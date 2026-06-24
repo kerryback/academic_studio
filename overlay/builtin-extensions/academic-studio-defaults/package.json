@@ -1,0 +1,39 @@
+{
+  "name": "academic-studio-defaults",
+  "displayName": "Academic Studio Defaults",
+  "description": "Default settings for Academic Studio. Built in; sets beginner-friendly, academic-workflow defaults. Any setting here can be overridden by the user.",
+  "version": "1.0.0",
+  "publisher": "academic-studio",
+  "license": "MIT",
+  "engines": { "vscode": "^1.121.0" },
+  "categories": ["Other"],
+  "contributes": {
+    "configurationDefaults": {
+      "files.autoSave": "afterDelay",
+      "files.autoSaveDelay": 1000,
+      "editor.minimap.enabled": false,
+      "editor.stickyScroll.enabled": false,
+      "editor.renderWhitespace": "none",
+      "breadcrumbs.enabled": true,
+      "telemetry.telemetryLevel": "off",
+      "redhat.telemetry.enabled": false,
+      "workbench.startupEditor": "readme",
+      "workbench.tips.enabled": false,
+      "workbench.reduceMotion": "on",
+      "security.workspace.trust.startupPrompt": "never",
+      "security.workspace.trust.banner": "never",
+      "git.openRepositoryInParentFolders": "never",
+      "git.confirmSync": false,
+      "extensions.ignoreRecommendations": true,
+      "chat.commandCenter.enabled": false,
+      "python.languageServer": "None",
+      "python.terminal.activateEnvironment": true,
+      "basedpyright.analysis.typeCheckingMode": "standard",
+      "[markdown]": { "editor.wordWrap": "on", "editor.quickSuggestions": { "comments": "off", "strings": "off", "other": "off" } },
+      "[quarto]": { "editor.wordWrap": "on" },
+      "[latex]": { "editor.wordWrap": "on" },
+      "[tex]": { "editor.wordWrap": "on" },
+      "[bibtex]": { "editor.wordWrap": "on" }
+    }
+  }
+}

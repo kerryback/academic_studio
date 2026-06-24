@@ -1,4 +1,18 @@
 {
+  "builtInExtensionsEnabledWithAutoUpdates": [
+    "quarto.quarto",
+    "James-Yu.latex-workshop",
+    "cweijan.vscode-office",
+    "ms-python.python",
+    "jeanp413.open-remote-ssh",
+    "REditorSupport.r",
+    "REditorSupport.r-syntax",
+    "detachhead.basedpyright",
+    "mechatroner.rainbow-csv",
+    "ms-toolsai.jupyter",
+    "streetsidesoftware.code-spell-checker",
+    "Anthropic.claude-code"
+  ],
   "nameShort": "Academic Studio",
   "nameLong": "Academic Studio",
   "applicationName": "academic-studio",

@@ -111,6 +111,17 @@ rm -f "$STAGE"/*.vsix
 cp "$ROOT/overlay/extensions/vsix/${EXT_TARGET}/"*.vsix "$STAGE"/
 echo "[build] staged $(ls "$STAGE"/*.vsix | wc -l | tr -d ' ') extension vsix -> vscode/as-extensions"
 
+# bundle local built-in extensions (e.g. academic-studio-defaults, which sets
+# configurationDefaults). These go into vscode/extensions/ where the build's
+# glob('extensions/*/package.json') picks them up automatically.
+for d in "$ROOT"/overlay/builtin-extensions/*/; do
+  [ -d "$d" ] || continue
+  ename="$(basename "$d")"
+  rm -rf "vscode/extensions/$ename"
+  cp -R "$d" "vscode/extensions/$ename"
+  echo "[build] bundled local extension: $ename"
+done
+
 # --- macOS native build include --------------------------------------------
 if [ -f "./include_${OS_NAME}.gypi" ]; then
   mkdir -p ~/.gyp
