@@ -1,0 +1,11 @@
+# The build engine is a pinned VSCodium clone — regenerable, large, and has its
+# own .git. Recreate with:
+#   git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
+#   (cd build-engine && git remote rename origin upstream)
+build-engine/
+
+# Build artifacts
+VSCode-*/
+*.dmg
+*.zip
+*.log
