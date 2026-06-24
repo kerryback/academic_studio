@@ -11,6 +11,10 @@ OVERLAY="$ROOT/overlay"
 # 1) product.json branding overrides ----------------------------------------
 # VSCodium merges build-engine/product.json (root) LAST over the vscode base,
 # so our keys land there. Keep a pristine copy to merge against each time.
+# NOTE: bundled builtInExtensions are injected later by build-macos.sh's
+# staging step (it needs the checked-out vscode tree to read the base js-debug
+# entries and union ours onto them — jq '*' replaces arrays, so a naive merge
+# here would drop js-debug).
 if [ ! -f "$ENGINE/product.json.vscodium" ]; then
   cp "$ENGINE/product.json" "$ENGINE/product.json.vscodium"
 fi
@@ -18,7 +22,7 @@ jq -s '.[0] * .[1]' \
   "$ENGINE/product.json.vscodium" \
   "$OVERLAY/product.overrides.json" \
   > "$ENGINE/product.json"
-echo "[overlay] merged product.overrides.json -> build-engine/product.json"
+echo "[overlay] merged branding -> build-engine/product.json"
 
 # 2) source patches (menu trimming, Copilot removal, beginner tweaks) --------
 # VSCodium auto-applies patches/user/*.patch last. We prefix ours with 'as-'

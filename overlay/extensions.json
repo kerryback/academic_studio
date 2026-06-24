@@ -1,0 +1,19 @@
+{
+  "_comment": "Extensions bundled as built-ins, fetched from Open VSX. 'universal' work on every OS; 'platformSpecific' are fetched per build target (darwin-arm64, darwin-x64, win32-x64, win32-arm64).",
+  "universal": [
+    "quarto.quarto",
+    "James-Yu.latex-workshop",
+    "cweijan.vscode-office",
+    "ms-python.python",
+    "jeanp413.open-remote-ssh",
+    "REditorSupport.r",
+    "REditorSupport.r-syntax",
+    "detachhead.basedpyright",
+    "mechatroner.rainbow-csv",
+    "ms-toolsai.jupyter",
+    "streetsidesoftware.code-spell-checker"
+  ],
+  "platformSpecific": [
+    "Anthropic.claude-code"
+  ]
+}

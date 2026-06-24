@@ -4,6 +4,10 @@
 #   (cd build-engine && git remote rename origin upstream)
 build-engine/
 
+# Downloaded extension VSIX cache (large, regenerable via fetch-extensions.sh).
+# The builtin.<target>.json manifests ARE tracked (they pin versions).
+overlay/extensions/vsix/
+
 # Build artifacts
 VSCode-*/
 *.dmg

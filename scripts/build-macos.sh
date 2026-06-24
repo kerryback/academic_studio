@@ -47,7 +47,13 @@ if command -v nvm >/dev/null 2>&1; then
 fi
 echo "[build] node $(node --version)  arch=${VSCODE_ARCH}"
 
-# --- inject our overlay -----------------------------------------------------
+# --- fetch bundled extensions for this target (if not already cached) -------
+EXT_TARGET="darwin-${VSCODE_ARCH}"
+if [ ! -f "$ROOT/overlay/extensions/builtin.${EXT_TARGET}.json" ]; then
+  "$ROOT/scripts/fetch-extensions.sh" "$EXT_TARGET"
+fi
+
+# --- inject our overlay (branding) ------------------------------------------
 "$ROOT/scripts/apply-overlay.sh"
 
 cd "$ENGINE"
@@ -68,7 +74,42 @@ if [ "$SKIP_SOURCE" = "no" ]; then
 else
   # shellcheck disable=SC1091
   . dev/build.env
+  # reuse the fetched source, but unwind prior patch commits and clear build
+  # output so patches + bundled extensions re-apply from a clean tree.
+  if [ -d vscode ]; then
+    ( cd vscode
+      git add -A 2>/dev/null || true
+      git reset -q --hard HEAD 2>/dev/null || true
+      while [ -n "$(git log -1 2>/dev/null | grep 'VSCODIUM HELPER')" ]; do
+        git reset -q --hard HEAD~ || break
+      done
+      # clear build output + the CLI's untracked openssl scratch dir, which
+      # build_cli.sh creates with a bare `mkdir openssl` (fails if it lingers).
+      rm -rf .build out* cli/openssl cli/vscode-openssl-prebuilt-*.tgz )
+  fi
 fi
+
+# --- bundle extensions: builtInExtensions union + stage VSIX ----------------
+# prepare_vscode.sh merges build-engine/product.json into vscode/product.json
+# with jq '*', which REPLACES the builtInExtensions array. So we set the
+# override's builtInExtensions to the UNION of the base js-debug entries (read
+# pristine from git, downloaded via GitHub at build time) and our bundled list
+# (extracted from local VSIX). Reading base from git keeps this correct across
+# vscode version bumps.
+BASE_BUILTINS="$(git -C vscode show HEAD:product.json | jq '.builtInExtensions // []')"
+OUR_BUILTINS="$(jq '.builtInExtensions' "$ROOT/overlay/extensions/builtin.${EXT_TARGET}.json")"
+UNION="$(jq -n --argjson a "$BASE_BUILTINS" --argjson b "$OUR_BUILTINS" '$a + $b')"
+PJTMP="$(jq --argjson bi "$UNION" '.builtInExtensions = $bi' "$ENGINE/product.json")"
+echo "$PJTMP" > "$ENGINE/product.json"
+echo "[build] builtInExtensions: $(echo "$UNION" | jq length) total ($(echo "$BASE_BUILTINS" | jq length) base + $(echo "$OUR_BUILTINS" | jq length) bundled)"
+
+# product.json vsix paths are relative to the vscode repo root; the build
+# extracts them at package time.
+STAGE="$ENGINE/vscode/as-extensions"
+mkdir -p "$STAGE"
+rm -f "$STAGE"/*.vsix
+cp "$ROOT/overlay/extensions/vsix/${EXT_TARGET}/"*.vsix "$STAGE"/
+echo "[build] staged $(ls "$STAGE"/*.vsix | wc -l | tr -d ' ') extension vsix -> vscode/as-extensions"
 
 # --- macOS native build include --------------------------------------------
 if [ -f "./include_${OS_NAME}.gypi" ]; then
