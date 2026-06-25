@@ -137,5 +137,26 @@ if [ -f ~/.gyp/include.gypi.pre-as ]; then
   mv ~/.gyp/include.gypi.pre-as ~/.gyp/include.gypi
 fi
 
+# --- package installer (.dmg) when requested --------------------------------
+# VSCodium's prepare_assets.sh only builds a .dmg when a signing cert is present
+# (it's gated on CERTIFICATE_OSX_P12_DATA). For an unsigned distributable we run
+# create-dmg directly: it warns "no code signing identity" but still produces a
+# working drag-to-Applications .dmg. Signing/notarization is Phase 7.
+if [ "$SKIP_ASSETS" = "no" ]; then
+  echo "[build] packaging .dmg (unsigned)..."
+  # shellcheck disable=SC1091
+  . dev/build.env
+  mkdir -p assets
+  APPDIR="VSCode-darwin-${VSCODE_ARCH}"
+  ( cd "$APPDIR" && rm -f ./*.dmg && npx --yes create-dmg ./*.app . || true )
+  DMG="$(ls "$APPDIR"/*.dmg 2>/dev/null | head -1)"
+  if [ -n "$DMG" ]; then
+    mv "$DMG" "assets/Academic-Studio.${VSCODE_ARCH}.${RELEASE_VERSION}.dmg"
+    echo "[build] assets: $(ls assets/ | tr '\n' ' ')"
+  else
+    echo "[build] WARNING: dmg not produced"
+  fi
+fi
+
 echo ""
 echo "[build] DONE. App bundle: ${ENGINE}/VSCode-darwin-${VSCODE_ARCH}/"
