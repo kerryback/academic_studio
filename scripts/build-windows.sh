@@ -16,6 +16,27 @@ set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENGINE="$ROOT/build-engine"
 
+# --- preflight: required tools (fail clearly, not with a cryptic crash) ------
+missing=""
+for tool in jq node npm git python; do
+  command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
+done
+if [ -n "$missing" ]; then
+  echo "ERROR: missing required tool(s):$missing"
+  echo "Install them, reopen Git Bash, and re-run. See docs/WINDOWS-BUILD.md."
+  echo "  jq:     winget install jqlang.jq"
+  echo "  node:   https://nodejs.org/dist/v22.22.1/  (need v22.22.1)"
+  echo "  python: install 3.11 and check 'Add to PATH'"
+  exit 1
+fi
+if [ "${SKIP_ASSETS:-no}" = "no" ]; then
+  for tool in iscc ISCC.exe 7z 7z.exe; do command -v "$tool" >/dev/null 2>&1 && break; done || true
+  command -v iscc >/dev/null 2>&1 || command -v ISCC.exe >/dev/null 2>&1 || \
+    echo "WARN: Inno Setup (ISCC) not on PATH — the installer step will fail. winget install JRSoftware.InnoSetup"
+  command -v 7z >/dev/null 2>&1 || command -v 7z.exe >/dev/null 2>&1 || \
+    echo "WARN: 7-Zip (7z) not on PATH — the .zip step will fail. winget install 7zip.7zip"
+fi
+
 # --- edition + branding (from the edition's product overrides) --------------
 EDITION="${1:-${EDITION:-student}}"
 EDIR="$ROOT/overlay/editions/$EDITION"
