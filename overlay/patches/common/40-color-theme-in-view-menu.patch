@@ -1,0 +1,21 @@
+diff --git a/src/vs/workbench/contrib/themes/browser/themes.contribution.ts b/src/vs/workbench/contrib/themes/browser/themes.contribution.ts
+index efee386b..eb04512a 100644
+--- a/src/vs/workbench/contrib/themes/browser/themes.contribution.ts
++++ b/src/vs/workbench/contrib/themes/browser/themes.contribution.ts
+@@ -913,6 +913,16 @@ MenuRegistry.appendMenuItem(MenuId.MenubarPreferencesMenu, {
+ 	order: 7
+ } satisfies ISubmenuItem);
+ 
++// Academic Studio: also surface the Themes submenu (Color Theme, File Icon
++// Theme, ...) in the View menu, where it's easy to find after the Preferences
++// menu was trimmed.
++MenuRegistry.appendMenuItem(MenuId.MenubarViewMenu, {
++	title: localize({ key: 'miSelectTheme', comment: ['&& denotes a mnemonic'] }, "&&Themes"),
++	submenu: ThemesSubMenu,
++	group: '5_theme',
++	order: 1
++} satisfies ISubmenuItem);
++
+ MenuRegistry.appendMenuItem(ThemesSubMenu, {
+ 	command: {
+ 		id: SelectColorThemeCommandId,

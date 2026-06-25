@@ -31,7 +31,7 @@ index 2bea6c46..77eeed4d 100644
  		if (!list) {
  			list = new LinkedList();
 diff --git a/src/vs/workbench/browser/parts/paneCompositeBar.ts b/src/vs/workbench/browser/parts/paneCompositeBar.ts
-index bc6003e2..31c877bc 100644
+index bc6003e2..fc31d074 100644
 --- a/src/vs/workbench/browser/parts/paneCompositeBar.ts
 +++ b/src/vs/workbench/browser/parts/paneCompositeBar.ts
 @@ -8,6 +8,7 @@ import { ActionsOrientation } from '../../../base/browser/ui/actionbar/actionbar
@@ -42,7 +42,20 @@ index bc6003e2..31c877bc 100644
  import { IDisposable, DisposableStore, Disposable, DisposableMap } from '../../../base/common/lifecycle.js';
  import { IColorTheme } from '../../../platform/theme/common/themeService.js';
  import { CompositeBar, ICompositeBarItem, CompositeDragAndDrop } from './compositeBar.js';
-@@ -333,7 +334,12 @@ export class PaneCompositeBar extends Disposable {
+@@ -117,7 +118,12 @@ export class PaneCompositeBar extends Disposable {
+ 			() => this.compositeBar.getCompositeBarItems(),
+ 		);
+ 
++		// Academic Studio: also drop hidden containers from the cached (persisted)
++		// activity-bar state, so they disappear even in profiles that pinned them
++		// before the hide list existed.
++		const asHiddenCached = (product as { academicStudioHideViewContainers?: string[] }).academicStudioHideViewContainers;
+ 		const cachedItems = this.cachedViewContainers
++			.filter(container => !(asHiddenCached && asHiddenCached.indexOf(container.id) !== -1))
+ 			.map(container => ({
+ 				id: container.id,
+ 				name: container.name,
+@@ -333,7 +339,12 @@ export class PaneCompositeBar extends Disposable {
  	}
  
  	private onDidRegisterViewContainers(viewContainers: readonly ViewContainer[]): void {
@@ -55,7 +68,7 @@ index bc6003e2..31c877bc 100644
  			this.addComposite(viewContainer);
  
  			// Pin it by default if it is new
-@@ -521,7 +527,10 @@ export class PaneCompositeBar extends Disposable {
+@@ -521,7 +532,10 @@ export class PaneCompositeBar extends Disposable {
  	}
  
  	private getViewContainers(): readonly ViewContainer[] {
