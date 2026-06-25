@@ -31,7 +31,7 @@ index 2bea6c46..77eeed4d 100644
  		if (!list) {
  			list = new LinkedList();
 diff --git a/src/vs/workbench/browser/parts/paneCompositeBar.ts b/src/vs/workbench/browser/parts/paneCompositeBar.ts
-index bc6003e2..fc31d074 100644
+index bc6003e2..41764d8a 100644
 --- a/src/vs/workbench/browser/parts/paneCompositeBar.ts
 +++ b/src/vs/workbench/browser/parts/paneCompositeBar.ts
 @@ -8,6 +8,7 @@ import { ActionsOrientation } from '../../../base/browser/ui/actionbar/actionbar
@@ -68,7 +68,21 @@ index bc6003e2..fc31d074 100644
  			this.addComposite(viewContainer);
  
  			// Pin it by default if it is new
-@@ -521,7 +532,10 @@ export class PaneCompositeBar extends Disposable {
+@@ -459,6 +470,13 @@ export class PaneCompositeBar extends Disposable {
+ 	}
+ 
+ 	private addComposite(viewContainer: ViewContainer): void {
++		// Academic Studio: never add hidden containers to the bar, no matter which
++		// path requests it (registration, visibility change, show/hide). This is the
++		// single chokepoint every caller funnels through.
++		const asHiddenAdd = (product as { academicStudioHideViewContainers?: string[] }).academicStudioHideViewContainers;
++		if (asHiddenAdd && asHiddenAdd.indexOf(viewContainer.id) !== -1) {
++			return;
++		}
+ 		this.compositeBar.addComposite({ id: viewContainer.id, name: typeof viewContainer.title === 'string' ? viewContainer.title : viewContainer.title.value, order: viewContainer.order, requestedIndex: viewContainer.requestedIndex });
+ 	}
+ 
+@@ -521,7 +539,10 @@ export class PaneCompositeBar extends Disposable {
  	}
  
  	private getViewContainers(): readonly ViewContainer[] {
