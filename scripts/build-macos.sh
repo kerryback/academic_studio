@@ -156,25 +156,28 @@ if [ -f ~/.gyp/include.gypi.pre-as ]; then
 fi
 
 # --- package installer (.dmg) when requested --------------------------------
-# VSCodium's prepare_assets.sh only builds a .dmg when a signing cert is present
-# (it's gated on CERTIFICATE_OSX_P12_DATA). For an unsigned distributable we run
-# create-dmg directly: it warns "no code signing identity" but still produces a
-# working drag-to-Applications .dmg. Signing/notarization is Phase 7.
+# VSCodium's prepare_assets.sh only builds a .dmg when a signing cert is present.
+# We build an unsigned drag-to-Applications .dmg with hdiutil (pure macOS, no
+# Node native deps — create-dmg's macos-alias module breaks under the build's
+# pinned Node). Signing/notarization is Phase 7.
 if [ "$SKIP_ASSETS" = "no" ]; then
-  echo "[build] packaging .dmg (unsigned)..."
+  echo "[build] packaging .dmg (unsigned, hdiutil)..."
   # shellcheck disable=SC1091
   . dev/build.env
   mkdir -p assets
   APPDIR="VSCode-darwin-${VSCODE_ARCH}"
-  ( cd "$APPDIR" && rm -f ./*.dmg && npx --yes create-dmg ./*.app . || true )
-  DMG="$(ls "$APPDIR"/*.dmg 2>/dev/null | head -1)"
-  if [ -n "$DMG" ]; then
-    SLUG="$(echo "$APP_NAME" | tr ' ' '-')"   # e.g. Academic-Studio-Student-Edition
-    mv "$DMG" "assets/${SLUG}.${VSCODE_ARCH}.${RELEASE_VERSION}.dmg"
+  SLUG="$(echo "$APP_NAME" | tr ' ' '-')"   # e.g. Academic-Studio-Student-Edition
+  DMG="assets/${SLUG}.${VSCODE_ARCH}.${RELEASE_VERSION}.dmg"
+  STAGEDMG="$(mktemp -d)"
+  cp -R "${APPDIR}/${APP_NAME}.app" "$STAGEDMG/"
+  ln -s /Applications "$STAGEDMG/Applications"
+  rm -f "$DMG"
+  if hdiutil create -volname "$APP_NAME" -srcfolder "$STAGEDMG" -ov -format UDZO "$DMG" >/dev/null; then
     echo "[build] assets: $(ls assets/ | tr '\n' ' ')"
   else
     echo "[build] WARNING: dmg not produced"
   fi
+  rm -rf "$STAGEDMG"
 fi
 
 echo ""
