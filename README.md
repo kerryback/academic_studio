@@ -47,10 +47,16 @@ a `.dmg`/`.zip`.
 ## Status
 
 - [x] Phase 1 — branded vanilla build on macOS
-- [ ] Phase 2 — branding assets (icon, IDs)
-- [ ] Phase 3 — bundle default extensions (Quarto, LaTeX Workshop, Claude Code, Office Viewer, Python, Open Remote SSH, R)
-- [ ] Phase 4 — beginner defaults + remove Copilot
-- [ ] Phase 5 — menu trimming (remove Selection/Go/Run)
-- [ ] Phase 6 — Windows build
-- [ ] Phase 7 — code signing + notarization
+- [x] Phase 2 — branding assets (mortarboard icon, bundle IDs, Open VSX)
+- [x] Phase 3 — bundle 12 default extensions (Quarto, LaTeX Workshop, Claude Code, Office Viewer, Python, Open Remote SSH, R + r-syntax, basedpyright, Rainbow CSV, Jupyter, Code Spell Checker)
+- [x] Phase 4 — beginner defaults (academic-studio-defaults built-in) + no Copilot + extension auto-updates
+- [x] Phase 5 — menu trimming (Selection/Go/Run removed; File/Edit/View/Terminal/Help kept)
+- [ ] Phase 6 — Windows build (`scripts/build-windows.sh`, see `docs/WINDOWS-BUILD.md`) — run on a Windows machine
+- [ ] Phase 7 — code signing + notarization (Apple Developer ID; Windows cert)
 - [ ] Phase 8 — releases + download page
+
+## Extras
+
+- `scripts/make-icon.py` / `make-icons.sh` — regenerate the placeholder icon (`.icns` + `.ico`). Replace `overlay/icons/academic-studio.png` with real art to rebrand.
+- `scripts/fetch-extensions.sh <target>` — download bundled extensions from Open VSX and emit the per-target `builtInExtensions` manifest.
+- R IntelliSense needs the R `languageserver` package: install R, then `install.packages("languageserver")`.
