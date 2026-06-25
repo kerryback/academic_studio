@@ -24,8 +24,8 @@ APP_NAME="$(jq -r '.nameLong' "$EDIR/product.overrides.json")"
 BINARY_NAME="$(jq -r '.applicationName' "$EDIR/product.overrides.json")"
 export APP_NAME BINARY_NAME
 export ORG_NAME="AcademicStudio"
-export GH_REPO_PATH="kerryback/academic-studio"
-export ASSETS_REPOSITORY="kerryback/academic-studio"
+export GH_REPO_PATH="kerryback/academic_studio"
+export ASSETS_REPOSITORY="kerryback/academic_studio"
 export TUNNEL_APP_NAME="${BINARY_NAME}-tunnel"
 
 # --- build flags ------------------------------------------------------------

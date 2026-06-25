@@ -24,8 +24,8 @@ BINARY_NAME="$(jq -r '.applicationName' "$EDIR/product.overrides.json")"
 # --- Academic Studio branding ---------------------------------------------------
 export APP_NAME BINARY_NAME
 export ORG_NAME="AcademicStudio"
-export GH_REPO_PATH="kerryback/academic-studio"
-export ASSETS_REPOSITORY="kerryback/academic-studio"
+export GH_REPO_PATH="kerryback/academic_studio"
+export ASSETS_REPOSITORY="kerryback/academic_studio"
 export TUNNEL_APP_NAME="${BINARY_NAME}-tunnel"
 
 # --- build flags ------------------------------------------------------------
@@ -169,7 +169,8 @@ if [ "$SKIP_ASSETS" = "no" ]; then
   ( cd "$APPDIR" && rm -f ./*.dmg && npx --yes create-dmg ./*.app . || true )
   DMG="$(ls "$APPDIR"/*.dmg 2>/dev/null | head -1)"
   if [ -n "$DMG" ]; then
-    mv "$DMG" "assets/Academic-Studio.${VSCODE_ARCH}.${RELEASE_VERSION}.dmg"
+    SLUG="$(echo "$APP_NAME" | tr ' ' '-')"   # e.g. Academic-Studio-Student-Edition
+    mv "$DMG" "assets/${SLUG}.${VSCODE_ARCH}.${RELEASE_VERSION}.dmg"
     echo "[build] assets: $(ls assets/ | tr '\n' ' ')"
   else
     echo "[build] WARNING: dmg not produced"

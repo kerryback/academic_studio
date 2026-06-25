@@ -37,19 +37,28 @@ cd build-engine && git remote rename origin upstream && cd ..
 
 ## 3. Build
 
-From Git Bash, in the repo root:
+Two architectures are supported: `x64` (64-bit Intel/AMD — the standard Windows
+build, sometimes written "x86-64") and `arm64` (Windows on ARM). Note: modern
+VS Code no longer builds true 32-bit (`ia32`) Windows, so there is no x86-32 target.
+
+Easiest — double-click the launcher for your architecture (it finds Git Bash):
+```
+scripts\build-windows-x64.cmd          REM 64-bit Intel/AMD, student edition
+scripts\build-windows-arm64.cmd        REM Windows on ARM, student edition
+scripts\build-windows-x64.cmd faculty  REM faculty edition
+```
+
+Or from Git Bash, in the repo root:
 ```bash
-# full build incl. installer (x64):
-"C:/Program Files/Git/bin/bash.exe" ./scripts/build-windows.sh
+./scripts/build-windows-x64.sh student      # x64 student
+./scripts/build-windows-arm64.sh student    # arm64 student
+./scripts/build-windows-x64.sh faculty      # x64 faculty
 
-# faster re-build reusing fetched source:
-SKIP_SOURCE=yes ./scripts/build-windows.sh
-
-# app only, skip the installer:
-SKIP_ASSETS=yes ./scripts/build-windows.sh
-
-# ARM64 target:
-ARCH=arm64 ./scripts/build-windows.sh
+# the wrappers call build-windows.sh; you can also drive it directly:
+ARCH=x64   ./scripts/build-windows.sh student
+ARCH=arm64 ./scripts/build-windows.sh faculty
+SKIP_SOURCE=yes ./scripts/build-windows-x64.sh student   # faster re-build
+SKIP_ASSETS=yes ./scripts/build-windows-x64.sh student   # app only, no installer
 ```
 
 ## 4. Outputs
