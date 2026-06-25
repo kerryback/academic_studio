@@ -14,13 +14,13 @@ if not exist "%GITBASH%" (
 )
 
 cd /d "%~dp0\.."
-"%GITBASH%" -lc "ARCH=arm64 ./scripts/build-windows.sh %EDITION%"
+REM tee runs inside Git Bash, so the build always writes build-win.log automatically.
+"%GITBASH%" -lc "set -o pipefail; ARCH=arm64 ./scripts/build-windows.sh %EDITION% 2>&1 | tee build-win.log"
 if errorlevel 1 (
   echo.
-  echo BUILD FAILED. Scroll up for the error, or re-run capturing a log:
-  echo   "%GITBASH%" -lc "ARCH=arm64 ./scripts/build-windows.sh %EDITION% 2>&1 | tee build-win.log"
+  echo BUILD FAILED. The full log is in build-win.log -- send that file to Claude.
 ) else (
   echo.
-  echo Build OK. App folder + installer are under build-engine\
+  echo Build OK. App + installer are under build-engine\  ^(log: build-win.log^)
 )
 pause
