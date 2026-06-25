@@ -1,0 +1,68 @@
+diff --git a/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts b/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts
+index 4794c30c..e372ef72 100644
+--- a/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts
++++ b/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts
+@@ -27,15 +27,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
+ 	order: 2
+ });
+ 
+-MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
+-	submenu: MenuId.MenubarSelectionMenu,
+-	title: {
+-		value: 'Selection',
+-		original: 'Selection',
+-		mnemonicTitle: localize({ key: 'mSelection', comment: ['&& denotes a mnemonic'] }, "&&Selection")
+-	},
+-	order: 3
+-});
++// Academic Studio: Selection top-level menu removed (decluttered).
+ 
+ MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
+ 	submenu: MenuId.MenubarViewMenu,
+@@ -47,15 +39,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
+ 	order: 4
+ });
+ 
+-MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
+-	submenu: MenuId.MenubarGoMenu,
+-	title: {
+-		value: 'Go',
+-		original: 'Go',
+-		mnemonicTitle: localize({ key: 'mGoto', comment: ['&& denotes a mnemonic'] }, "&&Go")
+-	},
+-	order: 5
+-});
++// Academic Studio: Go top-level menu removed (decluttered).
+ 
+ MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
+ 	submenu: MenuId.MenubarTerminalMenu,
+diff --git a/src/vs/workbench/contrib/debug/browser/debug.contribution.ts b/src/vs/workbench/contrib/debug/browser/debug.contribution.ts
+index 6a10c81e..cbe919e4 100644
+--- a/src/vs/workbench/contrib/debug/browser/debug.contribution.ts
++++ b/src/vs/workbench/contrib/debug/browser/debug.contribution.ts
+@@ -20,7 +20,7 @@ import { IQuickAccessRegistry, Extensions as QuickAccessExtensions } from '../..
+ import { Registry } from '../../../../platform/registry/common/platform.js';
+ import { EditorPaneDescriptor, IEditorPaneRegistry } from '../../../browser/editor.js';
+ import { ViewPaneContainer } from '../../../browser/parts/views/viewPaneContainer.js';
+-import { FocusedViewContext, IsSessionsWindowContext } from '../../../common/contextkeys.js';
++import { FocusedViewContext } from '../../../common/contextkeys.js';
+ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions, WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/contributions.js';
+ import { EditorExtensions } from '../../../common/editor.js';
+ import { IViewContainersRegistry, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from '../../../common/views.js';
+@@ -258,15 +258,7 @@ MenuRegistry.appendMenuItem(MenuId.EditorTitle, { submenu: MenuId.EditorTitleRun
+ 
+ // Debug menu
+ 
+-MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
+-	submenu: MenuId.MenubarDebugMenu,
+-	title: {
+-		...nls.localize2('runMenu', "Run"),
+-		mnemonicTitle: nls.localize({ key: 'mRun', comment: ['&& denotes a mnemonic'] }, "&&Run")
+-	},
+-	order: 6,
+-	when: IsSessionsWindowContext.negate()
+-});
++// Academic Studio: Run top-level menu removed (decluttered).
+ 
+ MenuRegistry.appendMenuItem(MenuId.MenubarDebugMenu, {
+ 	group: '1_debug',
