@@ -1,23 +1,32 @@
 #!/usr/bin/env bash
-# Build Academic Studio for macOS. Adapted from VSCodium's dev/build.sh, but
-# sets OUR branding (dev/build.sh hardcodes APP_NAME=VSCodium, so we cannot just
-# call it). Run from anywhere: scripts/build-macos.sh
+# Build Rice Studio for macOS. Adapted from VSCodium's dev/build.sh, but sets OUR
+# branding (dev/build.sh hardcodes APP_NAME=VSCodium, so we cannot just call it).
+#
+# Usage: scripts/build-macos.sh [edition]      (edition = student | faculty)
+#   or:  EDITION=faculty scripts/build-macos.sh
 #
 # Env knobs:
 #   SKIP_SOURCE=yes   reuse already-fetched vscode source (faster re-builds)
-#   SKIP_ASSETS=no    also package a .dmg/.zip (default: app bundle only)
+#   SKIP_ASSETS=no    also package a .dmg (default: app bundle only)
 set -e
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENGINE="$ROOT/build-engine"
 
-# --- Academic Studio branding ----------------------------------------------
-export APP_NAME="Academic Studio"
-export BINARY_NAME="academic-studio"
-export ORG_NAME="AcademicStudio"
-export GH_REPO_PATH="kerryback/academic-studio"
-export ASSETS_REPOSITORY="kerryback/academic-studio"
-export TUNNEL_APP_NAME="academic-studio-tunnel"
+# --- edition ----------------------------------------------------------------
+EDITION="${1:-${EDITION:-student}}"
+EDIR="$ROOT/overlay/editions/$EDITION"
+[ -d "$EDIR" ] || { echo "unknown edition '$EDITION' (no $EDIR)"; exit 1; }
+# branding read from the edition's product overrides (single source of truth)
+APP_NAME="$(jq -r '.nameLong' "$EDIR/product.overrides.json")"
+BINARY_NAME="$(jq -r '.applicationName' "$EDIR/product.overrides.json")"
+
+# --- Rice Studio branding ---------------------------------------------------
+export APP_NAME BINARY_NAME
+export ORG_NAME="RiceStudio"
+export GH_REPO_PATH="kerryback/rice-studio"
+export ASSETS_REPOSITORY="kerryback/rice-studio"
+export TUNNEL_APP_NAME="${BINARY_NAME}-tunnel"
 
 # --- build flags ------------------------------------------------------------
 export CI_BUILD="no"
@@ -45,16 +54,16 @@ export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 if command -v nvm >/dev/null 2>&1; then
   nvm use 22.22.1 >/dev/null 2>&1 || { nvm install 22.22.1 && nvm use 22.22.1; }
 fi
-echo "[build] node $(node --version)  arch=${VSCODE_ARCH}"
+echo "[build] edition=$EDITION  app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"
 
-# --- fetch bundled extensions for this target (if not already cached) -------
+# --- fetch bundled extensions for this edition+target (if not cached) --------
 EXT_TARGET="darwin-${VSCODE_ARCH}"
-if [ ! -f "$ROOT/overlay/extensions/builtin.${EXT_TARGET}.json" ]; then
-  "$ROOT/scripts/fetch-extensions.sh" "$EXT_TARGET"
+if [ ! -f "$EDIR/extensions/builtin.${EXT_TARGET}.json" ]; then
+  "$ROOT/scripts/fetch-extensions.sh" "$EDITION" "$EXT_TARGET"
 fi
 
-# --- inject our overlay (branding) ------------------------------------------
-"$ROOT/scripts/apply-overlay.sh"
+# --- inject our overlay (branding + edition patches + icons) ----------------
+"$ROOT/scripts/apply-overlay.sh" "$EDITION"
 
 cd "$ENGINE"
 
@@ -97,7 +106,7 @@ fi
 # (extracted from local VSIX). Reading base from git keeps this correct across
 # vscode version bumps.
 BASE_BUILTINS="$(git -C vscode show HEAD:product.json | jq '.builtInExtensions // []')"
-OUR_BUILTINS="$(jq '.builtInExtensions' "$ROOT/overlay/extensions/builtin.${EXT_TARGET}.json")"
+OUR_BUILTINS="$(jq '.builtInExtensions' "$EDIR/extensions/builtin.${EXT_TARGET}.json")"
 UNION="$(jq -n --argjson a "$BASE_BUILTINS" --argjson b "$OUR_BUILTINS" '$a + $b')"
 PJTMP="$(jq --argjson bi "$UNION" '.builtInExtensions = $bi' "$ENGINE/product.json")"
 echo "$PJTMP" > "$ENGINE/product.json"
@@ -108,10 +117,10 @@ echo "[build] builtInExtensions: $(echo "$UNION" | jq length) total ($(echo "$BA
 STAGE="$ENGINE/vscode/as-extensions"
 mkdir -p "$STAGE"
 rm -f "$STAGE"/*.vsix
-cp "$ROOT/overlay/extensions/vsix/${EXT_TARGET}/"*.vsix "$STAGE"/
+cp "$EDIR/extensions/vsix/${EXT_TARGET}/"*.vsix "$STAGE"/
 echo "[build] staged $(ls "$STAGE"/*.vsix | wc -l | tr -d ' ') extension vsix -> vscode/as-extensions"
 
-# bundle local built-in extensions (e.g. academic-studio-defaults, which sets
+# bundle local built-in extensions (e.g. rice-studio-defaults, which sets
 # configurationDefaults). These go into vscode/extensions/ where the build's
 # glob('extensions/*/package.json') picks them up automatically.
 for d in "$ROOT"/overlay/builtin-extensions/*/; do

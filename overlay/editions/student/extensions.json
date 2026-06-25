@@ -1,0 +1,16 @@
+{
+  "_comment": "Rice Studio STUDENT edition bundled extensions (Open VSX). Drops R, Remote SSH, LaTeX Workshop vs faculty; adds PDF viewer.",
+  "universal": [
+    "quarto.quarto",
+    "cweijan.vscode-office",
+    "ms-python.python",
+    "detachhead.basedpyright",
+    "mechatroner.rainbow-csv",
+    "ms-toolsai.jupyter",
+    "streetsidesoftware.code-spell-checker",
+    "tomoki1207.pdf"
+  ],
+  "platformSpecific": [
+    "Anthropic.claude-code"
+  ]
+}

@@ -2,19 +2,22 @@
 # Download the bundled extensions from Open VSX for a given build target and
 # emit the product.json `builtInExtensions` fragment used to bake them in.
 #
-# Usage: scripts/fetch-extensions.sh <target>
-#   target = darwin-arm64 | darwin-x64 | win32-x64 | win32-arm64
+# Usage: scripts/fetch-extensions.sh <edition> <target>
+#   edition = student | faculty
+#   target  = darwin-arm64 | darwin-x64 | win32-x64 | win32-arm64
 #
-# Outputs (per target):
-#   overlay/extensions/vsix/<target>/<id>.vsix
-#   overlay/extensions/builtin.<target>.json   ({ "builtInExtensions": [...] })
+# Outputs (per edition+target):
+#   overlay/editions/<edition>/extensions/vsix/<target>/<id>.vsix
+#   overlay/editions/<edition>/extensions/builtin.<target>.json
 set -euo pipefail
 
-TARGET="${1:?usage: fetch-extensions.sh <target>}"
+EDITION="${1:?usage: fetch-extensions.sh <edition> <target>}"
+TARGET="${2:?usage: fetch-extensions.sh <edition> <target>}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OVERLAY="$ROOT/overlay"
-LIST="$OVERLAY/extensions.json"
-OUTDIR="$OVERLAY/extensions/vsix/$TARGET"
+EDIR="$ROOT/overlay/editions/$EDITION"
+LIST="$EDIR/extensions.json"
+[ -f "$LIST" ] || { echo "unknown edition '$EDITION' (no $LIST)"; exit 1; }
+OUTDIR="$EDIR/extensions/vsix/$TARGET"
 mkdir -p "$OUTDIR"
 
 API="https://open-vsx.org/api"
@@ -62,7 +65,7 @@ fetch_one() {
     '. += [{name: $name, version: $version, sha256: $sha, vsix: $vsix}]')"
 }
 
-echo "[fetch] target=$TARGET -> $OUTDIR"
+echo "[fetch] edition=$EDITION target=$TARGET -> $OUTDIR"
 for id in $(jq -r '.universal[]' "$LIST"); do
   echo "- universal: $id"; fetch_one "$id" universal
 done
@@ -70,5 +73,5 @@ for id in $(jq -r '.platformSpecific[]' "$LIST"); do
   echo "- platform : $id"; fetch_one "$id" platform
 done
 
-echo "{\"builtInExtensions\": $ENTRIES}" | jq '.' > "$OVERLAY/extensions/builtin.$TARGET.json"
-echo "[fetch] wrote overlay/extensions/builtin.$TARGET.json ($(echo "$ENTRIES" | jq length) extensions)"
+echo "{\"builtInExtensions\": $ENTRIES}" | jq '.' > "$EDIR/extensions/builtin.$TARGET.json"
+echo "[fetch] wrote editions/$EDITION/extensions/builtin.$TARGET.json ($(echo "$ENTRIES" | jq length) extensions)"

@@ -1,9 +1,9 @@
 {
-  "name": "academic-studio-defaults",
-  "displayName": "Academic Studio Defaults",
-  "description": "Default settings for Academic Studio. Built in; sets beginner-friendly, academic-workflow defaults. Any setting here can be overridden by the user.",
+  "name": "rice-studio-defaults",
+  "displayName": "Rice Studio Defaults",
+  "description": "Default settings for Rice Studio. Built in; sets beginner-friendly, academic-workflow defaults. Any setting here can be overridden by the user.",
   "version": "1.0.0",
-  "publisher": "academic-studio",
+  "publisher": "rice-studio",
   "license": "MIT",
   "engines": { "vscode": "^1.121.0" },
   "categories": ["Other"],

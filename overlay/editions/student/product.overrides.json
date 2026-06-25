@@ -1,0 +1,39 @@
+{
+  "nameShort": "Rice Studio",
+  "nameLong": "Rice Studio Student Edition",
+  "applicationName": "rice-studio-student",
+  "serverApplicationName": "rice-studio-student-server",
+  "dataFolderName": ".rice-studio-student",
+  "serverDataFolderName": ".rice-studio-student-server",
+  "tunnelApplicationName": "rice-studio-student-tunnel",
+  "darwinBundleIdentifier": "com.ricestudio.student",
+  "win32AppUserModelId": "RiceStudio.Student",
+  "win32DirName": "Rice Studio Student Edition",
+  "win32MutexName": "ricestudiostudent",
+  "win32NameVersion": "Rice Studio Student Edition",
+  "win32RegValueName": "RiceStudioStudent",
+  "win32ShellNameShort": "Rice Studio",
+  "win32TunnelServiceMutex": "ricestudiostudent-tunnelservice",
+  "win32TunnelMutex": "ricestudiostudent-tunnel",
+  "win32AppId": "{{C29F4AD2-5386-4059-AF0C-E0A2EFA94CA1}",
+  "win32x64AppId": "{{299F3D16-918E-4814-A49A-75153866AA74}",
+  "win32arm64AppId": "{{D96B9C49-E509-46FE-A9E5-E3A28877F245}",
+  "win32UserAppId": "{{0AFB6FF1-D4CA-4494-995B-BC622BA370E1}",
+  "win32x64UserAppId": "{{5F6E762F-D264-4789-818A-864ACAA2677A}",
+  "win32arm64UserAppId": "{{6D295822-002D-45F2-BFA4-784B8E49C3EF}",
+  "win32ContextMenu": {
+    "x64": { "clsid": "89DDBDC4-5270-475C-B807-6179FB30DFF1" },
+    "arm64": { "clsid": "6B668D8C-3217-452A-B894-87D727C54FB0" }
+  },
+  "builtInExtensionsEnabledWithAutoUpdates": [
+    "quarto.quarto",
+    "cweijan.vscode-office",
+    "ms-python.python",
+    "detachhead.basedpyright",
+    "mechatroner.rainbow-csv",
+    "ms-toolsai.jupyter",
+    "streetsidesoftware.code-spell-checker",
+    "tomoki1207.pdf",
+    "Anthropic.claude-code"
+  ]
+}

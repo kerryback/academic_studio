@@ -1,0 +1,42 @@
+{
+  "nameShort": "Rice Studio",
+  "nameLong": "Rice Studio Faculty Edition",
+  "applicationName": "rice-studio-faculty",
+  "serverApplicationName": "rice-studio-faculty-server",
+  "dataFolderName": ".rice-studio-faculty",
+  "serverDataFolderName": ".rice-studio-faculty-server",
+  "tunnelApplicationName": "rice-studio-faculty-tunnel",
+  "darwinBundleIdentifier": "com.ricestudio.faculty",
+  "win32AppUserModelId": "RiceStudio.Faculty",
+  "win32DirName": "Rice Studio Faculty Edition",
+  "win32MutexName": "ricestudiofaculty",
+  "win32NameVersion": "Rice Studio Faculty Edition",
+  "win32RegValueName": "RiceStudioFaculty",
+  "win32ShellNameShort": "Rice Studio",
+  "win32TunnelServiceMutex": "ricestudiofaculty-tunnelservice",
+  "win32TunnelMutex": "ricestudiofaculty-tunnel",
+  "win32AppId": "{{C5FA4BD5-7EFA-45DD-8A33-566CD4D2F8F4}",
+  "win32x64AppId": "{{0082D6D8-BDAA-4A94-9890-CD3F8C51DD29}",
+  "win32arm64AppId": "{{6C25C3D2-DB72-4358-B2CB-D6BFF4830269}",
+  "win32UserAppId": "{{CF092644-8B24-4961-8FD3-2181ADEFFE1B}",
+  "win32x64UserAppId": "{{00E3CF71-66C7-4C69-870A-931946E71F22}",
+  "win32arm64UserAppId": "{{420906D6-216A-4B24-872D-68D154BD9BE7}",
+  "win32ContextMenu": {
+    "x64": { "clsid": "10A43A79-7762-4FD3-8F66-48300C375A7F" },
+    "arm64": { "clsid": "4321CAD5-D12D-46A7-AFED-FB2CE1197519" }
+  },
+  "builtInExtensionsEnabledWithAutoUpdates": [
+    "quarto.quarto",
+    "James-Yu.latex-workshop",
+    "cweijan.vscode-office",
+    "ms-python.python",
+    "jeanp413.open-remote-ssh",
+    "REditorSupport.r",
+    "REditorSupport.r-syntax",
+    "detachhead.basedpyright",
+    "mechatroner.rainbow-csv",
+    "ms-toolsai.jupyter",
+    "streetsidesoftware.code-spell-checker",
+    "Anthropic.claude-code"
+  ]
+}

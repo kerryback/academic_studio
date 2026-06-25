@@ -5,9 +5,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ICONS="$ROOT/overlay/icons"
-SRC="$ICONS/academic-studio.png"
+SRC="$ICONS/rice-studio.png"
 
-[ -f "$SRC" ] || python3 "$ROOT/scripts/make-icon.py"
+python3 "$ROOT/scripts/make-icon.py"
 
 # --- macOS .icns via iconset + iconutil ------------------------------------
 SET="$(mktemp -d)/icon.iconset"; mkdir -p "$SET"
@@ -15,11 +15,11 @@ for sz in 16 32 128 256 512; do
   sips -z $sz $sz       "$SRC" --out "$SET/icon_${sz}x${sz}.png"      >/dev/null
   sips -z $((sz*2)) $((sz*2)) "$SRC" --out "$SET/icon_${sz}x${sz}@2x.png" >/dev/null
 done
-iconutil -c icns "$SET" -o "$ICONS/academic-studio.icns"
-echo "wrote academic-studio.icns ($(du -h "$ICONS/academic-studio.icns" | cut -f1))"
+iconutil -c icns "$SET" -o "$ICONS/rice-studio.icns"
+echo "wrote rice-studio.icns ($(du -h "$ICONS/rice-studio.icns" | cut -f1))"
 
 # --- Windows .ico via Pillow (multi-resolution) ----------------------------
-python3 - "$SRC" "$ICONS/academic-studio.ico" <<'PY'
+python3 - "$SRC" "$ICONS/rice-studio.ico" <<'PY'
 import sys
 from PIL import Image
 src, out = sys.argv[1], sys.argv[2]
