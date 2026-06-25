@@ -25,6 +25,36 @@
     "x64": { "clsid": "89DDBDC4-5270-475C-B807-6179FB30DFF1" },
     "arm64": { "clsid": "6B668D8C-3217-452A-B894-87D727C54FB0" }
   },
+  "academicStudioHideViewContainers": [
+    "workbench.view.scm",
+    "workbench.view.debug",
+    "workbench.view.extension.test"
+  ],
+  "academicStudioMenuHide": {
+    "MenubarViewMenu": [
+      "workbench.view.scm",
+      "workbench.view.debug",
+      "workbench.view.extension.test",
+      "workbench.action.output.toggleOutput",
+      "workbench.actions.view.problems",
+      "workbench.debug.action.toggleRepl"
+    ],
+    "MenubarTerminalMenu": [
+      "workbench.action.tasks.runTask",
+      "workbench.action.tasks.build",
+      "workbench.action.tasks.showTasks",
+      "workbench.action.tasks.restartTask",
+      "workbench.action.tasks.terminate",
+      "workbench.action.tasks.configureTaskRunner",
+      "workbench.action.tasks.configureDefaultBuildTask"
+    ]
+  },
+  "academicStudioMenuKeepOnly": {
+    "MenubarHelpMenu": [
+      "workbench.action.showAboutDialog",
+      "workbench.action.openWalkthrough"
+    ]
+  },
   "builtInExtensionsEnabledWithAutoUpdates": [
     "quarto.quarto",
     "cweijan.vscode-office",

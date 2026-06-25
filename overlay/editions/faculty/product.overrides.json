@@ -25,6 +25,12 @@
     "x64": { "clsid": "10A43A79-7762-4FD3-8F66-48300C375A7F" },
     "arm64": { "clsid": "4321CAD5-D12D-46A7-AFED-FB2CE1197519" }
   },
+  "academicStudioMenuKeepOnly": {
+    "MenubarHelpMenu": [
+      "workbench.action.showAboutDialog",
+      "workbench.action.openWalkthrough"
+    ]
+  },
   "builtInExtensionsEnabledWithAutoUpdates": [
     "quarto.quarto",
     "James-Yu.latex-workshop",

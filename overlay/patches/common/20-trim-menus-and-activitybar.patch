@@ -1,0 +1,69 @@
+diff --git a/src/vs/platform/actions/common/actions.ts b/src/vs/platform/actions/common/actions.ts
+index 2bea6c46..77eeed4d 100644
+--- a/src/vs/platform/actions/common/actions.ts
++++ b/src/vs/platform/actions/common/actions.ts
+@@ -10,6 +10,7 @@ import { LinkedList } from '../../../base/common/linkedList.js';
+ import { ThemeIcon } from '../../../base/common/themables.js';
+ import { ICommandAction, ICommandActionTitle, Icon, ILocalizedString } from '../../action/common/action.js';
+ import { Categories } from '../../action/common/actionCommonCategories.js';
++import product from '../../product/common/product.js';
+ import { CommandsRegistry, ICommandService } from '../../commands/common/commands.js';
+ import { ContextKeyExpr, ContextKeyExpression, IContextKeyService } from '../../contextkey/common/contextkey.js';
+ import { createDecorator, ServicesAccessor } from '../../instantiation/common/instantiation.js';
+@@ -491,6 +492,19 @@ export const MenuRegistry: IMenuRegistry = new class implements IMenuRegistry {
+ 	}
+ 
+ 	appendMenuItem(id: MenuId, item: IMenuItem | ISubmenuItem): IDisposable {
++		// Academic Studio: drop / allow-list menu items per product.json
++		// (academicStudioMenuHide / academicStudioMenuKeepOnly, keyed by MenuId).
++		const asItemId = (item as IMenuItem).command?.id ?? (item as ISubmenuItem).submenu?.id;
++		if (asItemId) {
++			const asHide = (product as any).academicStudioMenuHide?.[id.id] as string[] | undefined;
++			if (asHide && asHide.indexOf(asItemId) !== -1) {
++				return toDisposable(() => { });
++			}
++			const asKeep = (product as any).academicStudioMenuKeepOnly?.[id.id] as string[] | undefined;
++			if (asKeep && asKeep.indexOf(asItemId) === -1) {
++				return toDisposable(() => { });
++			}
++		}
+ 		let list = this._menuItems.get(id);
+ 		if (!list) {
+ 			list = new LinkedList();
+diff --git a/src/vs/workbench/browser/parts/paneCompositeBar.ts b/src/vs/workbench/browser/parts/paneCompositeBar.ts
+index bc6003e2..31c877bc 100644
+--- a/src/vs/workbench/browser/parts/paneCompositeBar.ts
++++ b/src/vs/workbench/browser/parts/paneCompositeBar.ts
+@@ -8,6 +8,7 @@ import { ActionsOrientation } from '../../../base/browser/ui/actionbar/actionbar
+ import { IActivityService } from '../../services/activity/common/activity.js';
+ import { IWorkbenchLayoutService, Parts } from '../../services/layout/browser/layoutService.js';
+ import { IInstantiationService } from '../../../platform/instantiation/common/instantiation.js';
++import product from '../../../platform/product/common/product.js';
+ import { IDisposable, DisposableStore, Disposable, DisposableMap } from '../../../base/common/lifecycle.js';
+ import { IColorTheme } from '../../../platform/theme/common/themeService.js';
+ import { CompositeBar, ICompositeBarItem, CompositeDragAndDrop } from './compositeBar.js';
+@@ -333,7 +334,12 @@ export class PaneCompositeBar extends Disposable {
+ 	}
+ 
+ 	private onDidRegisterViewContainers(viewContainers: readonly ViewContainer[]): void {
++		// Academic Studio: never surface hidden view containers in the activity bar.
++		const asHidden = (product as any).academicStudioHideViewContainers as string[] | undefined;
+ 		for (const viewContainer of viewContainers) {
++			if (asHidden && asHidden.indexOf(viewContainer.id) !== -1) {
++				continue;
++			}
+ 			this.addComposite(viewContainer);
+ 
+ 			// Pin it by default if it is new
+@@ -521,7 +527,10 @@ export class PaneCompositeBar extends Disposable {
+ 	}
+ 
+ 	private getViewContainers(): readonly ViewContainer[] {
+-		return this.viewDescriptorService.getViewContainersByLocation(this.location);
++		const containers = this.viewDescriptorService.getViewContainersByLocation(this.location);
++		// Academic Studio: filter out view containers hidden via product.json.
++		const asHidden = (product as any).academicStudioHideViewContainers as string[] | undefined;
++		return asHidden && asHidden.length ? containers.filter(c => asHidden.indexOf(c.id) === -1) : containers;
+ 	}
+ 
+ 	private updateCompositeBarItemsFromStorage(retainExisting: boolean): void {
