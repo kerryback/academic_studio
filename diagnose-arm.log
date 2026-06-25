@@ -1,0 +1,33 @@
+=== Academic Studio — Windows build diagnostics ===
+when: Thu, Jun 25, 2026  9:52:58 AM
+where: /c/Users/kerry/repos/academic_studio
+arch (OS): AMD64
+
+=== toolchain (need: node v22.22.1, python 3.11, jq, git, rustc; for installer: ISCC + 7z) ===
+node:   v22.22.1
+npm:    10.9.4
+python: Python 3.14.6
+jq:     ./scripts/diagnose-windows.sh: line 19: jq: command not found
+git:    git version 2.47.0.windows.2
+rustc:  rustc 1.94.0 (4a4ef493e 2026-03-02)
+ISCC (Inno Setup): NOT on PATH
+7z:     NOT on PATH
+
+=== how far the build got ===
+build-engine: present
+- vscode source entries : 0
+- vscode/node_modules   : 0 packages
+- dev/build.env         :
+    (none — source/version step did not finish)
+- vscode/.build         :
+- app folders           :
+- assets                :
+
+=== pinned VS Code version (overlay) ===
+{
+  "tag": "1.121.0",
+  "commit": "987c9597516278c9fcf10d963a0592ce1384ab93"
+}
+
+=== tail of last captured build log (if you ran with '| tee build-win.log') ===
+(no build-win.log — re-run the build with: ./scripts/build-windows-arm64.sh student 2>&1 | tee build-win.log)
