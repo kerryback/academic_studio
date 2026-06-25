@@ -60,6 +60,7 @@ export VSCODE_QUALITY="stable"
 export VSCODE_SKIP_NODE_VERSION_CHECK="yes"
 export OS_NAME="windows"
 export VSCODE_ARCH="${ARCH:-x64}"
+export npm_config_arch="${VSCODE_ARCH}"
 export NODE_OPTIONS="--max-old-space-size=8192"
 
 echo "[build] edition=$EDITION  app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"

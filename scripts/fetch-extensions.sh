@@ -31,8 +31,8 @@ fetch_one() {
   else
     meta="$(curl -fsSL "$API/$ns/$name")"
   fi
-  version="$(echo "$meta" | jq -r '.version')"
-  url="$(echo "$meta" | jq -r '.files.download')"
+  version="$(echo "$meta" | jq -r '.version' | tr -d '\r')"
+  url="$(echo "$meta" | jq -r '.files.download' | tr -d '\r')"
   if [ -z "$url" ] || [ "$url" = "null" ]; then
     echo "  !! no download for $id ($mode/$TARGET)"; return 1
   fi
@@ -49,8 +49,8 @@ fetch_one() {
     curl -fsSL "$url" -o "$tmp/ext.vsix"
     # confirm folder id from the real manifest (publisher.name)
     local realfolder deps
-    realfolder="$(unzip -p "$tmp/ext.vsix" extension/package.json | jq -r '"\(.publisher).\(.name)"' | tr '[:upper:]' '[:lower:]')"
-    deps="$(unzip -p "$tmp/ext.vsix" extension/package.json | jq -rc '.extensionDependencies // []')"
+    realfolder="$(unzip -p "$tmp/ext.vsix" extension/package.json | jq -r '"\(.publisher).\(.name)"' | tr '[:upper:]' '[:lower:]' | tr -d '\r')"
+    deps="$(unzip -p "$tmp/ext.vsix" extension/package.json | jq -rc '.extensionDependencies // []' | tr -d '\r')"
     [ "$realfolder" != "$folder" ] && folder="$realfolder"
     mv "$tmp/ext.vsix" "$OUTDIR/$folder.vsix"; rm -rf "$tmp"
     echo "$version" > "$OUTDIR/$folder.version"
@@ -58,7 +58,12 @@ fetch_one() {
   fi
 
   # sha256 of the vsix is REQUIRED by the build's local-vsix checksum check
-  local sha; sha="$(shasum -a 256 "$OUTDIR/$folder.vsix" | cut -d' ' -f1)"
+  local sha
+  if command -v shasum >/dev/null 2>&1; then
+    sha="$(shasum -a 256 "$OUTDIR/$folder.vsix" | cut -d' ' -f1)"
+  else
+    sha="$(sha256sum "$OUTDIR/$folder.vsix" | cut -d' ' -f1)"
+  fi
   ENTRIES="$(echo "$ENTRIES" | jq \
     --arg name "$folder" --arg version "$version" \
     --arg vsix "as-extensions/$folder.vsix" --arg sha "$sha" \
@@ -66,10 +71,10 @@ fetch_one() {
 }
 
 echo "[fetch] edition=$EDITION target=$TARGET -> $OUTDIR"
-for id in $(jq -r '.universal[]' "$LIST"); do
+for id in $(jq -r '.universal[]' "$LIST" | tr -d '\r'); do
   echo "- universal: $id"; fetch_one "$id" universal
 done
-for id in $(jq -r '.platformSpecific[]' "$LIST"); do
+for id in $(jq -r '.platformSpecific[]' "$LIST" | tr -d '\r'); do
   echo "- platform : $id"; fetch_one "$id" platform
 done
 
