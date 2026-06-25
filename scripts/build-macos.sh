@@ -131,6 +131,15 @@ for d in "$ROOT"/overlay/builtin-extensions/*/; do
   echo "[build] bundled local extension: $ename"
 done
 
+# --- fix build_cli.sh app-bundle name assumption ----------------------------
+# VSCodium's build_cli.sh copies the tunnel binary into "${nameShort}.app", but
+# VS Code names the macOS bundle after nameLong (= APP_NAME). When short != long
+# (our editions) that path is wrong and the CLI step fails. Point it at APP_NAME.
+if grep -q 'VSCode-darwin-${VSCODE_ARCH}/${NAME_SHORT}.app' build_cli.sh; then
+  sed -i '' 's|VSCode-darwin-${VSCODE_ARCH}/${NAME_SHORT}.app|VSCode-darwin-${VSCODE_ARCH}/${APP_NAME}.app|g' build_cli.sh
+  echo "[build] patched build_cli.sh to use APP_NAME for the .app bundle"
+fi
+
 # --- macOS native build include --------------------------------------------
 if [ -f "./include_${OS_NAME}.gypi" ]; then
   mkdir -p ~/.gyp
