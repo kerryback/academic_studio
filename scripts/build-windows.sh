@@ -101,9 +101,28 @@ for d in "$ROOT"/overlay/builtin-extensions/*/; do
   echo "[build] bundled local extension: $ename"
 done
 
-# --- compile + package (build.sh handles the win32 branch + Inno Setup) -----
+# --- compile the app (produces VSCode-win32-<arch>/) ------------------------
 # shellcheck disable=SC1091
 . build.sh
 
+# --- package installer + zip into assets/ -----------------------------------
+# build.sh only builds the app folder; the Inno Setup installer (.exe) and .zip
+# are produced by prepare_assets.sh (-> build/windows/prepare_assets.sh, which
+# runs the gulp inno-setup tasks and 7z). Needs Inno Setup + 7-Zip on PATH.
+if [ "$SKIP_ASSETS" = "no" ]; then
+  echo "[build] packaging installer + zip into assets/ ..."
+  rm -rf build/windows/msi/releasedir
+  mkdir -p assets
+  # shellcheck disable=SC1091
+  . prepare_assets.sh
+fi
+
 echo ""
-echo "[build] DONE. Output under: ${ENGINE}/  (VSCode-win32-${VSCODE_ARCH}/ and assets/)"
+if [ -d "${ENGINE}/VSCode-win32-${VSCODE_ARCH}" ]; then
+  echo "[build] DONE."
+  echo "  App folder : ${ENGINE}/VSCode-win32-${VSCODE_ARCH}/   (run the .exe inside to test)"
+  echo "  Installers : ${ENGINE}/assets/   ($(ls "${ENGINE}/assets" 2>/dev/null | tr '\n' ' ' || echo 'none - check log above'))"
+else
+  echo "[build] FAILED: ${ENGINE}/VSCode-win32-${VSCODE_ARCH}/ was not produced. Check the log above."
+  exit 1
+fi

@@ -15,6 +15,12 @@ if not exist "%GITBASH%" (
 
 cd /d "%~dp0\.."
 "%GITBASH%" -lc "ARCH=x64 ./scripts/build-windows.sh %EDITION%"
-echo.
-echo Done. Installer (if built) is under build-engine\assets\
+if errorlevel 1 (
+  echo.
+  echo BUILD FAILED. Scroll up for the error, or re-run capturing a log:
+  echo   "%GITBASH%" -lc "ARCH=x64 ./scripts/build-windows.sh %EDITION% 2>&1 | tee build-win.log"
+) else (
+  echo.
+  echo Build OK. App folder + installer are under build-engine\
+)
 pause

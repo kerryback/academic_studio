@@ -14,7 +14,8 @@ toolchain hiccups.
 | Python | 3.11.x | Add to PATH. Needed by node-gyp |
 | Visual Studio Build Tools | 2022 | Workload: "Desktop development with C++" (MSVC v143, Windows 11 SDK) |
 | jq | latest | `winget install jqlang.jq` |
-| Inno Setup | 6.x | For the installer. `winget install JRSoftware.InnoSetup` |
+| Inno Setup | 6.x | For the installer .exe. `winget install JRSoftware.InnoSetup` |
+| 7-Zip | latest | For packaging the .zip. `winget install 7zip.7zip` (ensure `7z.exe` is on PATH) |
 | Rust | stable | For the `code` CLI. `winget install Rustlang.Rustup` |
 
 Verify in Git Bash:
