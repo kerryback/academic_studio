@@ -1,0 +1,58 @@
+{
+  "builtInExtensions": [
+    {
+      "name": "quarto.quarto",
+      "version": "1.134.0",
+      "sha256": "df2a4f8e2e68486a9c7e108ebebe2030c098890be9486d930f2303393f5ffbe4",
+      "vsix": "as-extensions/quarto.quarto.vsix"
+    },
+    {
+      "name": "cweijan.vscode-office",
+      "version": "4.0.5",
+      "sha256": "a630f79d3c7d237dffcee54c8efe5082047390a1155b9e496bee3ab8d08eef10",
+      "vsix": "as-extensions/cweijan.vscode-office.vsix"
+    },
+    {
+      "name": "ms-python.python",
+      "version": "2026.4.0",
+      "sha256": "232aeafb01f069824fdd92d3e628c1c442bbcfa1d3cc945ff97076340bb2b4a6",
+      "vsix": "as-extensions/ms-python.python.vsix"
+    },
+    {
+      "name": "detachhead.basedpyright",
+      "version": "1.39.8",
+      "sha256": "32209ad4eb8bbd7602e4799737333b2c22fbdb0786e34b434e02d65a5f4ac6e8",
+      "vsix": "as-extensions/detachhead.basedpyright.vsix"
+    },
+    {
+      "name": "mechatroner.rainbow-csv",
+      "version": "3.24.1",
+      "sha256": "0ecb7da3fb2a54517cd41fce8e858d6276ea8523bed6fbfd64d5ed281bd7514a",
+      "vsix": "as-extensions/mechatroner.rainbow-csv.vsix"
+    },
+    {
+      "name": "ms-toolsai.jupyter",
+      "version": "2025.9.1",
+      "sha256": "110660656944c4ab0ff687db488c2e8c59c67ec121dcf09bcaa54b6edd9ce71f",
+      "vsix": "as-extensions/ms-toolsai.jupyter.vsix"
+    },
+    {
+      "name": "streetsidesoftware.code-spell-checker",
+      "version": "4.6.0",
+      "sha256": "4c7396a310a691029fee63e8c9eaeea95c65f84fb833f16fa13e77b791ca6136",
+      "vsix": "as-extensions/streetsidesoftware.code-spell-checker.vsix"
+    },
+    {
+      "name": "tomoki1207.pdf",
+      "version": "1.2.2",
+      "sha256": "5697cd022caf93fa0fdb8c5b9c3624951394d8126ed09184ad4fdbcad62dadce",
+      "vsix": "as-extensions/tomoki1207.pdf.vsix"
+    },
+    {
+      "name": "anthropic.claude-code",
+      "version": "2.1.191",
+      "sha256": "80b168221c572ae9c1e9fb4b12ae69fab7e3b3c40ce4f4ce5c496edceb5b788a",
+      "vsix": "as-extensions/anthropic.claude-code.vsix"
+    }
+  ]
+}

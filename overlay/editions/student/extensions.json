@@ -1,5 +1,5 @@
 {
-  "_comment": "Rice Studio STUDENT edition bundled extensions (Open VSX). Drops R, Remote SSH, LaTeX Workshop vs faculty; adds PDF viewer.",
+  "_comment": "Academic Studio STUDENT edition bundled extensions (Open VSX). Drops R, Remote SSH, LaTeX Workshop vs faculty; adds PDF viewer.",
   "universal": [
     "quarto.quarto",
     "cweijan.vscode-office",

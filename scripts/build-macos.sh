@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Rice Studio for macOS. Adapted from VSCodium's dev/build.sh, but sets OUR
+# Build Academic Studio for macOS. Adapted from VSCodium's dev/build.sh, but sets OUR
 # branding (dev/build.sh hardcodes APP_NAME=VSCodium, so we cannot just call it).
 #
 # Usage: scripts/build-macos.sh [edition]      (edition = student | faculty)
@@ -21,11 +21,11 @@ EDIR="$ROOT/overlay/editions/$EDITION"
 APP_NAME="$(jq -r '.nameLong' "$EDIR/product.overrides.json")"
 BINARY_NAME="$(jq -r '.applicationName' "$EDIR/product.overrides.json")"
 
-# --- Rice Studio branding ---------------------------------------------------
+# --- Academic Studio branding ---------------------------------------------------
 export APP_NAME BINARY_NAME
-export ORG_NAME="RiceStudio"
-export GH_REPO_PATH="kerryback/rice-studio"
-export ASSETS_REPOSITORY="kerryback/rice-studio"
+export ORG_NAME="AcademicStudio"
+export GH_REPO_PATH="kerryback/academic-studio"
+export ASSETS_REPOSITORY="kerryback/academic-studio"
 export TUNNEL_APP_NAME="${BINARY_NAME}-tunnel"
 
 # --- build flags ------------------------------------------------------------
@@ -120,7 +120,7 @@ rm -f "$STAGE"/*.vsix
 cp "$EDIR/extensions/vsix/${EXT_TARGET}/"*.vsix "$STAGE"/
 echo "[build] staged $(ls "$STAGE"/*.vsix | wc -l | tr -d ' ') extension vsix -> vscode/as-extensions"
 
-# bundle local built-in extensions (e.g. rice-studio-defaults, which sets
+# bundle local built-in extensions (e.g. academic-studio-defaults, which sets
 # configurationDefaults). These go into vscode/extensions/ where the build's
 # glob('extensions/*/package.json') picks them up automatically.
 for d in "$ROOT"/overlay/builtin-extensions/*/; do

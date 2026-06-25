@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Rice Studio for Windows. RUN FROM GIT BASH on a Windows machine:
+# Build Academic Studio for Windows. RUN FROM GIT BASH on a Windows machine:
 #   "C:\Program Files\Git\bin\bash.exe" ./scripts/build-windows.sh student
 #
 # Usage: scripts/build-windows.sh [edition]    (edition = student | faculty)
@@ -23,9 +23,9 @@ EDIR="$ROOT/overlay/editions/$EDITION"
 APP_NAME="$(jq -r '.nameLong' "$EDIR/product.overrides.json")"
 BINARY_NAME="$(jq -r '.applicationName' "$EDIR/product.overrides.json")"
 export APP_NAME BINARY_NAME
-export ORG_NAME="RiceStudio"
-export GH_REPO_PATH="kerryback/rice-studio"
-export ASSETS_REPOSITORY="kerryback/rice-studio"
+export ORG_NAME="AcademicStudio"
+export GH_REPO_PATH="kerryback/academic-studio"
+export ASSETS_REPOSITORY="kerryback/academic-studio"
 export TUNNEL_APP_NAME="${BINARY_NAME}-tunnel"
 
 # --- build flags ------------------------------------------------------------

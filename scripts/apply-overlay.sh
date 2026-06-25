@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Inject Rice Studio customizations from overlay/ into build-engine/ (the
+# Inject Academic Studio customizations from overlay/ into build-engine/ (the
 # VSCodium clone) for a given EDITION. Idempotent: re-runnable before every
 # build. Keeps the engine otherwise pristine so `git pull upstream` stays clean.
 #
@@ -50,14 +50,14 @@ done
 # 3) icons -------------------------------------------------------------------
 # Files under src/stable/resources are copied into vscode/resources by
 # prepare_vscode.sh (cp -rp src/stable/* vscode/), so they become the app icon.
-if [ -f "$OVERLAY/icons/rice-studio.icns" ]; then
-  cp "$OVERLAY/icons/rice-studio.icns" \
+if [ -f "$OVERLAY/icons/academic-studio.icns" ]; then
+  cp "$OVERLAY/icons/academic-studio.icns" \
      "$ENGINE/src/stable/resources/darwin/code.icns"
   echo "[overlay] applied macOS icon (darwin/code.icns)"
 fi
-if [ -f "$OVERLAY/icons/rice-studio.ico" ]; then
+if [ -f "$OVERLAY/icons/academic-studio.ico" ]; then
   mkdir -p "$ENGINE/src/stable/resources/win32"
-  cp "$OVERLAY/icons/rice-studio.ico" \
+  cp "$OVERLAY/icons/academic-studio.ico" \
      "$ENGINE/src/stable/resources/win32/code.ico"
   echo "[overlay] applied Windows icon (win32/code.ico)"
 fi
