@@ -1,0 +1,19 @@
+diff --git a/src/vs/platform/dialogs/electron-browser/dialog.ts b/src/vs/platform/dialogs/electron-browser/dialog.ts
+index ec26804c..d4a0340d 100644
+--- a/src/vs/platform/dialogs/electron-browser/dialog.ts
++++ b/src/vs/platform/dialogs/electron-browser/dialog.ts
+@@ -18,8 +18,13 @@ export function createNativeAboutDialogDetails(productService: IProductService,
+ 		version = `${version} (Universal)`;
+ 	}
+ 
++	// Academic Studio: prepend our own product version (separate from the VS Code
++	// engine version above, which extensions check for compatibility).
++	const asVersion = (productService as { academicStudioVersion?: string }).academicStudioVersion;
++	const asLine = asVersion ? `${productService.nameLong} ${asVersion}\n` : '';
++
+ 	const getDetails = (useAgo: boolean): string => {
+-		return localize({ key: 'aboutDetail', comment: ['Electron, Chromium, Node.js and V8 are product names that need no translation'] },
++		return asLine + localize({ key: 'aboutDetail', comment: ['Electron, Chromium, Node.js and V8 are product names that need no translation'] },
+ 			"Version: {0}\nCommit: {1}\nDate: {2}\nElectron: {3}\nElectronBuildId: {4}\nChromium: {5}\nNode.js: {6}\nV8: {7}\nOS: {8}",
+ 			version,
+ 			productService.commit || 'Unknown',

@@ -22,8 +22,12 @@
   "win32x64UserAppId": "{{5F6E762F-D264-4789-818A-864ACAA2677A}",
   "win32arm64UserAppId": "{{6D295822-002D-45F2-BFA4-784B8E49C3EF}",
   "win32ContextMenu": {
-    "x64": { "clsid": "89DDBDC4-5270-475C-B807-6179FB30DFF1" },
-    "arm64": { "clsid": "6B668D8C-3217-452A-B894-87D727C54FB0" }
+    "x64": {
+      "clsid": "89DDBDC4-5270-475C-B807-6179FB30DFF1"
+    },
+    "arm64": {
+      "clsid": "6B668D8C-3217-452A-B894-87D727C54FB0"
+    }
   },
   "academicStudioHideViewContainers": [
     "workbench.view.scm",
@@ -65,5 +69,6 @@
     "streetsidesoftware.code-spell-checker",
     "tomoki1207.pdf",
     "Anthropic.claude-code"
-  ]
+  ],
+  "academicStudioVersion": "0.1"
 }

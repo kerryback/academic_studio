@@ -22,8 +22,12 @@
   "win32x64UserAppId": "{{00E3CF71-66C7-4C69-870A-931946E71F22}",
   "win32arm64UserAppId": "{{420906D6-216A-4B24-872D-68D154BD9BE7}",
   "win32ContextMenu": {
-    "x64": { "clsid": "10A43A79-7762-4FD3-8F66-48300C375A7F" },
-    "arm64": { "clsid": "4321CAD5-D12D-46A7-AFED-FB2CE1197519" }
+    "x64": {
+      "clsid": "10A43A79-7762-4FD3-8F66-48300C375A7F"
+    },
+    "arm64": {
+      "clsid": "4321CAD5-D12D-46A7-AFED-FB2CE1197519"
+    }
   },
   "academicStudioMenuKeepOnly": {
     "MenubarHelpMenu": [
@@ -44,5 +48,6 @@
     "ms-toolsai.jupyter",
     "streetsidesoftware.code-spell-checker",
     "Anthropic.claude-code"
-  ]
+  ],
+  "academicStudioVersion": "0.1"
 }
