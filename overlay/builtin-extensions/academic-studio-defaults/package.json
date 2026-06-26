@@ -8,7 +8,7 @@
   "engines": { "vscode": "^1.121.0" },
   "categories": ["Other"],
   "main": "./extension.js",
-  "activationEvents": ["onCommand:academicStudio.openHelp"],
+  "activationEvents": ["onStartupFinished"],
   "contributes": {
     "commands": [
       {

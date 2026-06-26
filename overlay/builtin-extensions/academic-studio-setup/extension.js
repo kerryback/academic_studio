@@ -60,7 +60,7 @@ function openSetupPanel(context) {
 	);
 
 	const stored = context.globalState.get(SELECTION_KEY) || {};
-	const audience = stored.audience || 'faculty';
+	const audience = stored.audience || 'student';
 	const selected = stored.selected || presetFor(audience);
 	panel.webview.html = renderHtml(audience, selected);
 
@@ -126,13 +126,13 @@ function renderHtml(audience, selected) {
 </head>
 <body>
 	<h1>Welcome to Academic Studio</h1>
-	<p class="sub">Pick the profile that fits you. It just sets sensible defaults — you can change any item below.</p>
+	<p class="sub">Pick the profile that fits you. It just sets sensible defaults — you can change any item below, and you can remove or add extensions later.</p>
 
 	<fieldset>
 		<legend>I am…</legend>
 		<div class="aud">
-			<label><input type="radio" name="aud" value="faculty"> Faculty</label>
 			<label><input type="radio" name="aud" value="student"> Students &amp; Professionals</label>
+			<label><input type="radio" name="aud" value="faculty"> Faculty</label>
 		</div>
 	</fieldset>
 

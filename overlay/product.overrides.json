@@ -57,7 +57,8 @@
     "MenubarHelpMenu": [
       "workbench.action.showAboutDialog",
       "workbench.action.openWalkthrough",
-      "academicStudio.openHelp"
+      "academicStudio.openHelp",
+      "academicStudio.openSetup"
     ]
   },
   "builtInExtensionsEnabledWithAutoUpdates": [

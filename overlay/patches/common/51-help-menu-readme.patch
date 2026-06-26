@@ -1,7 +1,7 @@
 diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/browser/actions/helpActions.ts
 --- a/src/vs/workbench/browser/actions/helpActions.ts
 +++ b/src/vs/workbench/browser/actions/helpActions.ts
-@@ -406,3 +406,12 @@
+@@ -406,3 +406,21 @@
  registerAction2(GetStartedWithAccessibilityFeatures);
  
  registerAction2(AskVSCodeCopilot);
@@ -13,4 +13,13 @@ diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/
 +	},
 +	group: '1_welcome',
 +	order: 2,
++});
++
++MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {
++	command: {
++		id: 'academicStudio.openSetup',
++		title: localize('academicStudioSetup', "Run Setup…"),
++	},
++	group: '1_welcome',
++	order: 3,
 +});

@@ -1,0 +1,27 @@
+diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts b/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
+--- a/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
++++ b/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
+@@ -150,5 +150,5 @@
+ 		description: localize('gettingStarted.openFolder.description', "Open a folder to start working"),
+ 		icon: Codicon.folderOpened,
+-		when: '!isWeb && !isMac',
++		when: '!isWeb',
+ 		content: {
+ 			type: 'startEntry',
+diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts b/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
+--- a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
++++ b/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
+@@ -1175,5 +1175,5 @@
+ 			});
+ 
+-		startList.setEntries(parsedStartEntries);
++		startList.setEntries(parsedStartEntries.filter(e => e.id === 'topLevelOpenFolder'));
+ 		startList.onDidChange(() => this.registerDispatchListeners());
+ 		return startList;
+@@ -1261,5 +1261,5 @@
+ 		});
+ 
+-		gettingStartedList.setEntries(this.gettingStartedCategories);
++		gettingStartedList.setEntries([]);
+ 		allWalkthroughsHiddenContext.bindTo(this.contextService).set(gettingStartedList.itemCount === 0);
+ 
