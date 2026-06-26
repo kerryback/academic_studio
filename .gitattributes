@@ -1,0 +1,21 @@
+# Normalize line endings so the same checkout works on macOS and Windows.
+# Without this, .cmd/.bat files committed with LF mis-parse under cmd.exe
+# (multi-line if/else blocks, goto labels), and .sh files checked out with
+# CRLF break under Git Bash with "\r: command not found".
+
+# Default: let git normalize text in the repo to LF, auto on checkout.
+* text=auto
+
+# Windows batch/PowerShell must be CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Unix shell scripts must stay LF (run under Git Bash on Windows).
+*.sh  text eol=lf
+
+# Binary assets: never touch.
+*.png  binary
+*.ico  binary
+*.icns binary
+*.vsix binary
