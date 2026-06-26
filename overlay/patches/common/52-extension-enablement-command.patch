@@ -1,0 +1,16 @@
+diff --git a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
+--- a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
++++ b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
+@@ -2121,3 +2121,12 @@
+ 			return [];
+ 		}
+ 	}]);
++
++// Academic Studio: let the setup extension enable/disable bundled extensions.
++CommandsRegistry.registerCommand('academicStudio.setExtensionsEnablement', async (accessor: ServicesAccessor, ids: string[], enabled: boolean) => {
++	const service = accessor.get(IExtensionsWorkbenchService);
++	const wanted = (ids || []).map(id => id.toLowerCase());
++	const targets = service.installed.filter(e => wanted.indexOf(e.identifier.id.toLowerCase()) !== -1);
++	if (!targets.length) { return; }
++	await service.setEnablement(targets, enabled ? EnablementState.EnabledGlobally : EnablementState.DisabledGlobally);
++});

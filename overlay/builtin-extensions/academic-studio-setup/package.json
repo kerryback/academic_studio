@@ -1,0 +1,21 @@
+{
+  "name": "academic-studio-setup",
+  "displayName": "Academic Studio Setup",
+  "description": "First-run setup for Academic Studio: pick your audience and choose which bundled extensions are active.",
+  "version": "1.0.0",
+  "publisher": "academic-studio",
+  "license": "MIT",
+  "engines": { "vscode": "^1.121.0" },
+  "categories": ["Other"],
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      {
+        "command": "academicStudio.openSetup",
+        "title": "Academic Studio Setup…",
+        "category": "Academic Studio"
+      }
+    ]
+  }
+}
