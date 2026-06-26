@@ -1,0 +1,16 @@
+diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/browser/actions/helpActions.ts
+--- a/src/vs/workbench/browser/actions/helpActions.ts
++++ b/src/vs/workbench/browser/actions/helpActions.ts
+@@ -406,3 +406,12 @@
+ registerAction2(GetStartedWithAccessibilityFeatures);
+ 
+ registerAction2(AskVSCodeCopilot);
++
++MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {
++	command: {
++		id: 'academicStudio.openHelp',
++		title: localize('academicStudioHelp', "Academic Studio Help"),
++	},
++	group: '1_welcome',
++	order: 2,
++});

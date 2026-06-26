@@ -56,7 +56,8 @@
   "academicStudioMenuKeepOnly": {
     "MenubarHelpMenu": [
       "workbench.action.showAboutDialog",
-      "workbench.action.openWalkthrough"
+      "workbench.action.openWalkthrough",
+      "academicStudio.openHelp"
     ]
   },
   "builtInExtensionsEnabledWithAutoUpdates": [

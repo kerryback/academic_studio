@@ -44,6 +44,17 @@ if compgen -G "$OVERLAY/patches/common/*.patch" > /dev/null; then
 fi
 [ "$staged" -eq 0 ] && echo "[overlay] no source patches"
 
+# 2b) drop unwanted VSCodium community patches -------------------------------
+# These ship in the engine's own patches/ dir (not our overlay). We remove the
+# "announcements" patch so the Get Started page has no announcements section.
+# build-engine is regenerable, so re-doing this each run is fine + idempotent.
+for cp in 00-community-add-announcements.patch; do
+  if [ -f "$ENGINE/patches/$cp" ]; then
+    rm -f "$ENGINE/patches/$cp"
+    echo "[overlay] dropped community patch: $cp"
+  fi
+done
+
 # 3) icons -------------------------------------------------------------------
 # Files under src/stable/resources are copied into vscode/resources by
 # prepare_vscode.sh (cp -rp src/stable/* vscode/), so they become the app icon.
