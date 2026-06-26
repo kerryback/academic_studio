@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build Academic Studio for Windows. RUN FROM GIT BASH on a Windows machine:
-#   "C:\Program Files\Git\bin\bash.exe" ./scripts/build-windows.sh student
+#   "C:\Program Files\Git\bin\bash.exe" ./scripts/build-windows.sh
 #
-# Usage: scripts/build-windows.sh [edition]    (edition = student | faculty)
+# Usage: scripts/build-windows.sh   (arch via ARCH=x64|arm64, default x64)
 # See docs/WINDOWS-BUILD.md for prerequisites (Node 22.22.1, Python, VS Build
 # Tools with C++, jq, Inno Setup). Sets OUR branding then drives VSCodium's
 # build.sh (which hardcodes APP_NAME=VSCodium, so we cannot call dev/build.sh).
@@ -37,12 +37,12 @@ if [ "${SKIP_ASSETS:-no}" = "no" ]; then
     echo "WARN: 7-Zip (7z) not on PATH — the .zip step will fail. winget install 7zip.7zip"
 fi
 
-# --- edition + branding (from the edition's product overrides) --------------
-EDITION="${1:-${EDITION:-student}}"
-EDIR="$ROOT/overlay/editions/$EDITION"
-[ -d "$EDIR" ] || { echo "unknown edition '$EDITION' (no $EDIR)"; exit 1; }
-APP_NAME="$(jq -r '.nameLong' "$EDIR/product.overrides.json")"
-BINARY_NAME="$(jq -r '.applicationName' "$EDIR/product.overrides.json")"
+# --- branding (single source of truth: overlay/product.overrides.json) ------
+OVERRIDES="$ROOT/overlay/product.overrides.json"
+EXTDIR="$ROOT/overlay/extensions"
+[ -f "$OVERRIDES" ] || { echo "missing $OVERRIDES"; exit 1; }
+APP_NAME="$(jq -r '.nameLong' "$OVERRIDES")"
+BINARY_NAME="$(jq -r '.applicationName' "$OVERRIDES")"
 export APP_NAME BINARY_NAME
 export ORG_NAME="AcademicStudio"
 export GH_REPO_PATH="kerryback/academic_studio"
@@ -63,16 +63,16 @@ export VSCODE_ARCH="${ARCH:-x64}"
 export npm_config_arch="${VSCODE_ARCH}"
 export NODE_OPTIONS="--max-old-space-size=8192"
 
-echo "[build] edition=$EDITION  app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"
+echo "[build] app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"
 EXT_TARGET="win32-${VSCODE_ARCH}"
 
-# --- fetch bundled extensions for this edition+target -----------------------
-if [ ! -f "$EDIR/extensions/builtin.${EXT_TARGET}.json" ]; then
-  "$ROOT/scripts/fetch-extensions.sh" "$EDITION" "$EXT_TARGET"
+# --- fetch bundled extensions for this target -------------------------------
+if [ ! -f "$EXTDIR/builtin.${EXT_TARGET}.json" ]; then
+  "$ROOT/scripts/fetch-extensions.sh" "$EXT_TARGET"
 fi
 
-# --- inject overlay (branding + edition patches + icons) --------------------
-"$ROOT/scripts/apply-overlay.sh" "$EDITION"
+# --- inject overlay (branding + patches + icons) ----------------------------
+"$ROOT/scripts/apply-overlay.sh"
 
 cd "$ENGINE"
 
@@ -105,7 +105,7 @@ fi
 
 # --- bundle extensions: builtInExtensions union + stage VSIX ----------------
 BASE_BUILTINS="$(git -C vscode show HEAD:product.json | jq '.builtInExtensions // []')"
-OUR_BUILTINS="$(jq '.builtInExtensions' "$EDIR/extensions/builtin.${EXT_TARGET}.json")"
+OUR_BUILTINS="$(jq '.builtInExtensions' "$EXTDIR/builtin.${EXT_TARGET}.json")"
 UNION="$(jq -n --argjson a "$BASE_BUILTINS" --argjson b "$OUR_BUILTINS" '$a + $b')"
 PJTMP="$(jq --argjson bi "$UNION" '.builtInExtensions = $bi' "$ENGINE/product.json")"
 echo "$PJTMP" > "$ENGINE/product.json"
@@ -113,7 +113,7 @@ echo "[build] builtInExtensions: $(echo "$UNION" | jq length) total"
 
 STAGE="$ENGINE/vscode/as-extensions"
 mkdir -p "$STAGE"; rm -f "$STAGE"/*.vsix
-cp "$EDIR/extensions/vsix/${EXT_TARGET}/"*.vsix "$STAGE"/
+cp "$EXTDIR/vsix/${EXT_TARGET}/"*.vsix "$STAGE"/
 echo "[build] staged $(ls "$STAGE"/*.vsix | wc -l | tr -d ' ') extension vsix"
 
 for d in "$ROOT"/overlay/builtin-extensions/*/; do

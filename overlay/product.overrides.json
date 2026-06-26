@@ -1,32 +1,32 @@
 {
   "nameShort": "Academic Studio",
-  "nameLong": "Academic Studio Student Edition",
-  "applicationName": "academic-studio-student",
-  "serverApplicationName": "academic-studio-student-server",
-  "dataFolderName": ".academic-studio-student",
-  "serverDataFolderName": ".academic-studio-student-server",
-  "tunnelApplicationName": "academic-studio-student-tunnel",
-  "darwinBundleIdentifier": "com.academicstudio.student",
-  "win32AppUserModelId": "AcademicStudio.Student",
-  "win32DirName": "Academic Studio Student Edition",
-  "win32MutexName": "academicstudiostudent",
-  "win32NameVersion": "Academic Studio Student Edition",
-  "win32RegValueName": "AcademicStudioStudent",
+  "nameLong": "Academic Studio",
+  "applicationName": "academic-studio",
+  "serverApplicationName": "academic-studio-server",
+  "dataFolderName": ".academic-studio",
+  "serverDataFolderName": ".academic-studio-server",
+  "tunnelApplicationName": "academic-studio-tunnel",
+  "darwinBundleIdentifier": "com.academicstudio.app",
+  "win32AppUserModelId": "AcademicStudio.AcademicStudio",
+  "win32DirName": "Academic Studio",
+  "win32MutexName": "academicstudio",
+  "win32NameVersion": "Academic Studio",
+  "win32RegValueName": "AcademicStudio",
   "win32ShellNameShort": "Academic Studio",
-  "win32TunnelServiceMutex": "academicstudiostudent-tunnelservice",
-  "win32TunnelMutex": "academicstudiostudent-tunnel",
-  "win32AppId": "{{C29F4AD2-5386-4059-AF0C-E0A2EFA94CA1}",
-  "win32x64AppId": "{{299F3D16-918E-4814-A49A-75153866AA74}",
-  "win32arm64AppId": "{{D96B9C49-E509-46FE-A9E5-E3A28877F245}",
-  "win32UserAppId": "{{0AFB6FF1-D4CA-4494-995B-BC622BA370E1}",
-  "win32x64UserAppId": "{{5F6E762F-D264-4789-818A-864ACAA2677A}",
-  "win32arm64UserAppId": "{{6D295822-002D-45F2-BFA4-784B8E49C3EF}",
+  "win32TunnelServiceMutex": "academicstudio-tunnelservice",
+  "win32TunnelMutex": "academicstudio-tunnel",
+  "win32AppId": "{{83829DF2-EBA8-4E78-B3FA-C29DA0F37D11}",
+  "win32x64AppId": "{{40304C16-C04E-4B76-86C7-4233291E482B}",
+  "win32arm64AppId": "{{4A7C2540-DF47-4285-B556-49B385EB8B30}",
+  "win32UserAppId": "{{F19C10B8-E128-4913-BF8B-E471D1FFE2A0}",
+  "win32x64UserAppId": "{{7FAEC879-9A76-48D7-B1CB-C2ACD43F6463}",
+  "win32arm64UserAppId": "{{29A9E05C-FAEF-436D-8A6F-8111DE432C05}",
   "win32ContextMenu": {
     "x64": {
-      "clsid": "89DDBDC4-5270-475C-B807-6179FB30DFF1"
+      "clsid": "1366CB2D-8DB2-48B6-B41D-4A5432BA1911"
     },
     "arm64": {
-      "clsid": "6B668D8C-3217-452A-B894-87D727C54FB0"
+      "clsid": "F9E1CB5D-02D7-4428-9D26-E75D469E0CBA"
     }
   },
   "academicStudioHideViewContainers": [
@@ -61,8 +61,12 @@
   },
   "builtInExtensionsEnabledWithAutoUpdates": [
     "quarto.quarto",
+    "James-Yu.latex-workshop",
     "cweijan.vscode-office",
     "ms-python.python",
+    "jeanp413.open-remote-ssh",
+    "REditorSupport.r",
+    "REditorSupport.r-syntax",
     "detachhead.basedpyright",
     "mechatroner.rainbow-csv",
     "ms-toolsai.jupyter",

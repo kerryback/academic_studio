@@ -1,9 +1,13 @@
 {
-  "_comment": "Academic Studio STUDENT edition bundled extensions (Open VSX). Drops R, Remote SSH, LaTeX Workshop vs faculty; adds PDF viewer.",
+  "_comment": "Academic Studio bundled extensions (Open VSX). Union of the former Student + Faculty sets; first-run picker (future) will enable per audience.",
   "universal": [
     "quarto.quarto",
+    "James-Yu.latex-workshop",
     "cweijan.vscode-office",
     "ms-python.python",
+    "jeanp413.open-remote-ssh",
+    "REditorSupport.r",
+    "REditorSupport.r-syntax",
     "detachhead.basedpyright",
     "mechatroner.rainbow-csv",
     "ms-toolsai.jupyter",

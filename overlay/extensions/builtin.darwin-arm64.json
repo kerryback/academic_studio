@@ -7,9 +7,15 @@
       "vsix": "as-extensions/quarto.quarto.vsix"
     },
     {
+      "name": "james-yu.latex-workshop",
+      "version": "10.16.1",
+      "sha256": "7feac2e1fa09a4171608ec622f80091538eac78a5d6a704fdbbf34ad984b9d14",
+      "vsix": "as-extensions/james-yu.latex-workshop.vsix"
+    },
+    {
       "name": "cweijan.vscode-office",
-      "version": "4.0.5",
-      "sha256": "a630f79d3c7d237dffcee54c8efe5082047390a1155b9e496bee3ab8d08eef10",
+      "version": "4.0.7",
+      "sha256": "a7b785f8ec4736227e71268bcc1fcbc256cffa642084db2c5df296ae10a29c84",
       "vsix": "as-extensions/cweijan.vscode-office.vsix"
     },
     {
@@ -17,6 +23,24 @@
       "version": "2026.4.0",
       "sha256": "232aeafb01f069824fdd92d3e628c1c442bbcfa1d3cc945ff97076340bb2b4a6",
       "vsix": "as-extensions/ms-python.python.vsix"
+    },
+    {
+      "name": "jeanp413.open-remote-ssh",
+      "version": "0.1.2",
+      "sha256": "4c4305484d35a119eeac6ba57c77e8cc181b1e21a748f80a7b79b967e89a5681",
+      "vsix": "as-extensions/jeanp413.open-remote-ssh.vsix"
+    },
+    {
+      "name": "reditorsupport.r",
+      "version": "2.8.8",
+      "sha256": "9add9b7aceda1dc0072cc9e048b5bfcc8de4488ccd2802ea5fe834517a3ce2e2",
+      "vsix": "as-extensions/reditorsupport.r.vsix"
+    },
+    {
+      "name": "reditorsupport.r-syntax",
+      "version": "0.1.4",
+      "sha256": "110af62e93b38c240ce2ea5c0f89a0b5fe58e9c6ba5400fe3175547324846eba",
+      "vsix": "as-extensions/reditorsupport.r-syntax.vsix"
     },
     {
       "name": "detachhead.basedpyright",
@@ -50,8 +74,8 @@
     },
     {
       "name": "anthropic.claude-code",
-      "version": "2.1.191",
-      "sha256": "80b168221c572ae9c1e9fb4b12ae69fab7e3b3c40ce4f4ce5c496edceb5b788a",
+      "version": "2.1.193",
+      "sha256": "3526dc80a888845c68cca203cbfad65cb802937e70e762dd1fde940d2772cdc9",
       "vsix": "as-extensions/anthropic.claude-code.vsix"
     }
   ]

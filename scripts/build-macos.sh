@@ -2,8 +2,7 @@
 # Build Academic Studio for macOS. Adapted from VSCodium's dev/build.sh, but sets OUR
 # branding (dev/build.sh hardcodes APP_NAME=VSCodium, so we cannot just call it).
 #
-# Usage: scripts/build-macos.sh [edition]      (edition = student | faculty)
-#   or:  EDITION=faculty scripts/build-macos.sh
+# Usage: scripts/build-macos.sh
 #
 # Env knobs:
 #   SKIP_SOURCE=yes   reuse already-fetched vscode source (faster re-builds)
@@ -13,13 +12,12 @@ set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENGINE="$ROOT/build-engine"
 
-# --- edition ----------------------------------------------------------------
-EDITION="${1:-${EDITION:-student}}"
-EDIR="$ROOT/overlay/editions/$EDITION"
-[ -d "$EDIR" ] || { echo "unknown edition '$EDITION' (no $EDIR)"; exit 1; }
-# branding read from the edition's product overrides (single source of truth)
-APP_NAME="$(jq -r '.nameLong' "$EDIR/product.overrides.json")"
-BINARY_NAME="$(jq -r '.applicationName' "$EDIR/product.overrides.json")"
+# --- branding (single source of truth: overlay/product.overrides.json) ------
+OVERRIDES="$ROOT/overlay/product.overrides.json"
+EXTDIR="$ROOT/overlay/extensions"
+[ -f "$OVERRIDES" ] || { echo "missing $OVERRIDES"; exit 1; }
+APP_NAME="$(jq -r '.nameLong' "$OVERRIDES")"
+BINARY_NAME="$(jq -r '.applicationName' "$OVERRIDES")"
 
 # --- Academic Studio branding ---------------------------------------------------
 export APP_NAME BINARY_NAME
@@ -54,16 +52,16 @@ export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 if command -v nvm >/dev/null 2>&1; then
   nvm use 22.22.1 >/dev/null 2>&1 || { nvm install 22.22.1 && nvm use 22.22.1; }
 fi
-echo "[build] edition=$EDITION  app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"
+echo "[build] app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"
 
-# --- fetch bundled extensions for this edition+target (if not cached) --------
+# --- fetch bundled extensions for this target (if not cached) ---------------
 EXT_TARGET="darwin-${VSCODE_ARCH}"
-if [ ! -f "$EDIR/extensions/builtin.${EXT_TARGET}.json" ]; then
-  "$ROOT/scripts/fetch-extensions.sh" "$EDITION" "$EXT_TARGET"
+if [ ! -f "$EXTDIR/builtin.${EXT_TARGET}.json" ]; then
+  "$ROOT/scripts/fetch-extensions.sh" "$EXT_TARGET"
 fi
 
-# --- inject our overlay (branding + edition patches + icons) ----------------
-"$ROOT/scripts/apply-overlay.sh" "$EDITION"
+# --- inject our overlay (branding + patches + icons) ------------------------
+"$ROOT/scripts/apply-overlay.sh"
 
 cd "$ENGINE"
 
@@ -106,7 +104,7 @@ fi
 # (extracted from local VSIX). Reading base from git keeps this correct across
 # vscode version bumps.
 BASE_BUILTINS="$(git -C vscode show HEAD:product.json | jq '.builtInExtensions // []')"
-OUR_BUILTINS="$(jq '.builtInExtensions' "$EDIR/extensions/builtin.${EXT_TARGET}.json")"
+OUR_BUILTINS="$(jq '.builtInExtensions' "$EXTDIR/builtin.${EXT_TARGET}.json")"
 UNION="$(jq -n --argjson a "$BASE_BUILTINS" --argjson b "$OUR_BUILTINS" '$a + $b')"
 PJTMP="$(jq --argjson bi "$UNION" '.builtInExtensions = $bi' "$ENGINE/product.json")"
 echo "$PJTMP" > "$ENGINE/product.json"
@@ -117,7 +115,7 @@ echo "[build] builtInExtensions: $(echo "$UNION" | jq length) total ($(echo "$BA
 STAGE="$ENGINE/vscode/as-extensions"
 mkdir -p "$STAGE"
 rm -f "$STAGE"/*.vsix
-cp "$EDIR/extensions/vsix/${EXT_TARGET}/"*.vsix "$STAGE"/
+cp "$EXTDIR/vsix/${EXT_TARGET}/"*.vsix "$STAGE"/
 echo "[build] staged $(ls "$STAGE"/*.vsix | wc -l | tr -d ' ') extension vsix -> vscode/as-extensions"
 
 # bundle local built-in extensions (e.g. academic-studio-defaults, which sets

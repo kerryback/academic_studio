@@ -44,22 +44,20 @@ VS Code no longer builds true 32-bit (`ia32`) Windows, so there is no x86-32 tar
 
 Easiest — double-click the launcher for your architecture (it finds Git Bash):
 ```
-scripts\build-windows-x64.cmd          REM 64-bit Intel/AMD, student edition
-scripts\build-windows-arm64.cmd        REM Windows on ARM, student edition
-scripts\build-windows-x64.cmd faculty  REM faculty edition
+scripts\build-windows-x64.cmd          REM 64-bit Intel/AMD
+scripts\build-windows-arm64.cmd        REM Windows on ARM
 ```
 
 Or from Git Bash, in the repo root:
 ```bash
-./scripts/build-windows-x64.sh student      # x64 student
-./scripts/build-windows-arm64.sh student    # arm64 student
-./scripts/build-windows-x64.sh faculty      # x64 faculty
+./scripts/build-windows-x64.sh      # x64
+./scripts/build-windows-arm64.sh    # arm64
 
 # the wrappers call build-windows.sh; you can also drive it directly:
-ARCH=x64   ./scripts/build-windows.sh student
-ARCH=arm64 ./scripts/build-windows.sh faculty
-SKIP_SOURCE=yes ./scripts/build-windows-x64.sh student   # faster re-build
-SKIP_ASSETS=yes ./scripts/build-windows-x64.sh student   # app only, no installer
+ARCH=x64   ./scripts/build-windows.sh
+ARCH=arm64 ./scripts/build-windows.sh
+SKIP_SOURCE=yes ./scripts/build-windows-x64.sh   # faster re-build
+SKIP_ASSETS=yes ./scripts/build-windows-x64.sh   # app only, no installer
 ```
 
 ## 4. Outputs

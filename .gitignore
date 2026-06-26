@@ -6,7 +6,8 @@ build-engine/
 
 # Downloaded extension VSIX cache (large, regenerable via fetch-extensions.sh).
 # The builtin.<target>.json manifests ARE tracked (they pin versions).
-overlay/editions/*/extensions/vsix/
+overlay/extensions/vsix/
+overlay/extensions/*/*.version
 
 # Build artifacts
 VSCode-*/

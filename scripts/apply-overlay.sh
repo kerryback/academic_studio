@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 # Inject Academic Studio customizations from overlay/ into build-engine/ (the
-# VSCodium clone) for a given EDITION. Idempotent: re-runnable before every
-# build. Keeps the engine otherwise pristine so `git pull upstream` stays clean.
+# VSCodium clone). Idempotent: re-runnable before every build. Keeps the engine
+# otherwise pristine so `git pull upstream` stays clean.
 #
-# Usage: scripts/apply-overlay.sh <edition>   (edition = student | faculty)
+# Usage: scripts/apply-overlay.sh
 set -euo pipefail
 
-EDITION="${1:?usage: apply-overlay.sh <edition>}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENGINE="$ROOT/build-engine"
 OVERLAY="$ROOT/overlay"
-EDIR="$OVERLAY/editions/$EDITION"
-[ -d "$EDIR" ] || { echo "unknown edition '$EDITION' (no $EDIR)"; exit 1; }
+OVERRIDES="$OVERLAY/product.overrides.json"
+[ -f "$OVERRIDES" ] || { echo "missing $OVERRIDES"; exit 1; }
 
 # 1) product.json branding overrides ----------------------------------------
 # VSCodium merges build-engine/product.json (root) LAST over the vscode base,
@@ -25,26 +24,24 @@ if [ ! -f "$ENGINE/product.json.vscodium" ]; then
 fi
 jq -s '.[0] * .[1]' \
   "$ENGINE/product.json.vscodium" \
-  "$EDIR/product.overrides.json" \
+  "$OVERRIDES" \
   > "$ENGINE/product.json"
-echo "[overlay] merged $EDITION branding -> build-engine/product.json"
+echo "[overlay] merged branding -> build-engine/product.json"
 
 # 2) source patches ----------------------------------------------------------
-# VSCodium auto-applies patches/user/*.patch last. We stage common patches (both
-# editions) + edition-specific ones, prefixed 'as-' so order is deterministic.
-# Clear stale copies first so removals/edition-switches take effect.
+# VSCodium auto-applies patches/user/*.patch last. We stage our common patches,
+# prefixed 'as-' so order is deterministic. Clear stale copies first so removals
+# take effect.
 mkdir -p "$ENGINE/patches/user"
 find "$ENGINE/patches/user" -name 'as-*.patch' -delete 2>/dev/null || true
 staged=0
-for dir in "$OVERLAY/patches/common" "$OVERLAY/patches/$EDITION"; do
-  if compgen -G "$dir/*.patch" > /dev/null; then
-    for p in "$dir"/*.patch; do
-      cp "$p" "$ENGINE/patches/user/as-$(basename "$p")"
-      echo "[overlay] staged patch: as-$(basename "$p")"
-      staged=$((staged+1))
-    done
-  fi
-done
+if compgen -G "$OVERLAY/patches/common/*.patch" > /dev/null; then
+  for p in "$OVERLAY"/patches/common/*.patch; do
+    cp "$p" "$ENGINE/patches/user/as-$(basename "$p")"
+    echo "[overlay] staged patch: as-$(basename "$p")"
+    staged=$((staged+1))
+  done
+fi
 [ "$staged" -eq 0 ] && echo "[overlay] no source patches"
 
 # 3) icons -------------------------------------------------------------------
@@ -62,4 +59,4 @@ if [ -f "$OVERLAY/icons/academic-studio.ico" ]; then
   echo "[overlay] applied Windows icon (win32/code.ico)"
 fi
 
-echo "[overlay] done (edition=$EDITION)."
+echo "[overlay] done."

@@ -8,47 +8,44 @@ toolchain (so it ships without GitHub Copilot, without telemetry, and uses the
 
 ## Architecture
 
-Two layers, kept separate so upstream updates stay clean:
-
-Ships in two editions — Student and Faculty — that differ only in their bundled
-extensions and how much UI is trimmed. Both build from the same engine + overlay.
+Two layers, kept separate so upstream updates stay clean. One product — a single
+"Academic Studio" — builds from the engine + overlay. (Audience-specific extension
+selection will become a first-run choice, not a build fork.)
 
 ```
 academic_code/
 ├── build-engine/        VSCodium clone (git remote: upstream). Kept pristine.
 ├── overlay/             ALL Academic Studio customizations live here.
-│   ├── editions/
-│   │   ├── student/     product.overrides.json (name/IDs/trim lists) + extensions.json
-│   │   └── faculty/     product.overrides.json + extensions.json
+│   ├── product.overrides.json   name / IDs / menu-trim lists
+│   ├── extensions.json          bundled extension list (Open VSX ids)
+│   ├── extensions/              fetched VSIX cache + builtin.<target>.json
 │   ├── builtin-extensions/academic-studio-defaults/   beginner default settings
-│   ├── patches/
-│   │   ├── common/      applied to both editions (menu removals, UI-trim filter)
-│   │   └── student/     student-only patches
+│   ├── patches/common/  menu removals + UI-trim filter
 │   └── icons/           academic-studio.icns / .ico (from AcademicStudio.png)
 └── scripts/
     ├── setup-toolchain.sh        one-time: nvm + Node 22.22.1, rustup
     ├── make-icon.py/make-icons.sh regenerate the app icon
-    ├── fetch-extensions.sh <edition> <target>   pull bundled exts from Open VSX
-    ├── apply-overlay.sh <edition>               inject overlay → engine (idempotent)
-    ├── build-macos.sh [edition]                 build the macOS .app + .dmg
-    └── build-windows.sh [edition]               build on Windows (see docs/)
+    ├── fetch-extensions.sh <target>   pull bundled exts from Open VSX
+    ├── apply-overlay.sh               inject overlay → engine (idempotent)
+    ├── build-macos.sh                 build the macOS .app + .dmg
+    └── build-windows.sh               build on Windows (see docs/)
 ```
 
 `apply-overlay.sh` injects our files into the engine at build time; the engine
 itself is never hand-edited, so `git -C build-engine pull upstream master`
 brings in new VSCodium/VS Code releases without merge conflicts.
 
-Build a given edition: `scripts/build-macos.sh student` (or `faculty`).
+Build: `scripts/build-macos.sh`.
 
-### Editions
+### What's customized
 
-| | Student | Faculty |
-|---|---|---|
-| Extensions | Quarto, Office, Python, basedpyright, Rainbow CSV, Jupyter, Spell Checker, PDF, Claude | + LaTeX Workshop, R (+syntax), Open Remote SSH |
-| Activity bar | Explorer, Search, Extensions, Claude only | full |
-| Menus | Selection/Go/Run removed; View/Terminal/Help trimmed | Selection/Go/Run removed; Help trimmed |
+- Extensions (bundled, Open VSX): Quarto, LaTeX Workshop, Office viewer, Python,
+  basedpyright, Open Remote SSH, R (+ r-syntax), Rainbow CSV, Jupyter, Spell
+  Checker, PDF viewer, Claude Code.
+- Activity bar: Source Control, Run/Debug, and Tests hidden.
+- Menus: Selection/Go/Run removed; View/Terminal/Help trimmed.
 
-UI trimming is data-driven: each edition's `product.overrides.json` carries
+UI trimming is data-driven: `overlay/product.overrides.json` carries
 `academicStudioHideViewContainers`, `academicStudioMenuHide`, and
 `academicStudioMenuKeepOnly`, read by a small filter in
 `patches/common/20-trim-menus-and-activitybar.patch`.

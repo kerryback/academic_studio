@@ -38,7 +38,7 @@ LOG="$ROOT/diagnose-win.log"
   echo
 
   echo "=== tail of last captured build log (if you ran with '| tee build-win.log') ==="
-  tail -80 build-win.log 2>/dev/null || echo "(no build-win.log — re-run the build with: ./scripts/build-windows-arm64.sh student 2>&1 | tee build-win.log)"
+  tail -80 build-win.log 2>/dev/null || echo "(no build-win.log — re-run the build with: ./scripts/build-windows-arm64.sh 2>&1 | tee build-win.log)"
 } 2>&1 | tee "$LOG"
 
 echo
