@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Publish the built installers in build-engine/assets/ to a GitHub Release.
+#
+# Run this AFTER a release build (SKIP_ASSETS=no) on each platform:
+#   macOS:   SKIP_ASSETS=no scripts/build-macos.sh
+#   Windows: SKIP_ASSETS=no scripts/build-windows.sh   (from Git Bash)
+# then run this script on that machine to upload that platform's assets.
+#
+# Idempotent: creates the release on first run, and on later runs uploads
+# (clobbering same-named assets) so you can publish Mac and Windows builds to
+# the same release from two different machines.
+#
+# Usage: scripts/make-release.sh [tag]
+#   tag defaults to v<academicStudioVersion> (e.g. v0.1).
+set -e
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OVERRIDES="$ROOT/overlay/product.overrides.json"
+ASSETS="$ROOT/build-engine/assets"
+REPO="kerryback/academic_studio"
+
+command -v jq >/dev/null 2>&1 || { echo "ERROR: jq not found."; exit 1; }
+command -v gh >/dev/null 2>&1 || { echo "ERROR: gh CLI not found. Install from https://cli.github.com/ and run 'gh auth login'."; exit 1; }
+
+ASVER="$(jq -r '.academicStudioVersion // "0.0"' "$OVERRIDES")"
+TAG="${1:-v$ASVER}"
+
+[ -d "$ASSETS" ] || { echo "ERROR: no assets dir ($ASSETS). Build with SKIP_ASSETS=no first."; exit 1; }
+shopt -s nullglob
+files=("$ASSETS"/*)
+[ "${#files[@]}" -gt 0 ] || { echo "ERROR: $ASSETS is empty. Build with SKIP_ASSETS=no first."; exit 1; }
+
+echo "Release $TAG on $REPO"
+echo "Assets to upload:"
+printf '  %s\n' "${files[@]##*/}"
+echo
+
+if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+  echo "Release $TAG already exists — uploading (clobbering same-named assets)…"
+  gh release upload "$TAG" "${files[@]}" --repo "$REPO" --clobber
+else
+  echo "Creating release $TAG…"
+  gh release create "$TAG" "${files[@]}" --repo "$REPO" \
+    --title "Academic Studio $ASVER" \
+    --notes "Academic Studio $ASVER
+
+Download the installer for your platform below:
+- macOS (Apple Silicon): the macos-arm64 .dmg
+- macOS (Intel): the macos-x64 .dmg
+- Windows (most PCs): the windows-x64 Setup .exe
+- Windows on ARM (e.g. Surface Pro): the windows-arm64 Setup .exe
+
+These builds are not yet code-signed, so on first launch you may need to allow
+the app: macOS — right-click the app and choose Open; Windows — click
+\"More info\" then \"Run anyway\" on the SmartScreen prompt."
+fi
+
+echo
+echo "Done: https://github.com/$REPO/releases/tag/$TAG"

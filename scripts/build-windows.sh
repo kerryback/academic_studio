@@ -148,6 +148,30 @@ if [ "$SKIP_ASSETS" = "no" ]; then
   mkdir -p assets
   # shellcheck disable=SC1091
   . prepare_assets.sh
+
+  # rename the engine's outputs (which carry the upstream VS Code version and a
+  # space-y app name) to OS-qualified, AS-versioned distribution names. An arch
+  # alone is ambiguous (arm64 spans Apple Silicon and Windows-on-ARM), so the
+  # filename says "windows".
+  ASVER="$(jq -r '.academicStudioVersion // "0.0"' "$OVERRIDES")"
+  A="${VSCODE_ARCH}"
+  ( cd assets || exit 0
+    shopt -s nullglob
+    for f in *Setup-"${A}"-*.exe; do
+      case "$f" in
+        *UserSetup-*) mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}-UserSetup.exe" ;;
+        *)            mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}-Setup.exe" ;;
+      esac
+    done
+    for f in *-win32-"${A}"-*.zip; do
+      mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}.zip"
+    done
+    for f in *-"${A}"-*.msi; do
+      case "$f" in
+        *updates-disabled*) mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}-updates-disabled.msi" ;;
+        *)                  mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}.msi" ;;
+      esac
+    done )
 fi
 
 echo ""

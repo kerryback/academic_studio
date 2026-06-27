@@ -164,8 +164,12 @@ if [ "$SKIP_ASSETS" = "no" ]; then
   . dev/build.env
   mkdir -p assets
   APPDIR="VSCode-darwin-${VSCODE_ARCH}"
-  SLUG="$(echo "$APP_NAME" | tr ' ' '-')"   # e.g. Academic-Studio-Student-Edition
-  DMG="assets/${SLUG}.${VSCODE_ARCH}.${RELEASE_VERSION}.dmg"
+  SLUG="$(echo "$APP_NAME" | tr ' ' '-')"   # Academic-Studio
+  ASVER="$(jq -r '.academicStudioVersion // "0.0"' "$OVERRIDES")"
+  # OS-qualified name: an arch alone is ambiguous (arm64 spans Apple Silicon and
+  # Windows-on-ARM), so the filename says "macos". Versioned by our own product
+  # version, not the upstream VS Code engine version.
+  DMG="assets/${SLUG}-${ASVER}-macos-${VSCODE_ARCH}.dmg"
   STAGEDMG="$(mktemp -d)"
   cp -R "${APPDIR}/${APP_NAME}.app" "$STAGEDMG/"
   ln -s /Applications "$STAGEDMG/Applications"
