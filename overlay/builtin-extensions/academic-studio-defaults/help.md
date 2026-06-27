@@ -3,10 +3,10 @@
 Academic Studio is a bundle of Claude Code, a file browser, a file viewer and
 editor, and a simplified install method for extensions and supporting software
 that are especially useful for business professionals, students, and teachers.
-Claude Code launches on startup. On first startup, if your computer is not
-already logged in to Anthropic, you should enter /login in the Claude prompt
-window to initiate the login process.
+Claude Code launches on startup.
 
+On first startup, if your computer is not already logged in to Anthropic, you
+should enter /login in the Claude prompt window to initiate the login process.
 Open this guide any time from **Help → Academic Studio Help**.
 
 ## Features
