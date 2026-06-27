@@ -19,7 +19,7 @@ Open this guide any time from **Help → Academic Studio Help**.
   spreadsheet" or "a 10-slide deck" and you get an actual file you can open and
   share.
 - A workspace, not just a chat. Open a folder and your files and your
-  conversation history lives with that project — your work persists.
+  conversation history live with that project — your work persists.
 - Python, Jupyter, R, LaTeX, Quarto. Bundled support for data analysis,
   notebooks, statistics, typesetting, and HTML document creation.
 - Slides with Quarto + reveal.js. Write a `.qmd` file with `format: revealjs`;
