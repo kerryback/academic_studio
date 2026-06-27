@@ -32,7 +32,9 @@
   "academicStudioHideViewContainers": [
     "workbench.view.scm",
     "workbench.view.debug",
-    "workbench.view.extension.test"
+    "workbench.view.extension.test",
+    "workbench.view.extension.claude-sidebar",
+    "workbench.view.extension.claude-sidebar-secondary"
   ],
   "academicStudioMenuHide": {
     "MenubarViewMenu": [

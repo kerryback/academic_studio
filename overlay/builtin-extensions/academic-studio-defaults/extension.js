@@ -27,11 +27,14 @@ function openClaudeOnStartup() {
 	if (CLAUDE_ONLY_WITH_FOLDER && !(vscode.workspace.workspaceFolders || []).length) {
 		return;
 	}
-	// The Claude Code extension activates onStartupFinished too; retry a few
-	// times so we don't lose the race before its command is registered.
+	// Open Claude in the editor area (a real editor group) — not the secondary
+	// sidebar — so it behaves like a normal tab and closing the welcome page
+	// leaves no orphaned empty group. The Claude Code extension activates
+	// onStartupFinished too; retry a few times so we don't lose the race before
+	// its command is registered.
 	let tries = 0;
 	const tick = () => {
-		vscode.commands.executeCommand('claude-vscode.sidebar.open').then(
+		vscode.commands.executeCommand('claude-vscode.primaryEditor.open').then(
 			() => { /* opened */ },
 			() => { if (++tries < 6) { setTimeout(tick, 700); } }
 		);

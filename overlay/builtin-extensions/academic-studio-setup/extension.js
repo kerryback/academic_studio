@@ -87,13 +87,10 @@ function openSetupPanel(context) {
 		await context.globalState.update(SELECTION_KEY, { audience: msg.audience, selected: selectedIds });
 		panel.dispose();
 
-		const choice = await vscode.window.showInformationMessage(
-			'Academic Studio setup applied. Reload now to finish enabling/disabling extensions.',
-			'Reload', 'Later'
-		);
-		if (choice === 'Reload') {
-			vscode.commands.executeCommand('workbench.action.reloadWindow');
-		}
+		// Enabling/disabling extensions only takes effect after a window reload, so
+		// reload automatically — otherwise Apply appears to do nothing (a newly
+		// enabled extension like the PDF viewer won't activate until reload).
+		await vscode.commands.executeCommand('workbench.action.reloadWindow');
 	}, undefined, context.subscriptions);
 }
 
