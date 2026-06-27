@@ -14,15 +14,16 @@ Open this guide any time from **Help → Academic Studio Help**.
 - Claude Code, built in. The Claude Code assistant opens automatically and works
   alongside your files. Ask it to write, analyze data, build slides, or create
   documents.
-- Real documents. Claude can create and edit Excel, Word, PowerPoint, and PDF
-  files using its document skills — ask for "a budget spreadsheet" or "a 10-slide
-  deck" and you get an actual file you can open and share.
+- Real documents. Claude can create and edit Excel, Word, PowerPoint, PDF,
+  LaTeX, and Quarto files using its document skills — ask for "a budget
+  spreadsheet" or "a 10-slide deck" and you get an actual file you can open and
+  share.
 - A workspace, not just a chat. Open a folder and your files and your
   conversation history lives with that project — your work persists.
-- Slides with Quarto + reveal.js. Write a `.qmd` file with `format: revealjs`;
-  Claude is great at these, and the plain text stays easy to edit afterward.
 - Python, Jupyter, R, LaTeX, Quarto. Bundled support for data analysis,
   notebooks, statistics, typesetting, and HTML document creation.
+- Slides with Quarto + reveal.js. Write a `.qmd` file with `format: revealjs`;
+  Claude is great at these, and the plain text stays easy to edit afterward.
 - One-stop setup. **Help → Run Setup…** lets you pick your profile (Faculty or
   Students & Professionals), choose which extensions are active, and install
   supporting programs (Python, Node.js, Quarto, R, TinyTeX) with one click.
