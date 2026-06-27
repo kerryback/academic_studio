@@ -20,6 +20,11 @@
         "command": "academicStudio.checkForUpdates",
         "title": "Check for Updates…",
         "category": "Help"
+      },
+      {
+        "command": "academicStudio.about",
+        "title": "About Academic Studio",
+        "category": "Help"
       }
     ],
     "configurationDefaults": {

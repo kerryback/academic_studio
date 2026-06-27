@@ -35,7 +35,7 @@ diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/
 +
 +MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {
 +	command: {
-+		id: 'workbench.action.showAboutDialog',
++		id: 'academicStudio.about',
 +		title: localize('academicStudioAbout', "About Academic Studio"),
 +	},
 +	group: 'z_about',

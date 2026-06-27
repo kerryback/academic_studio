@@ -20,6 +20,16 @@ function activate(context) {
 		})
 	);
 
+	// Help → About Academic Studio. We use our own command id (rather than
+	// wiring the built-in workbench.action.showAboutDialog directly into the
+	// Help menu) because the native menu injects a "Check for Updates…" item
+	// next to any showAboutDialog entry — which would duplicate the one below.
+	context.subscriptions.push(
+		vscode.commands.registerCommand('academicStudio.about', async () => {
+			await vscode.commands.executeCommand('workbench.action.showAboutDialog');
+		})
+	);
+
 	// Help → Check for Updates… opens the GitHub Releases page in the browser.
 	// (The in-app auto-updater isn't wired to an Academic Studio feed yet, so we
 	// point users at the releases page to grab a newer installer.)
