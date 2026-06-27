@@ -29,6 +29,17 @@ if [ -n "$missing" ]; then
   echo "  python: install 3.11 and check 'Add to PATH'"
   exit 1
 fi
+# Node version: the build's native modules expect Node 22.x (the macOS build
+# pins 22.22.1 via nvm). A mismatched Node is the #1 cause of cryptic
+# native-module build failures, so fail fast with a clear message instead.
+NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
+if [ "$NODE_MAJOR" != "22" ]; then
+  echo "ERROR: Node $(node --version 2>/dev/null) detected, but the build needs Node 22.x (22.22.1)."
+  echo "Install it from https://nodejs.org/dist/v22.22.1/ (or via nvm-windows:"
+  echo "  nvm install 22.22.1 && nvm use 22.22.1), reopen Git Bash, and re-run."
+  echo "See docs/WINDOWS-BUILD.md."
+  exit 1
+fi
 if [ "${SKIP_ASSETS:-no}" = "no" ]; then
   for tool in iscc ISCC.exe 7z 7z.exe; do command -v "$tool" >/dev/null 2>&1 && break; done || true
   command -v iscc >/dev/null 2>&1 || command -v ISCC.exe >/dev/null 2>&1 || \
@@ -109,7 +120,7 @@ OUR_BUILTINS="$(jq '.builtInExtensions' "$EXTDIR/builtin.${EXT_TARGET}.json")"
 UNION="$(jq -n --argjson a "$BASE_BUILTINS" --argjson b "$OUR_BUILTINS" '$a + $b')"
 PJTMP="$(jq --argjson bi "$UNION" '.builtInExtensions = $bi' "$ENGINE/product.json")"
 echo "$PJTMP" > "$ENGINE/product.json"
-echo "[build] builtInExtensions: $(echo "$UNION" | jq length) total"
+echo "[build] builtInExtensions: $(echo "$UNION" | jq length) total ($(echo "$BASE_BUILTINS" | jq length) base + $(echo "$OUR_BUILTINS" | jq length) bundled)"
 
 STAGE="$ENGINE/vscode/as-extensions"
 mkdir -p "$STAGE"; rm -f "$STAGE"/*.vsix
