@@ -15,3 +15,7 @@ VSCode-*/
 *.zip
 *.log
 diagnose-win.log
+
+# Quarto render artifacts of bundled help docs
+overlay/builtin-extensions/*/help.html
+overlay/builtin-extensions/*/*_files/

@@ -27,6 +27,7 @@
       "telemetry.telemetryLevel": "off",
       "redhat.telemetry.enabled": false,
       "workbench.startupEditor": "welcomePage",
+      "workbench.editorAssociations": { "*.md": "default", "*.markdown": "default" },
       "workbench.tips.enabled": false,
       "workbench.reduceMotion": "on",
       "security.workspace.trust.startupPrompt": "never",

@@ -1,72 +1,58 @@
 # Academic Studio — Help
 
-Welcome. Academic Studio is a streamlined version of VS Code set up for academic
-work: writing, data analysis, and document/slide preparation, with an AI
-assistant built in. This guide covers the essentials. Open it any time from
-**Help → Academic Studio Help**.
+Academic Studio is a bundle of Claude Code, a file browser, a file viewer and editor, and a simplified install method for extensions and supporting software that are especially useful for business professionals, students, and teachers.  Claude Code launches on startup.  On first startup, if your computer is not already logged in to Anthropic, you should enter /login in the Claude prompt window to initiate the login process.  
 
-## The basics
+Open this guide any time from **Help → Academic Studio Help**.
 
-- Open a folder to work in: **File → Open Folder…**. Your files appear in the
-  Explorer on the left.
-- Create a file: **File → New File…**, then save it with a name and extension
-  (e.g. `notes.qmd`, `analysis.py`).
-- Files save automatically a moment after you stop typing.
-- Open the AI assistant from the Claude icon in the left bar.
+## Features
 
-## Python and Jupyter
+- Claude Code, built in. The Claude Code assistant opens automatically and works
+  alongside your files. Ask it to write, analyze data, build slides, or create
+  documents.
+- Real documents. Claude can create and edit Excel, Word, PowerPoint, and PDF
+  files using its document skills — ask for "a budget spreadsheet" or "a 10-slide
+  deck" and you get an actual file you can open and share.
+- A workspace, not just a chat. Open a folder and your files and your
+  conversation history lives with that project — your work persists.
+- Slides with Quarto + reveal.js. Write a `.qmd` file with `format: revealjs`;
+  Claude is great at these, and the plain text stays easy to edit afterward.
+- Python, Jupyter, R, LaTeX, Quarto. Bundled support for data analysis, notebooks,
+  statistics, typesetting, and HTML document creation.
+- One-stop setup. **Help → Run Setup…** lets you pick your profile (Faculty or
+  Students & Professionals), choose which extensions are active, and install
+  supporting programs (Python, Node.js, Quarto, R, TinyTeX) with one click.
+- Installation of important Python libraries: the scientific stack plus libraries used by Claude to create Office documents.
 
-Academic Studio bundles the Python and Jupyter extensions. To run Python you
-also need Python itself installed on your computer (see *Installing supporting
-tools* below).
+### Getting started
 
-- Run a script: open a `.py` file and click the ▷ Run button.
-- Notebooks: open or create a `.ipynb` file to write code and prose in cells.
+1. Open a folder: **File → Open Folder…** — your files appear in the Explorer on
+   the left.
+2. Talk to Claude in the panel that opens on startup — ask it to create a file,
+   write some code, or build a document.
+3. Files save automatically a moment after you stop typing.
 
-## Making slides with Quarto + reveal.js
+## Compared to Claude Desktop
 
-Academic Studio bundles [Quarto](https://quarto.org). A nice way to build slides
-here is to write a Quarto document (`.qmd`) that renders to **reveal.js** HTML
-slides. Two reasons this works well:
+Academic Studio runs Claude Code like the Code mode of Claude Desktop.  The principal benefits for business professionals and students of Academic Studio relative to Claude Desktop Code are the integrated file browser and file viewer/editor and the one-stop install of Python and Node.js.  
 
-- The AI assistant is much better at producing clean reveal.js slides than at
-  producing PowerPoint, so you get better first drafts.
-- Quarto's plain-text format keeps the slide text easy for you to read and edit
-  afterward — no fighting with a slide editor.
+For faculty and researchers, the one-click run/build for Latex, Quarto, Python, R, and Jupyter are the most important benefits.  
 
-Minimal example — put this at the top of a `.qmd` file:
+Unlike Claude Desktop, Academic Studio does not use point-and-click to install skills, MCP connectors, and plugins.  However, there is an easier method - just ask Claude to install them.
+## Compared to VS Code
 
-```yaml
----
-title: "My Talk"
-format: revealjs
----
-```
+Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it will fell familiar if you've used VS Code — but it's simplified for getting work done:
 
-Then write each slide under a `##` heading and render with the Quarto preview.
-
-> Exporting slides to PDF or PowerPoint (via decktape) will be available once the
-> supporting-tools installer lands; this section will be updated then.
-
-## Office documents and PDFs
-
-Word, Excel, and PowerPoint files open in a viewer, and PDFs render inline —
-just click the file in the Explorer.
-
-## Installing supporting tools
-
-Some features need companion programs installed on your computer (Python, Quarto,
-R, a LaTeX distribution). If something isn't working, install the tool directly:
-
-- Python — https://www.python.org/downloads/
-- Quarto — https://quarto.org/docs/get-started/
-- R — https://cran.r-project.org/
-- TinyTeX (LaTeX) — https://yihui.org/tinytex/
-
-(An installer that sets these up for you is planned.)
+- Menus and toolbars are trimmed, with beginner-friendly defaults.
+- Files auto-save a second after you stop typing (auto-save is off by default in standard VS Code).
+- Claude Code is built in and opens on startup.
+- One-stop installation for important tools — Office Viewer, PDF, Quarto, Python, Jupyter, R, LaTeX — so there's no hunting for extensions.
+- **Help → Run Setup…** installs the supporting programs (Python, Quarto, R, TinyTeX, Node.js) for you.
+- No telemetry and no Copilot; extensions come from the open [Open VSX](https://open-vsx.org) registry.
 
 ## Tips
 
-- Command Palette (all commands): press **F1**.
+- Command Palette (every command): press **F1**.
+- Re-run setup any time from **Help → Run Setup…** to change your extensions or
+  install more programs.
 - R IntelliSense needs the R `languageserver` package: install R, then run
   `install.packages("languageserver")` in R.
