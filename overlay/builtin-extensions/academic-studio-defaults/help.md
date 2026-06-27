@@ -28,7 +28,7 @@ Open this guide any time from **Help → Academic Studio Help**.
   Students & Professionals), choose which extensions are active, and install
   supporting programs (Python, Node.js, Quarto, R, TinyTeX) with one click.
 - Installation of important Python libraries: the scientific stack plus
-  libraries used by Claude to create Office documents.
+  libraries to create Office documents.
 
 ### Getting started
 
