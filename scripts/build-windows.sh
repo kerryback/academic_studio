@@ -59,6 +59,46 @@ export ORG_NAME="AcademicStudio"
 export GH_REPO_PATH="kerryback/academic_studio"
 export ASSETS_REPOSITORY="kerryback/academic_studio"
 export TUNNEL_APP_NAME="${BINARY_NAME}-tunnel"
+NAME_SHORT="$(jq -r '.nameShort' "$OVERRIDES")"   # the .exe is "<nameShort>.exe"
+
+# --- code signing (optional; only when a cert is configured) ----------------
+# Set ONE credential source, then the app exe + installers get Authenticode
+# signed (removes the SmartScreen "unknown publisher" warning). See docs/SIGNING.md.
+#   AS_WIN_CERT_FILE [+ AS_WIN_CERT_PASSWORD]   path to a .pfx and its password
+#   AS_WIN_CERT_SHA1                            SHA1 thumbprint of a cert in the
+#                                               store (typical for EV USB tokens)
+#   AS_WIN_TIMESTAMP_URL                        RFC3161 server (has a default)
+as_find_signtool() {
+  command -v signtool   >/dev/null 2>&1 && { echo signtool;   return; }
+  command -v signtool.exe >/dev/null 2>&1 && { echo signtool.exe; return; }
+  local st
+  st="$(ls -d "/c/Program Files (x86)/Windows Kits/10/bin/"*/x64/signtool.exe 2>/dev/null | sort -V | tail -1)"
+  [ -n "$st" ] && echo "$st"
+}
+as_win_sign() {   # $@ = files to sign; no-op unless a cert is configured
+  [ "$#" -gt 0 ] || return 0
+  local cred=()
+  if [ -n "${AS_WIN_CERT_FILE:-}" ]; then
+    cred=(/f "$AS_WIN_CERT_FILE")
+    [ -n "${AS_WIN_CERT_PASSWORD:-}" ] && cred+=(/p "$AS_WIN_CERT_PASSWORD")
+  elif [ -n "${AS_WIN_CERT_SHA1:-}" ]; then
+    cred=(/sha1 "$AS_WIN_CERT_SHA1")
+  else
+    return 0
+  fi
+  local st; st="$(as_find_signtool)"
+  [ -n "$st" ] || { echo "WARN: signtool not found (install the Windows 10/11 SDK) — leaving files UNSIGNED."; return 0; }
+  local ts="${AS_WIN_TIMESTAMP_URL:-http://timestamp.digicert.com}"
+  local f
+  for f in "$@"; do
+    [ -e "$f" ] || continue
+    echo "[sign] $f"
+    "$st" sign /fd SHA256 /tr "$ts" /td SHA256 "${cred[@]}" "$f" || echo "WARN: signing failed for $f"
+  done
+}
+if [ -z "${AS_WIN_CERT_FILE:-}${AS_WIN_CERT_SHA1:-}" ]; then
+  echo "[sign] no Windows cert configured (AS_WIN_CERT_FILE or AS_WIN_CERT_SHA1) — shipping UNSIGNED (SmartScreen will warn)."
+fi
 
 # --- build flags ------------------------------------------------------------
 export CI_BUILD="no"
@@ -138,6 +178,9 @@ done
 # shellcheck disable=SC1091
 . build.sh
 
+# sign the app's main exe BEFORE packaging, so the installer ships a signed app.
+as_win_sign "VSCode-win32-${VSCODE_ARCH}/${NAME_SHORT}.exe"
+
 # --- package installer + zip into assets/ -----------------------------------
 # build.sh only builds the app folder; the Inno Setup installer (.exe) and .zip
 # are produced by prepare_assets.sh (-> build/windows/prepare_assets.sh, which
@@ -172,6 +215,12 @@ if [ "$SKIP_ASSETS" = "no" ]; then
         *)                  mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}.msi" ;;
       esac
     done )
+
+  # sign the produced installers (the .zip can't be signed; its app exe already
+  # was, above).
+  as_win_sign assets/Academic-Studio-"${ASVER}"-windows-"${A}"-*.exe \
+              assets/Academic-Studio-"${ASVER}"-windows-"${A}".msi \
+              assets/Academic-Studio-"${ASVER}"-windows-"${A}"-updates-disabled.msi
 fi
 
 echo ""

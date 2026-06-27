@@ -153,6 +153,23 @@ if [ -f ~/.gyp/include.gypi.pre-as ]; then
   mv ~/.gyp/include.gypi.pre-as ~/.gyp/include.gypi
 fi
 
+# --- code sign + notarize the .app (optional; only when a cert is set) -------
+# Set AS_MAC_SIGN_IDENTITY to a Developer ID Application identity in your login
+# keychain, e.g. "Developer ID Application: Kerry Back (TEAMID)". Notarization
+# also needs notary credentials (see scripts/mac-notarize.sh). Without these the
+# build stays UNSIGNED — it runs, but shows Gatekeeper warnings. See docs/SIGNING.md.
+if [ -n "${AS_MAC_SIGN_IDENTITY:-}" ]; then
+  APPPATH="VSCode-darwin-${VSCODE_ARCH}/${APP_NAME}.app"
+  echo "[sign] codesigning ${APPPATH} (hardened runtime, Electron entitlements)…"
+  # @electron/osx-sign (vendored) signs inside-out: every nested framework,
+  # helper app, .node, and embedded binary (incl. the bundled claude binary),
+  # then the outer bundle. Defaults to hardened runtime + distribution.
+  ./build/node_modules/.bin/electron-osx-sign "$APPPATH" --identity="$AS_MAC_SIGN_IDENTITY"
+  "$ROOT/scripts/mac-notarize.sh" "$APPPATH"
+else
+  echo "[sign] AS_MAC_SIGN_IDENTITY not set — shipping an UNSIGNED .app (Gatekeeper will warn)."
+fi
+
 # --- package installer (.dmg) when requested --------------------------------
 # VSCodium's prepare_assets.sh only builds a .dmg when a signing cert is present.
 # We build an unsigned drag-to-Applications .dmg with hdiutil (pure macOS, no
@@ -175,6 +192,13 @@ if [ "$SKIP_ASSETS" = "no" ]; then
   ln -s /Applications "$STAGEDMG/Applications"
   rm -f "$DMG"
   if hdiutil create -volname "$APP_NAME" -srcfolder "$STAGEDMG" -ov -format UDZO "$DMG" >/dev/null; then
+    # sign + notarize the .dmg too, so the downloaded disk image itself passes
+    # Gatekeeper (the app inside is already stapled from the step above).
+    if [ -n "${AS_MAC_SIGN_IDENTITY:-}" ]; then
+      echo "[sign] codesigning + notarizing $(basename "$DMG")…"
+      codesign --force --sign "$AS_MAC_SIGN_IDENTITY" "$DMG"
+      "$ROOT/scripts/mac-notarize.sh" "$DMG"
+    fi
     echo "[build] assets: $(ls assets/ | tr '\n' ' ')"
   else
     echo "[build] WARNING: dmg not produced"
