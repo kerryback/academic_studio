@@ -1,7 +1,7 @@
 diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/browser/actions/helpActions.ts
 --- a/src/vs/workbench/browser/actions/helpActions.ts
 +++ b/src/vs/workbench/browser/actions/helpActions.ts
-@@ -406,3 +406,21 @@
+@@ -406,3 +406,39 @@
  registerAction2(GetStartedWithAccessibilityFeatures);
  
  registerAction2(AskVSCodeCopilot);
@@ -22,4 +22,22 @@ diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/
 +	},
 +	group: '1_welcome',
 +	order: 3,
++});
++
++MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {
++	command: {
++		id: 'academicStudio.checkForUpdates',
++		title: localize('academicStudioCheckForUpdates', "Check for Updates…"),
++	},
++	group: '5_update',
++	order: 1,
++});
++
++MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {
++	command: {
++		id: 'workbench.action.showAboutDialog',
++		title: localize('academicStudioAbout', "About Academic Studio"),
++	},
++	group: 'z_about',
++	order: 1,
 +});

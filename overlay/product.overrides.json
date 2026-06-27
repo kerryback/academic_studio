@@ -60,7 +60,8 @@
       "workbench.action.showAboutDialog",
       "workbench.action.openWalkthrough",
       "academicStudio.openHelp",
-      "academicStudio.openSetup"
+      "academicStudio.openSetup",
+      "academicStudio.checkForUpdates"
     ]
   },
   "builtInExtensionsEnabledWithAutoUpdates": [

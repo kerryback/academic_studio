@@ -15,6 +15,11 @@
         "command": "academicStudio.openHelp",
         "title": "Academic Studio Help",
         "category": "Help"
+      },
+      {
+        "command": "academicStudio.checkForUpdates",
+        "title": "Check for Updates…",
+        "category": "Help"
       }
     ],
     "configurationDefaults": {

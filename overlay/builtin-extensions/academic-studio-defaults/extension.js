@@ -20,6 +20,16 @@ function activate(context) {
 		})
 	);
 
+	// Help → Check for Updates… opens the GitHub Releases page in the browser.
+	// (The in-app auto-updater isn't wired to an Academic Studio feed yet, so we
+	// point users at the releases page to grab a newer installer.)
+	context.subscriptions.push(
+		vscode.commands.registerCommand('academicStudio.checkForUpdates', async () => {
+			await vscode.env.openExternal(
+				vscode.Uri.parse('https://github.com/kerryback/academic_studio/releases'));
+		})
+	);
+
 	openClaudeOnStartup();
 }
 
