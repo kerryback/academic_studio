@@ -90,7 +90,19 @@ const PROGRAMS = [
 		],
 	},
 	{
-		id: 'gh', label: 'GitHub CLI (gh)', group: 'common',
+		id: 'git', label: 'Git (version control; installs the Apple Command Line Tools)', group: 'faculty',
+		detect: 'xcode-select -p >/dev/null 2>&1 && echo installed',
+		manualUrl: 'https://git-scm.com/download/mac',
+		manualSteps: 'Run "xcode-select --install" in Terminal and complete the macOS dialog.',
+		installMac: [
+			'xcode-select --install 2>/dev/null || true',
+			'echo "If a macOS dialog appeared, click Install and wait for it to finish (this can take several minutes)…"',
+			'for i in $(seq 1 180); do xcode-select -p >/dev/null 2>&1 && break; sleep 10; done',
+			'xcode-select -p >/dev/null 2>&1 || { echo "Command Line Tools not detected — finish the install, then re-run."; exit 1; }',
+		],
+	},
+	{
+		id: 'gh', label: 'GitHub CLI (gh)', group: 'faculty',
 		detect: 'gh --version',
 		manualUrl: 'https://cli.github.com/',
 		manualSteps: 'Download the macOS .pkg from cli.github.com and run it.',
@@ -258,7 +270,7 @@ function shq(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'"; }
 
 // Resolve prereqs + ordering. Returns { ordered, skipped:[{id,reason}] }.
 function planInstall(selectedIds, detected) {
-	const ORDER = ['python', 'node', 'quarto', 'r', 'gh', 'tinytex', 'decktape', 'libreoffice'];
+	const ORDER = ['python', 'node', 'quarto', 'r', 'git', 'gh', 'tinytex', 'decktape', 'libreoffice'];
 	const selected = new Set(selectedIds);
 	const skipped = [];
 	const ordered = [];
