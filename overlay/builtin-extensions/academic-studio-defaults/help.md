@@ -1,6 +1,11 @@
 # Academic Studio — Help
 
-Academic Studio is a bundle of Claude Code, a file browser, a file viewer and editor, and a simplified install method for extensions and supporting software that are especially useful for business professionals, students, and teachers.  Claude Code launches on startup.  On first startup, if your computer is not already logged in to Anthropic, you should enter /login in the Claude prompt window to initiate the login process.  
+Academic Studio is a bundle of Claude Code, a file browser, a file viewer and
+editor, and a simplified install method for extensions and supporting software
+that are especially useful for business professionals, students, and teachers.
+Claude Code launches on startup. On first startup, if your computer is not
+already logged in to Anthropic, you should enter /login in the Claude prompt
+window to initiate the login process.
 
 Open this guide any time from **Help → Academic Studio Help**.
 
@@ -16,12 +21,13 @@ Open this guide any time from **Help → Academic Studio Help**.
   conversation history lives with that project — your work persists.
 - Slides with Quarto + reveal.js. Write a `.qmd` file with `format: revealjs`;
   Claude is great at these, and the plain text stays easy to edit afterward.
-- Python, Jupyter, R, LaTeX, Quarto. Bundled support for data analysis, notebooks,
-  statistics, typesetting, and HTML document creation.
+- Python, Jupyter, R, LaTeX, Quarto. Bundled support for data analysis,
+  notebooks, statistics, typesetting, and HTML document creation.
 - One-stop setup. **Help → Run Setup…** lets you pick your profile (Faculty or
   Students & Professionals), choose which extensions are active, and install
   supporting programs (Python, Node.js, Quarto, R, TinyTeX) with one click.
-- Installation of important Python libraries: the scientific stack plus libraries used by Claude to create Office documents.
+- Installation of important Python libraries: the scientific stack plus
+  libraries used by Claude to create Office documents.
 
 ### Getting started
 
@@ -33,21 +39,34 @@ Open this guide any time from **Help → Academic Studio Help**.
 
 ## Compared to Claude Desktop
 
-Academic Studio runs Claude Code like the Code mode of Claude Desktop.  The principal benefits for business professionals and students of Academic Studio relative to Claude Desktop Code are the integrated file browser and file viewer/editor and the one-stop install of Python and Node.js.  
+Academic Studio runs Claude Code like the Code mode of Claude Desktop. The
+principal benefits for business professionals and students of Academic Studio
+relative to Claude Desktop Code are the integrated file browser and file
+viewer/editor and the one-stop install of Python and Node.js.
 
-For faculty and researchers, the one-click run/build for Latex, Quarto, Python, R, and Jupyter are the most important benefits.  
+For faculty and researchers, the one-click run/build for Latex, Quarto, Python,
+R, and Jupyter are the most important benefits.
 
-Unlike Claude Desktop, Academic Studio does not use point-and-click to install skills, MCP connectors, and plugins.  However, there is an easier method - just ask Claude to install them.
+Unlike Claude Desktop, Academic Studio does not use point-and-click to install
+skills, MCP connectors, and plugins. However, there is an easier method — just
+ask Claude to install them.
+
 ## Compared to VS Code
 
-Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it will fell familiar if you've used VS Code — but it's simplified for getting work done:
+Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it
+will feel familiar if you've used VS Code — but it's simplified for getting work
+done:
 
 - Menus and toolbars are trimmed, with beginner-friendly defaults.
-- Files auto-save a second after you stop typing (auto-save is off by default in standard VS Code).
+- Files auto-save a second after you stop typing (auto-save is off by default in
+  standard VS Code).
 - Claude Code is built in and opens on startup.
-- One-stop installation for important tools — Office Viewer, PDF, Quarto, Python, Jupyter, R, LaTeX — so there's no hunting for extensions.
-- **Help → Run Setup…** installs the supporting programs (Python, Quarto, R, TinyTeX, Node.js) for you.
-- No telemetry and no Copilot; extensions come from the open [Open VSX](https://open-vsx.org) registry.
+- One-stop installation for important tools — Office Viewer, PDF, Quarto, Python,
+  Jupyter, R, LaTeX — so there's no hunting for extensions.
+- **Help → Run Setup…** installs the supporting programs (Python, Quarto, R,
+  TinyTeX, Node.js) for you.
+- No telemetry and no Copilot; extensions come from the open
+  [Open VSX](https://open-vsx.org) registry.
 
 ## Tips
 
