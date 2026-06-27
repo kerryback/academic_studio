@@ -406,6 +406,7 @@ function renderHtml(audience, enabledExt) {
 	fieldset { border: 1px solid var(--vscode-panel-border); border-radius: 6px; margin: 20px 0; padding: 14px 18px; }
 	legend { padding: 0 6px; font-weight: 600; }
 	.aud { display: inline-flex; gap: 20px; } .aud label { cursor: pointer; }
+	.amlabel { font-weight: 600; margin: 2px 0 8px; }
 	.row { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; }
 	.row code { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-left: auto; }
 	.row .status { margin-left: auto; font-style: normal; font-size: 0.85em; color: var(--vscode-descriptionForeground); }
@@ -432,8 +433,8 @@ function renderHtml(audience, enabledExt) {
 	<div id="topbanner" class="banner" style="display:none"></div>
 
 	<fieldset>
-		<legend>I am…</legend>
 		<p class="sub">Pick the profile that fits you. It just sets sensible defaults — you can change any item below, and you can remove or add extensions later. Leave checked any extensions that you want enabled. Unchecking will cause currently enabled extensions to be disabled.</p>
+		<div class="amlabel">I am…</div>
 		<div class="aud">
 			<label><input type="radio" name="aud" value="student"> Students &amp; Professionals</label>
 			<label><input type="radio" name="aud" value="faculty"> Faculty</label>
