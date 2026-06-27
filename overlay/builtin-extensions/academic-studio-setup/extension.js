@@ -52,7 +52,7 @@ function presetFor(audience) {
 //   prereq: another program id that must be present-or-selected first
 const PROGRAMS = [
 	{
-		id: 'python', label: 'Python + scientific libraries', group: 'common',
+		id: 'python', label: 'Python + scientific libraries + Office-related libraries', group: 'common',
 		detect: 'python3 --version',
 		manualUrl: 'https://www.python.org/downloads/macos/',
 		manualSteps: 'Download the macOS 64-bit universal2 installer and run it, then reopen the app.',
@@ -124,7 +124,7 @@ const PROGRAMS = [
 		],
 	},
 	{
-		id: 'decktape', label: 'decktape (slides → PDF/PPTX)', group: 'optin', prereq: 'node',
+		id: 'decktape', label: 'decktape (HTML slides → PDF/PPTX)', group: 'optin', prereq: 'node',
 		detect: 'decktape version',
 		manualUrl: 'https://github.com/astefanutti/decktape',
 		manualSteps: 'With Node.js installed, run: npm install -g decktape',
