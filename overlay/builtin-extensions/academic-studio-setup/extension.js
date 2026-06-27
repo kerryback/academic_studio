@@ -454,7 +454,7 @@ function renderHtml(audience, enabledExt) {
 	</fieldset>
 
 	<fieldset>
-		<legend>Active extensions</legend>
+		<legend>Extensions</legend>
 		${extRows}
 		<p class="note">LaTeX Workshop and the PDF viewer can't both be active (they both handle PDFs) — choosing one clears the other.</p>
 		<button id="apply">Apply</button>
@@ -465,7 +465,7 @@ function renderHtml(audience, enabledExt) {
 		<legend>Supporting programs</legend>
 		<p class="note">Programs your computer needs for some features. Only missing ones are checked. Installing runs the official installer in a terminal — you may be asked for your Mac password.</p>
 		${progRows}
-		<p><button id="install" class="secondary">Install selected programs</button></p>
+		<p><button id="install">Install selected programs</button></p>
 		<div id="report"></div>
 	</fieldset>
 

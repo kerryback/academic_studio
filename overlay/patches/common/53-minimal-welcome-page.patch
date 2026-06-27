@@ -1,13 +1,39 @@
 diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts b/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
 --- a/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
 +++ b/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
-@@ -150,5 +150,5 @@
+@@ -150,9 +150,31 @@
  		description: localize('gettingStarted.openFolder.description', "Open a folder to start working"),
  		icon: Codicon.folderOpened,
 -		when: '!isWeb && !isMac',
 +		when: '!isWeb',
  		content: {
  			type: 'startEntry',
+ 			command: 'command:workbench.action.files.openFolder',
+ 		}
+ 	},
++	{
++		id: 'academicStudioSetup',
++		title: localize('gettingStarted.academicStudioSetup.title', "Run Setup..."),
++		description: localize('gettingStarted.academicStudioSetup.description', "Pick your profile, choose extensions, and install supporting programs"),
++		icon: Codicon.gear,
++		when: '!isWeb',
++		content: {
++			type: 'startEntry',
++			command: 'command:academicStudio.openSetup',
++		}
++	},
++	{
++		id: 'academicStudioHelp',
++		title: localize('gettingStarted.academicStudioHelp.title', "Help..."),
++		description: localize('gettingStarted.academicStudioHelp.description', "Open the Academic Studio help guide"),
++		icon: Codicon.book,
++		when: '!isWeb',
++		content: {
++			type: 'startEntry',
++			command: 'command:academicStudio.openHelp',
++		}
++	},
+ 	{
 diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts b/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
 --- a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
 +++ b/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts
@@ -15,7 +41,7 @@ diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStart
  			});
  
 -		startList.setEntries(parsedStartEntries);
-+		startList.setEntries(parsedStartEntries.filter(e => e.id === 'topLevelOpenFolder'));
++		startList.setEntries(parsedStartEntries.filter(e => ['topLevelOpenFolder', 'academicStudioSetup', 'academicStudioHelp'].includes(e.id)));
  		startList.onDidChange(() => this.registerDispatchListeners());
  		return startList;
 @@ -1261,5 +1261,5 @@
