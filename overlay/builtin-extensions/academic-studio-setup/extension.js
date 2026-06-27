@@ -429,11 +429,11 @@ function renderHtml(audience, enabledExt) {
 </style></head><body>
 	<h1>Welcome to Academic Studio</h1>
 	<div class="signin">If you are a first-time user and not already logged in to Anthropic, sign in now — type <code>/login</code> in the prompt window to initiate the sign-in process.</div>
-	<p class="sub">Pick the profile that fits you. It just sets sensible defaults — you can change any item below, and you can remove or add extensions later. Leave checked any extensions that you want enabled. Unchecking will cause currently enabled extensions to be disabled.</p>
 	<div id="topbanner" class="banner" style="display:none"></div>
 
 	<fieldset>
 		<legend>I am…</legend>
+		<p class="sub">Pick the profile that fits you. It just sets sensible defaults — you can change any item below, and you can remove or add extensions later. Leave checked any extensions that you want enabled. Unchecking will cause currently enabled extensions to be disabled.</p>
 		<div class="aud">
 			<label><input type="radio" name="aud" value="student"> Students &amp; Professionals</label>
 			<label><input type="radio" name="aud" value="faculty"> Faculty</label>
