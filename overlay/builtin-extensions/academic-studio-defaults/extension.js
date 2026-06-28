@@ -61,7 +61,10 @@ function openClaudeOnStartup() {
 	// Give session-restore a chance to reopen an existing Claude tab; only open
 	// our own if none shows up, so we never duplicate the restored one.
 	let waited = 0;
-	const STEP = 500, MAX_WAIT = 3000;
+	// MAX_WAIT must stay comfortably longer than session-restore takes to reopen
+	// the Claude tab, or a slow restore lets us open a duplicate. 1.5s is a safe
+	// floor on normal hardware; don't drop much below ~1s.
+	const STEP = 300, MAX_WAIT = 1500;
 	const poll = () => {
 		if (claudeTabIsOpen()) { return; }
 		waited += STEP;
