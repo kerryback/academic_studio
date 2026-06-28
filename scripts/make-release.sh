@@ -32,7 +32,7 @@ shopt -s nullglob
 # link permanently to .../releases/latest/download/<name>. The versioned copies
 # are uploaded too (archival). Each machine only has its own platform's file, so
 # the [ -e ] guard makes the others no-ops.
-alias_copy() { [ -e "$1" ] && cp -f "$1" "$ASSETS/$2" && echo "  aliased: $2"; }
+alias_copy() { [ -e "$1" ] || return 0; cp -f "$1" "$ASSETS/$2"; echo "  aliased: $2"; }
 echo "Version-less 'latest' aliases:"
 alias_copy "$ASSETS/Academic-Studio-${ASVER}-macos-arm64.dmg"          "Academic-Studio-macos-arm64.dmg"
 alias_copy "$ASSETS/Academic-Studio-${ASVER}-windows-x64-Setup.exe"    "Academic-Studio-windows-x64-Setup.exe"
