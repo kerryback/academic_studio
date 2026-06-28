@@ -1,0 +1,82 @@
+{
+  "builtInExtensions": [
+    {
+      "name": "quarto.quarto",
+      "version": "1.134.0",
+      "sha256": "df2a4f8e2e68486a9c7e108ebebe2030c098890be9486d930f2303393f5ffbe4",
+      "vsix": "as-extensions/quarto.quarto.vsix"
+    },
+    {
+      "name": "james-yu.latex-workshop",
+      "version": "10.16.1",
+      "sha256": "7feac2e1fa09a4171608ec622f80091538eac78a5d6a704fdbbf34ad984b9d14",
+      "vsix": "as-extensions/james-yu.latex-workshop.vsix"
+    },
+    {
+      "name": "cweijan.vscode-office",
+      "version": "4.0.7",
+      "sha256": "a7b785f8ec4736227e71268bcc1fcbc256cffa642084db2c5df296ae10a29c84",
+      "vsix": "as-extensions/cweijan.vscode-office.vsix"
+    },
+    {
+      "name": "ms-python.python",
+      "version": "2026.4.0",
+      "sha256": "232aeafb01f069824fdd92d3e628c1c442bbcfa1d3cc945ff97076340bb2b4a6",
+      "vsix": "as-extensions/ms-python.python.vsix"
+    },
+    {
+      "name": "jeanp413.open-remote-ssh",
+      "version": "0.1.2",
+      "sha256": "4c4305484d35a119eeac6ba57c77e8cc181b1e21a748f80a7b79b967e89a5681",
+      "vsix": "as-extensions/jeanp413.open-remote-ssh.vsix"
+    },
+    {
+      "name": "reditorsupport.r",
+      "version": "2.8.8",
+      "sha256": "9add9b7aceda1dc0072cc9e048b5bfcc8de4488ccd2802ea5fe834517a3ce2e2",
+      "vsix": "as-extensions/reditorsupport.r.vsix"
+    },
+    {
+      "name": "reditorsupport.r-syntax",
+      "version": "0.1.4",
+      "sha256": "110af62e93b38c240ce2ea5c0f89a0b5fe58e9c6ba5400fe3175547324846eba",
+      "vsix": "as-extensions/reditorsupport.r-syntax.vsix"
+    },
+    {
+      "name": "detachhead.basedpyright",
+      "version": "1.39.9",
+      "sha256": "23272e8fb117cd1c1582fa64d0a5daddd370dab2f6d439c6e2886a204c52e86a",
+      "vsix": "as-extensions/detachhead.basedpyright.vsix"
+    },
+    {
+      "name": "mechatroner.rainbow-csv",
+      "version": "3.24.1",
+      "sha256": "0ecb7da3fb2a54517cd41fce8e858d6276ea8523bed6fbfd64d5ed281bd7514a",
+      "vsix": "as-extensions/mechatroner.rainbow-csv.vsix"
+    },
+    {
+      "name": "ms-toolsai.jupyter",
+      "version": "2025.9.1",
+      "sha256": "110660656944c4ab0ff687db488c2e8c59c67ec121dcf09bcaa54b6edd9ce71f",
+      "vsix": "as-extensions/ms-toolsai.jupyter.vsix"
+    },
+    {
+      "name": "streetsidesoftware.code-spell-checker",
+      "version": "4.6.0",
+      "sha256": "4c7396a310a691029fee63e8c9eaeea95c65f84fb833f16fa13e77b791ca6136",
+      "vsix": "as-extensions/streetsidesoftware.code-spell-checker.vsix"
+    },
+    {
+      "name": "tomoki1207.pdf",
+      "version": "1.2.2",
+      "sha256": "5697cd022caf93fa0fdb8c5b9c3624951394d8126ed09184ad4fdbcad62dadce",
+      "vsix": "as-extensions/tomoki1207.pdf.vsix"
+    },
+    {
+      "name": "anthropic.claude-code",
+      "version": "2.1.195",
+      "sha256": "6bab4f47ed6a9bc450521696d796cda6813959651bf2d35dacdf437bded3d010",
+      "vsix": "as-extensions/anthropic.claude-code.vsix"
+    }
+  ]
+}
