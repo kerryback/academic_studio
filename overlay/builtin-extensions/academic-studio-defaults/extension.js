@@ -2,14 +2,11 @@
 // 1. Declarative configurationDefaults (see package.json).
 // 2. academicStudio.openHelp — opens the bundled help.md as a rendered Markdown
 //    preview (wired into the Help menu by patches/common/51-help-menu-readme).
-// 3. On startup, opens the Claude Code chat in the side bar (Claude-Desktop-like
-//    launch). Because opening a folder reloads the window, this also covers
-//    "open Claude when a folder is opened".
+// (We no longer open Claude Code on startup — the bundled Claude Code extension
+//  now opens itself automatically, so doing it here just added a duplicate tab
+//  on each restart.)
 const vscode = require('vscode');
 const path = require('path');
-
-// To restrict Claude to only open once a folder is present, set this true.
-const CLAUDE_ONLY_WITH_FOLDER = false;
 
 function activate(context) {
 	context.subscriptions.push(
@@ -39,27 +36,6 @@ function activate(context) {
 				vscode.Uri.parse('https://github.com/kerryback/academic_studio/releases'));
 		})
 	);
-
-	openClaudeOnStartup();
-}
-
-function openClaudeOnStartup() {
-	if (CLAUDE_ONLY_WITH_FOLDER && !(vscode.workspace.workspaceFolders || []).length) {
-		return;
-	}
-	// Open Claude in the editor area (a real editor group) — not the secondary
-	// sidebar — so it behaves like a normal tab and closing the welcome page
-	// leaves no orphaned empty group. The Claude Code extension activates
-	// onStartupFinished too; retry a few times so we don't lose the race before
-	// its command is registered.
-	let tries = 0;
-	const tick = () => {
-		vscode.commands.executeCommand('claude-vscode.primaryEditor.open').then(
-			() => { /* opened */ },
-			() => { if (++tries < 6) { setTimeout(tick, 700); } }
-		);
-	};
-	setTimeout(tick, 800);
 }
 
 function deactivate() {}
