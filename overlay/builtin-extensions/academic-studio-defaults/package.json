@@ -36,6 +36,7 @@
       "breadcrumbs.enabled": true,
       "telemetry.telemetryLevel": "off",
       "redhat.telemetry.enabled": false,
+      "workbench.colorTheme": "Visual Studio Light",
       "workbench.startupEditor": "welcomePage",
       "workbench.editorAssociations": { "*.md": "default", "*.markdown": "default" },
       "workbench.tips.enabled": false,

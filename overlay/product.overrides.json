@@ -79,5 +79,8 @@
     "tomoki1207.pdf",
     "Anthropic.claude-code"
   ],
-  "academicStudioVersion": "0.1"
+  "academicStudioVersion": "0.1",
+  "configurationDefaults": {
+    "workbench.colorTheme": "Visual Studio Light"
+  }
 }

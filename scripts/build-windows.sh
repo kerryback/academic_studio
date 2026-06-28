@@ -127,6 +127,17 @@ fi
 
 cd "$ENGINE"
 
+# --- apply build-engine patches (npm platform fixes for Windows) -----------
+BEPATCH="$ROOT/build-engine-npm-platform-fixes.patch"
+if [ -f "$BEPATCH" ]; then
+  if git apply --check "$BEPATCH" 2>/dev/null; then
+    echo "[patch] applying build-engine-npm-platform-fixes.patch"
+    git apply "$BEPATCH"
+  else
+    echo "[patch] build-engine-npm-platform-fixes.patch already applied or does not apply cleanly — skipping"
+  fi
+fi
+
 # --- fetch vscode source at the pinned tag ---------------------------------
 if [ "$SKIP_SOURCE" = "no" ]; then
   rm -rf vscode vscode-*

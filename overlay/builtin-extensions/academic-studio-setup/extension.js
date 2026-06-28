@@ -53,7 +53,7 @@ function presetFor(audience) {
 const PROGRAMS = [
 	{
 		id: 'python', label: 'Python + scientific libraries + Office-related libraries', group: 'common',
-		detect: 'python3 --version',
+		detect: process.platform === 'win32' ? 'python --version' : 'python3 --version',
 		manualUrl: 'https://www.python.org/downloads/macos/',
 		manualSteps: 'Download the macOS 64-bit universal2 installer and run it, then reopen the app.',
 		installMac: [
@@ -90,10 +90,10 @@ const PROGRAMS = [
 		],
 	},
 	{
-		id: 'git', label: 'Git (version control; installs the Apple Command Line Tools)', group: 'faculty',
-		detect: 'xcode-select -p >/dev/null 2>&1 && echo installed',
-		manualUrl: 'https://git-scm.com/download/mac',
-		manualSteps: 'Run "xcode-select --install" in Terminal and complete the macOS dialog.',
+		id: 'git', label: 'Git (version control)', group: 'faculty',
+		detect: 'git --version',
+		manualUrl: process.platform === 'win32' ? 'https://git-scm.com/download/win' : 'https://git-scm.com/download/mac',
+		manualSteps: process.platform === 'win32' ? 'Download Git for Windows from git-scm.com and run the installer.' : 'Run "xcode-select --install" in Terminal and complete the macOS dialog.',
 		installMac: [
 			'xcode-select --install 2>/dev/null || true',
 			'echo "If a macOS dialog appeared, click Install and wait for it to finish (this can take several minutes)…"',
@@ -115,9 +115,9 @@ const PROGRAMS = [
 	},
 	{
 		id: 'r', label: 'R', group: 'faculty',
-		detect: 'R --version',
+		detect: process.platform === 'win32' ? 'Rscript --version' : 'R --version',
 		manualUrl: 'https://cran.r-project.org/',
-		manualSteps: 'Download the macOS .pkg from CRAN and run it.',
+		manualSteps: process.platform === 'win32' ? 'Download R for Windows from CRAN and run the installer.' : 'Download the macOS .pkg from CRAN and run it.',
 		installMac: [
 			'REL=$(curl -fsSL https://cran.r-project.org/bin/macosx/big-sur-arm64/base/ | grep -oE "R-[0-9.]+-arm64\\.pkg" | sort -V | tail -1)',
 			'[ -n "$REL" ] || { echo "Could not find the latest R installer URL."; exit 1; }',
@@ -137,7 +137,7 @@ const PROGRAMS = [
 	},
 	{
 		id: 'decktape', label: 'decktape (HTML slides → PDF/PPTX)', group: 'optin', prereq: 'node',
-		detect: 'decktape version',
+		detect: 'npx decktape version',
 		manualUrl: 'https://github.com/astefanutti/decktape',
 		manualSteps: 'With Node.js installed, run: npm install -g decktape',
 		installMac: [
@@ -146,9 +146,9 @@ const PROGRAMS = [
 	},
 	{
 		id: 'libreoffice', label: 'LibreOffice (PDF export & thumbnails for the Word/PowerPoint skills)', group: 'optin',
-		detect: '[ -d /Applications/LibreOffice.app ] && echo installed',
+		detect: process.platform === 'win32' ? 'where soffice' : '[ -d /Applications/LibreOffice.app ] && echo installed',
 		manualUrl: 'https://www.libreoffice.org/download/download/',
-		manualSteps: 'Download LibreOffice for macOS from libreoffice.org and drag it to Applications.',
+		manualSteps: process.platform === 'win32' ? 'Download LibreOffice for Windows from libreoffice.org and run the installer.' : 'Download LibreOffice for macOS from libreoffice.org and drag it to Applications.',
 		installMac: [
 			'VER=$(curl -fsSL https://download.documentfoundation.org/libreoffice/stable/ | grep -oE "[0-9]+\\.[0-9]+\\.[0-9]+/" | tr -d / | sort -V | tail -1)',
 			'[ -n "$VER" ] || { echo "Could not find the latest LibreOffice version."; exit 1; }',
@@ -210,17 +210,22 @@ function programPresetFor(audience) {
 }
 
 // ---- detection -------------------------------------------------------------
-function loginShellExec(command) {
-	// Run through a login shell so the user's full PATH (Homebrew, /usr/local,
-	// pyenv, etc.) is visible — GUI apps otherwise get a minimal PATH.
-	const shell = process.env.SHELL || '/bin/zsh';
+function shellExec(command) {
+	// On macOS, run through a login shell so the user's full PATH (Homebrew,
+	// /usr/local, pyenv, etc.) is visible — GUI apps otherwise get a minimal PATH.
+	// On Windows, use cmd.exe /c which inherits the system PATH.
+	const isWin = process.platform === 'win32';
+	const shell = isWin ? process.env.COMSPEC || 'cmd.exe' : (process.env.SHELL || '/bin/zsh');
+	const args = isWin ? ['/c', command] : ['-lc', command];
 	return new Promise((resolve) => {
-		cp.execFile(shell, ['-lc', command], { timeout: 8000 }, (err, stdout, stderr) => {
+		cp.execFile(shell, args, { timeout: 8000 }, (err, stdout, stderr) => {
 			const out = ((stdout || '') + (stderr || '')).trim();
 			resolve({ ok: !err, out });
 		});
 	});
 }
+// Keep old name as alias so nothing else breaks
+const loginShellExec = shellExec;
 
 async function detectPrograms() {
 	const result = {};
@@ -349,7 +354,6 @@ function activate(context) {
 	const open = () => openSetupPanel(context);
 	context.subscriptions.push(vscode.commands.registerCommand('academicStudio.openSetup', open));
 	autoInstallClaudeSkills();
-	if (!context.globalState.get(SETUP_DONE_KEY)) { open(); }
 }
 
 function openSetupPanel(context) {
