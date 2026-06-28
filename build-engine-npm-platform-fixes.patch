@@ -16,7 +16,7 @@ index 84a75bc..7806403 100755
  
        if [[ "${VSCODE_ARCH}" != "x64" ]]; then
 diff --git a/prepare_vscode.sh b/prepare_vscode.sh
-index 2f5febc..346ab99 100755
+index 2f5febc..ce29ae8 100755
 --- a/prepare_vscode.sh
 +++ b/prepare_vscode.sh
 @@ -227,6 +227,24 @@ for i in {1..5}; do # try 5 times
@@ -30,7 +30,7 @@ index 2f5febc..346ab99 100755
 +  if [ -d "node_modules/@typescript/native-preview" ] && [ ! -d "node_modules/@typescript/native-preview-win32-${VSCODE_ARCH}" ]; then
 +    echo "[fix] ${_tsgo_pkg} missing after npm ci — installing manually..."
 +    tsgo_ver="$(node -e "console.log(require('./node_modules/@typescript/native-preview/package.json').optionalDependencies['${_tsgo_pkg}'])")"
-+    npm install "${_tsgo_pkg}@${tsgo_ver}" --no-save
++    npm install "${_tsgo_pkg}@${tsgo_ver}" --no-save --force
 +  fi
 +
 +  # Workaround: npm ci on ARM64 Windows also installs linux-arm64 @parcel/watcher
