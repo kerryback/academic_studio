@@ -2,9 +2,9 @@
 // 1. Declarative configurationDefaults (see package.json).
 // 2. academicStudio.openHelp — opens the bundled help.md as a rendered Markdown
 //    preview (wired into the Help menu by patches/common/51-help-menu-readme).
-// (We no longer open Claude Code on startup — the bundled Claude Code extension
-//  now opens itself automatically, so doing it here just added a duplicate tab
-//  on each restart.)
+// 3. Opens Claude Code in the editor area on startup — but only if a Claude tab
+//    isn't already there. VS Code restores the previous session's tabs, so
+//    opening unconditionally stacked a duplicate Claude tab on every restart.
 const vscode = require('vscode');
 const path = require('path');
 
@@ -36,6 +36,49 @@ function activate(context) {
 				vscode.Uri.parse('https://github.com/kerryback/academic_studio/releases'));
 		})
 	);
+
+	openClaudeOnStartup();
+}
+
+// True if a Claude Code tab is already open in the editor area (e.g. restored
+// from the previous session). The primary editor is a webview labelled
+// "Claude Code"; match on the tab label or webview viewType.
+function claudeTabIsOpen() {
+	try {
+		for (const group of vscode.window.tabGroups.all) {
+			for (const tab of group.tabs) {
+				const viewType = tab.input && tab.input.viewType;
+				if ((viewType && /claude/i.test(viewType)) || /claude/i.test(tab.label || '')) {
+					return true;
+				}
+			}
+		}
+	} catch (e) { /* tabGroups API unavailable — fall through and just try to open */ }
+	return false;
+}
+
+function openClaudeOnStartup() {
+	// Give session-restore a chance to reopen an existing Claude tab; only open
+	// our own if none shows up, so we never duplicate the restored one.
+	let waited = 0;
+	const STEP = 500, MAX_WAIT = 3000;
+	const poll = () => {
+		if (claudeTabIsOpen()) { return; }
+		waited += STEP;
+		if (waited < MAX_WAIT) { setTimeout(poll, STEP); return; }
+		// Nothing restored a Claude tab — open one. Retry a few times in case the
+		// Claude Code extension hasn't registered its command yet.
+		let tries = 0;
+		const tick = () => {
+			if (claudeTabIsOpen()) { return; }
+			vscode.commands.executeCommand('claude-vscode.primaryEditor.open').then(
+				() => { /* opened */ },
+				() => { if (++tries < 6) { setTimeout(tick, 700); } }
+			);
+		};
+		tick();
+	};
+	setTimeout(poll, STEP);
 }
 
 function deactivate() {}
