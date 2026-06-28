@@ -80,6 +80,27 @@ For non-technical users, the friendliest single Windows download is the
 `UserSetup.exe` (no admin prompt). You can leave all variants up, or ask to trim
 the list.
 
+## Website download links (permanent)
+
+`make-release.sh` also uploads version-less copies of the three primary
+installers, so a website can link to URLs that never change across releases:
+GitHub's `releases/latest/download/<name>` always serves the newest release's
+asset of that name. (The versioned copies are uploaded too, for archival.)
+
+Use these three links on the site:
+
+- Mac — "Apple Silicon only; does not run on older Macs with Intel chips":
+  `https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-macos-arm64.dmg`
+- Windows — "for most Windows computers":
+  `https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-x64-Setup.exe`
+- Windows on ARM — "for Microsoft Surface Pro laptops and other Windows ARM computers":
+  `https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-arm64-Setup.exe`
+
+These resolve only once a non-draft release containing those names exists, so
+re-run `make-release.sh` on each platform (it adds the aliases) after the first
+build. Host only the landing page on GitHub Pages; let these links point at the
+release assets rather than committing the large files to the Pages repo.
+
 ## Signing
 
 Builds are unsigned by default — they run, but show first-launch warnings

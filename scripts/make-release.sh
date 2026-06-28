@@ -27,6 +27,18 @@ TAG="${1:-v$ASVER}"
 
 [ -d "$ASSETS" ] || { echo "ERROR: no assets dir ($ASSETS). Build with SKIP_ASSETS=no first."; exit 1; }
 shopt -s nullglob
+
+# Stable, version-less aliases for the three primary installers, so a website can
+# link permanently to .../releases/latest/download/<name>. The versioned copies
+# are uploaded too (archival). Each machine only has its own platform's file, so
+# the [ -e ] guard makes the others no-ops.
+alias_copy() { [ -e "$1" ] && cp -f "$1" "$ASSETS/$2" && echo "  aliased: $2"; }
+echo "Version-less 'latest' aliases:"
+alias_copy "$ASSETS/Academic-Studio-${ASVER}-macos-arm64.dmg"          "Academic-Studio-macos-arm64.dmg"
+alias_copy "$ASSETS/Academic-Studio-${ASVER}-windows-x64-Setup.exe"    "Academic-Studio-windows-x64-Setup.exe"
+alias_copy "$ASSETS/Academic-Studio-${ASVER}-windows-arm64-Setup.exe"  "Academic-Studio-windows-arm64-Setup.exe"
+echo
+
 files=("$ASSETS"/*)
 [ "${#files[@]}" -gt 0 ] || { echo "ERROR: $ASSETS is empty. Build with SKIP_ASSETS=no first."; exit 1; }
 
@@ -44,11 +56,13 @@ else
     --title "Academic Studio $ASVER" \
     --notes "Academic Studio $ASVER
 
-Download the installer for your platform below:
-- macOS (Apple Silicon): the macos-arm64 .dmg
-- macOS (Intel): the macos-x64 .dmg
-- Windows (most PCs): the windows-x64 Setup .exe
-- Windows on ARM (e.g. Surface Pro): the windows-arm64 Setup .exe
+Download the installer for your computer:
+- Mac — Apple Silicon only; does not run on older Macs with Intel chips:
+  Academic-Studio-macos-arm64.dmg
+- Windows — for most Windows computers:
+  Academic-Studio-windows-x64-Setup.exe
+- Windows on ARM — for Microsoft Surface Pro laptops and other Windows ARM computers:
+  Academic-Studio-windows-arm64-Setup.exe
 
 These builds are not yet code-signed, so on first launch you may need to allow
 the app: macOS — right-click the app and choose Open; Windows — click
