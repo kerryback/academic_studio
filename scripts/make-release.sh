@@ -39,8 +39,11 @@ alias_copy "$ASSETS/Academic-Studio-${ASVER}-windows-x64-Setup.exe"    "Academic
 alias_copy "$ASSETS/Academic-Studio-${ASVER}-windows-arm64-Setup.exe"  "Academic-Studio-windows-arm64-Setup.exe"
 echo
 
-files=("$ASSETS"/*)
-[ "${#files[@]}" -gt 0 ] || { echo "ERROR: $ASSETS is empty. Build with SKIP_ASSETS=no first."; exit 1; }
+# Upload only distributable installer types — not stray build artifacts (e.g. the
+# CLI tarball the Windows packaging drops in assets/). nullglob (set above) drops
+# patterns that match nothing.
+files=("$ASSETS"/*.dmg "$ASSETS"/*.exe "$ASSETS"/*.zip "$ASSETS"/*.msi)
+[ "${#files[@]}" -gt 0 ] || { echo "ERROR: no installer files (.dmg/.exe/.zip/.msi) in $ASSETS. Build with SKIP_ASSETS=no first."; exit 1; }
 
 echo "Release $TAG on $REPO"
 echo "Assets to upload:"
