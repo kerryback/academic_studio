@@ -7,6 +7,9 @@
 # Env knobs:
 #   SKIP_SOURCE=yes   reuse already-fetched vscode source (faster re-builds)
 #   SKIP_ASSETS=no    also package a .dmg (default: app bundle only)
+#   SIGN_ONLY=yes     skip the build entirely; sign + notarize the already-built
+#                     .app and (re)package a signed .dmg. Needs AS_MAC_SIGN_IDENTITY
+#                     (+ notary creds). See docs/SIGNING.md.
 set -e
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -32,6 +35,7 @@ export SHOULD_BUILD="yes"
 export SKIP_ASSETS="${SKIP_ASSETS:-yes}"
 export SKIP_BUILD="no"
 export SKIP_SOURCE="${SKIP_SOURCE:-no}"
+SIGN_ONLY="${SIGN_ONLY:-no}"
 export VSCODE_LATEST="no"
 export VSCODE_QUALITY="stable"
 export VSCODE_SKIP_NODE_VERSION_CHECK="yes"
@@ -53,6 +57,61 @@ if command -v nvm >/dev/null 2>&1; then
   nvm use 22.22.1 >/dev/null 2>&1 || { nvm install 22.22.1 && nvm use 22.22.1; }
 fi
 echo "[build] app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"
+
+# --- sign + (re)package the .app/.dmg ---------------------------------------
+# Factored out so both a normal build (at the end) and SIGN_ONLY=yes use it.
+# Absolute paths, so it doesn't depend on the current directory.
+mac_sign_and_dmg() {
+  local APPPATH="${ENGINE}/VSCode-darwin-${VSCODE_ARCH}/${APP_NAME}.app"
+  local SIGNTOOL="${ENGINE}/vscode/build/node_modules/.bin/electron-osx-sign"
+  if [ -n "${AS_MAC_SIGN_IDENTITY:-}" ]; then
+    [ -d "$APPPATH" ] || { echo "[sign] app bundle not found: $APPPATH"; exit 1; }
+    [ -x "$SIGNTOOL" ] || { echo "[sign] electron-osx-sign not found: $SIGNTOOL"; exit 1; }
+    echo "[sign] codesigning ${APPPATH##*/} (hardened runtime, Electron entitlements)…"
+    # Signs inside-out: every nested framework, helper, .node, and embedded
+    # binary (incl. the bundled claude binary), then the outer bundle.
+    "$SIGNTOOL" "$APPPATH" --identity="$AS_MAC_SIGN_IDENTITY"
+    "$ROOT/scripts/mac-notarize.sh" "$APPPATH"
+  else
+    echo "[sign] AS_MAC_SIGN_IDENTITY not set — shipping an UNSIGNED .app (Gatekeeper will warn)."
+  fi
+
+  [ "$SKIP_ASSETS" = "no" ] || return 0
+  echo "[build] packaging .dmg (hdiutil)..."
+  mkdir -p "${ENGINE}/assets"
+  local SLUG ASVER DMG STAGEDMG
+  SLUG="$(echo "$APP_NAME" | tr ' ' '-')"
+  ASVER="$(jq -r '.academicStudioVersion // "0.0"' "$OVERRIDES")"
+  # OS-qualified name: arch alone is ambiguous (arm64 spans Apple Silicon and
+  # Windows-on-ARM), so the filename says "macos".
+  DMG="${ENGINE}/assets/${SLUG}-${ASVER}-macos-${VSCODE_ARCH}.dmg"
+  STAGEDMG="$(mktemp -d)"
+  cp -R "$APPPATH" "$STAGEDMG/"
+  ln -s /Applications "$STAGEDMG/Applications"
+  rm -f "$DMG"
+  if hdiutil create -volname "$APP_NAME" -srcfolder "$STAGEDMG" -ov -format UDZO "$DMG" >/dev/null; then
+    if [ -n "${AS_MAC_SIGN_IDENTITY:-}" ]; then
+      echo "[sign] codesigning + notarizing $(basename "$DMG")…"
+      codesign --force --sign "$AS_MAC_SIGN_IDENTITY" "$DMG"
+      "$ROOT/scripts/mac-notarize.sh" "$DMG"
+    fi
+    echo "[build] assets: $(ls "${ENGINE}/assets" | tr '\n' ' ')"
+  else
+    echo "[build] WARNING: dmg not produced"
+  fi
+  rm -rf "$STAGEDMG"
+}
+
+# --- SIGN_ONLY: sign the already-built app, skip the whole build ------------
+if [ "$SIGN_ONLY" = "yes" ]; then
+  [ -n "${AS_MAC_SIGN_IDENTITY:-}" ] || { echo "SIGN_ONLY=yes needs AS_MAC_SIGN_IDENTITY (see docs/SIGNING.md)."; exit 1; }
+  SKIP_ASSETS="no"   # must repackage so the .dmg holds the signed app
+  echo "[sign-only] signing the already-built ${VSCODE_ARCH} app (no recompile)…"
+  mac_sign_and_dmg
+  echo ""
+  echo "[sign-only] DONE. Signed app + dmg in ${ENGINE}/assets/"
+  exit 0
+fi
 
 # --- fetch bundled extensions for this target (if not cached) ---------------
 EXT_TARGET="darwin-${VSCODE_ARCH}"
@@ -153,58 +212,10 @@ if [ -f ~/.gyp/include.gypi.pre-as ]; then
   mv ~/.gyp/include.gypi.pre-as ~/.gyp/include.gypi
 fi
 
-# --- code sign + notarize the .app (optional; only when a cert is set) -------
-# Set AS_MAC_SIGN_IDENTITY to a Developer ID Application identity in your login
-# keychain, e.g. "Developer ID Application: Kerry Back (TEAMID)". Notarization
-# also needs notary credentials (see scripts/mac-notarize.sh). Without these the
-# build stays UNSIGNED — it runs, but shows Gatekeeper warnings. See docs/SIGNING.md.
-if [ -n "${AS_MAC_SIGN_IDENTITY:-}" ]; then
-  APPPATH="VSCode-darwin-${VSCODE_ARCH}/${APP_NAME}.app"
-  echo "[sign] codesigning ${APPPATH} (hardened runtime, Electron entitlements)…"
-  # @electron/osx-sign (vendored) signs inside-out: every nested framework,
-  # helper app, .node, and embedded binary (incl. the bundled claude binary),
-  # then the outer bundle. Defaults to hardened runtime + distribution.
-  ./build/node_modules/.bin/electron-osx-sign "$APPPATH" --identity="$AS_MAC_SIGN_IDENTITY"
-  "$ROOT/scripts/mac-notarize.sh" "$APPPATH"
-else
-  echo "[sign] AS_MAC_SIGN_IDENTITY not set — shipping an UNSIGNED .app (Gatekeeper will warn)."
-fi
-
-# --- package installer (.dmg) when requested --------------------------------
-# VSCodium's prepare_assets.sh only builds a .dmg when a signing cert is present.
-# We build an unsigned drag-to-Applications .dmg with hdiutil (pure macOS, no
-# Node native deps — create-dmg's macos-alias module breaks under the build's
-# pinned Node). Signing/notarization is Phase 7.
-if [ "$SKIP_ASSETS" = "no" ]; then
-  echo "[build] packaging .dmg (unsigned, hdiutil)..."
-  # shellcheck disable=SC1091
-  . dev/build.env
-  mkdir -p assets
-  APPDIR="VSCode-darwin-${VSCODE_ARCH}"
-  SLUG="$(echo "$APP_NAME" | tr ' ' '-')"   # Academic-Studio
-  ASVER="$(jq -r '.academicStudioVersion // "0.0"' "$OVERRIDES")"
-  # OS-qualified name: an arch alone is ambiguous (arm64 spans Apple Silicon and
-  # Windows-on-ARM), so the filename says "macos". Versioned by our own product
-  # version, not the upstream VS Code engine version.
-  DMG="assets/${SLUG}-${ASVER}-macos-${VSCODE_ARCH}.dmg"
-  STAGEDMG="$(mktemp -d)"
-  cp -R "${APPDIR}/${APP_NAME}.app" "$STAGEDMG/"
-  ln -s /Applications "$STAGEDMG/Applications"
-  rm -f "$DMG"
-  if hdiutil create -volname "$APP_NAME" -srcfolder "$STAGEDMG" -ov -format UDZO "$DMG" >/dev/null; then
-    # sign + notarize the .dmg too, so the downloaded disk image itself passes
-    # Gatekeeper (the app inside is already stapled from the step above).
-    if [ -n "${AS_MAC_SIGN_IDENTITY:-}" ]; then
-      echo "[sign] codesigning + notarizing $(basename "$DMG")…"
-      codesign --force --sign "$AS_MAC_SIGN_IDENTITY" "$DMG"
-      "$ROOT/scripts/mac-notarize.sh" "$DMG"
-    fi
-    echo "[build] assets: $(ls assets/ | tr '\n' ' ')"
-  else
-    echo "[build] WARNING: dmg not produced"
-  fi
-  rm -rf "$STAGEDMG"
-fi
+# --- code sign + notarize the .app, then package + sign the .dmg ------------
+# No-op signing when AS_MAC_SIGN_IDENTITY is unset (ships unsigned); .dmg only
+# when SKIP_ASSETS=no. See docs/SIGNING.md.
+mac_sign_and_dmg
 
 echo ""
 echo "[build] DONE. App bundle: ${ENGINE}/VSCode-darwin-${VSCODE_ARCH}/"

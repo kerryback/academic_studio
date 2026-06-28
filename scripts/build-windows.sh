@@ -11,6 +11,9 @@
 #   SKIP_SOURCE=yes   reuse already-fetched vscode source
 #   SKIP_ASSETS=yes   skip building the installer (.exe); app dir only
 #   ARCH=x64|arm64    target arch (default: x64)
+#   SIGN_ONLY=yes     skip the build; sign the already-built app exe, repackage
+#                     the installers, and sign them. Needs AS_WIN_CERT_* (see
+#                     docs/SIGNING.md).
 set -e
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -106,6 +109,7 @@ export SHOULD_BUILD="yes"
 export SKIP_ASSETS="${SKIP_ASSETS:-no}"   # default: build the installer
 export SKIP_BUILD="no"
 export SKIP_SOURCE="${SKIP_SOURCE:-no}"
+SIGN_ONLY="${SIGN_ONLY:-no}"
 export VSCODE_LATEST="no"
 export VSCODE_QUALITY="stable"
 export VSCODE_SKIP_NODE_VERSION_CHECK="yes"
@@ -116,6 +120,64 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 
 echo "[build] app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"
 EXT_TARGET="win32-${VSCODE_ARCH}"
+
+# --- sign the app exe + (re)package + sign installers -----------------------
+# Factored out so a normal build (after compile) and SIGN_ONLY=yes share it.
+# Assumes cwd is "$ENGINE". Signing is a no-op unless a cert is configured.
+win_sign_and_package() {
+  # sign the app's main exe BEFORE packaging, so the installer ships a signed app.
+  as_win_sign "VSCode-win32-${VSCODE_ARCH}/${NAME_SHORT}.exe"
+
+  [ "$SKIP_ASSETS" = "no" ] || return 0
+  echo "[build] packaging installer + zip into assets/ ..."
+  rm -rf build/windows/msi/releasedir
+  mkdir -p assets
+  # shellcheck disable=SC1091
+  . prepare_assets.sh
+
+  # rename engine outputs to OS-qualified, AS-versioned names (arch alone is
+  # ambiguous: arm64 spans Apple Silicon and Windows-on-ARM, so we say "windows").
+  local ASVER A
+  ASVER="$(jq -r '.academicStudioVersion // "0.0"' "$OVERRIDES")"
+  A="${VSCODE_ARCH}"
+  ( cd assets || exit 0
+    shopt -s nullglob
+    for f in *Setup-"${A}"-*.exe; do
+      case "$f" in
+        *UserSetup-*) mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}-UserSetup.exe" ;;
+        *)            mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}-Setup.exe" ;;
+      esac
+    done
+    for f in *-win32-"${A}"-*.zip; do
+      mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}.zip"
+    done
+    for f in *-"${A}"-*.msi; do
+      case "$f" in
+        *updates-disabled*) mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}-updates-disabled.msi" ;;
+        *)                  mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}.msi" ;;
+      esac
+    done )
+
+  # sign the produced installers (the .zip can't be signed; its app exe already was).
+  as_win_sign assets/Academic-Studio-"${ASVER}"-windows-"${A}"-*.exe \
+              assets/Academic-Studio-"${ASVER}"-windows-"${A}".msi \
+              assets/Academic-Studio-"${ASVER}"-windows-"${A}"-updates-disabled.msi
+}
+
+# --- SIGN_ONLY: sign the already-built app, skip fetch/compile ---------------
+if [ "$SIGN_ONLY" = "yes" ]; then
+  [ -n "${AS_WIN_CERT_FILE:-}${AS_WIN_CERT_SHA1:-}" ] || { echo "SIGN_ONLY=yes needs AS_WIN_CERT_FILE or AS_WIN_CERT_SHA1 (see docs/SIGNING.md)."; exit 1; }
+  cd "$ENGINE"
+  [ -d "VSCode-win32-${VSCODE_ARCH}" ] || { echo "No built app at ${ENGINE}/VSCode-win32-${VSCODE_ARCH} — run a full build first."; exit 1; }
+  # shellcheck disable=SC1091
+  [ -f dev/build.env ] && . dev/build.env
+  SKIP_ASSETS="no"   # must repackage so the installer wraps the signed exe
+  echo "[sign-only] signing the already-built ${VSCODE_ARCH} app + installers (no recompile)…"
+  win_sign_and_package
+  echo ""
+  echo "[sign-only] DONE. Signed installers in ${ENGINE}/assets/"
+  exit 0
+fi
 
 # --- fetch bundled extensions for this target -------------------------------
 if [ ! -f "$EXTDIR/builtin.${EXT_TARGET}.json" ]; then
@@ -189,50 +251,11 @@ done
 # shellcheck disable=SC1091
 . build.sh
 
-# sign the app's main exe BEFORE packaging, so the installer ships a signed app.
-as_win_sign "VSCode-win32-${VSCODE_ARCH}/${NAME_SHORT}.exe"
-
-# --- package installer + zip into assets/ -----------------------------------
-# build.sh only builds the app folder; the Inno Setup installer (.exe) and .zip
-# are produced by prepare_assets.sh (-> build/windows/prepare_assets.sh, which
-# runs the gulp inno-setup tasks and 7z). Needs Inno Setup + 7-Zip on PATH.
-if [ "$SKIP_ASSETS" = "no" ]; then
-  echo "[build] packaging installer + zip into assets/ ..."
-  rm -rf build/windows/msi/releasedir
-  mkdir -p assets
-  # shellcheck disable=SC1091
-  . prepare_assets.sh
-
-  # rename the engine's outputs (which carry the upstream VS Code version and a
-  # space-y app name) to OS-qualified, AS-versioned distribution names. An arch
-  # alone is ambiguous (arm64 spans Apple Silicon and Windows-on-ARM), so the
-  # filename says "windows".
-  ASVER="$(jq -r '.academicStudioVersion // "0.0"' "$OVERRIDES")"
-  A="${VSCODE_ARCH}"
-  ( cd assets || exit 0
-    shopt -s nullglob
-    for f in *Setup-"${A}"-*.exe; do
-      case "$f" in
-        *UserSetup-*) mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}-UserSetup.exe" ;;
-        *)            mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}-Setup.exe" ;;
-      esac
-    done
-    for f in *-win32-"${A}"-*.zip; do
-      mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}.zip"
-    done
-    for f in *-"${A}"-*.msi; do
-      case "$f" in
-        *updates-disabled*) mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}-updates-disabled.msi" ;;
-        *)                  mv -f "$f" "Academic-Studio-${ASVER}-windows-${A}.msi" ;;
-      esac
-    done )
-
-  # sign the produced installers (the .zip can't be signed; its app exe already
-  # was, above).
-  as_win_sign assets/Academic-Studio-"${ASVER}"-windows-"${A}"-*.exe \
-              assets/Academic-Studio-"${ASVER}"-windows-"${A}".msi \
-              assets/Academic-Studio-"${ASVER}"-windows-"${A}"-updates-disabled.msi
-fi
+# --- package + sign installers ----------------------------------------------
+# build.sh only builds the app folder; win_sign_and_package signs the app exe,
+# runs the Inno Setup + 7-Zip packaging (prepare_assets.sh), renames to
+# OS-qualified names, and signs the installers. Needs Inno Setup + 7-Zip on PATH.
+win_sign_and_package
 
 echo ""
 if [ -d "${ENGINE}/VSCode-win32-${VSCODE_ARCH}" ]; then

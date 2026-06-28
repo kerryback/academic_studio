@@ -6,6 +6,26 @@ environment variables below and the same build commands produce signed (and, on
 macOS, notarized) artifacts. One certificate per platform covers every
 architecture and every release — you do not need a separate cert per arch.
 
+## Signing an already-built release (no rebuild)
+
+Signing applies to finished binaries, so you do not have to recompile a build you
+already made unsigned. Once your cert is set up, run the same build script with
+`SIGN_ONLY=yes` and the cert variables — it skips fetch/compile and only signs
+the existing app and (re)packages the signed installers. This takes minutes, not
+a full build, and must run on the machine that holds that platform's build output.
+
+```
+# macOS (signs the existing .app, repackages + notarizes the .dmg):
+AS_MAC_SIGN_IDENTITY="Developer ID Application: … (TEAMID)" AS_NOTARY_PROFILE="AS_NOTARY" \
+SIGN_ONLY=yes scripts/build-macos.sh
+
+# Windows (signs the existing app exe, repackages + signs the installers):
+AS_WIN_CERT_SHA1="<thumbprint>" SIGN_ONLY=yes scripts/build-windows-x64.sh   # or -arm64
+```
+
+Then re-run `scripts/make-release.sh` to replace the unsigned files in the release.
+The rest of this document is the one-time cert setup for each platform.
+
 ## macOS
 
 Prerequisites:

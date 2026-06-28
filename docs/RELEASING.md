@@ -109,8 +109,10 @@ set the cert environment variables before the build command; everything else is
 identical. See `docs/SIGNING.md` for the full setup (Apple Developer ID +
 notarization on macOS; a Certum/Authenticode certificate on Windows).
 
-When you later sign, just rebuild with the cert variables set and re-run
-`make-release.sh` — it clobbers the unsigned assets in place.
+When you later sign, you do not have to rebuild: run the same build script with
+`SIGN_ONLY=yes` plus the cert variables to sign the already-built artifacts (see
+docs/SIGNING.md), then re-run `make-release.sh` — it clobbers the unsigned assets
+in place.
 
 ## Verify the release
 
