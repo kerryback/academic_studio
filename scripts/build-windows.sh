@@ -132,6 +132,12 @@ win_sign_and_package() {
   echo "[build] packaging installer + zip into assets/ ..."
   rm -rf build/windows/msi/releasedir
   mkdir -p assets
+  # We ship the Inno Setup .exe installers + .zip, not MSI. The MSI build needs
+  # WiX (heat.exe), which is NOT a documented prerequisite (see docs/WINDOWS-
+  # BUILD.md); leaving it on makes prepare_assets.sh abort under `set -e` before
+  # it promotes the Setup .exe into assets/. Skip MSI unless explicitly enabled.
+  export SHOULD_BUILD_MSI="${SHOULD_BUILD_MSI:-no}"
+  export SHOULD_BUILD_MSI_NOUP="${SHOULD_BUILD_MSI_NOUP:-no}"
   # shellcheck disable=SC1091
   . prepare_assets.sh
 
