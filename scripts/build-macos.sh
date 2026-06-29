@@ -71,7 +71,7 @@ mac_sign_and_dmg() {
     # Signs inside-out: every nested framework, helper, .node, and embedded
     # binary (incl. the bundled claude binary), then the outer bundle. Via the
     # Node API (the 2.x CLI ignores --identity).
-    node "$ROOT/scripts/mac-codesign.mjs" "$SIGNJS" "$APPPATH" "$AS_MAC_SIGN_IDENTITY"
+    node "$ROOT/scripts/mac-codesign.mjs" "$SIGNJS" "$APPPATH" "$AS_MAC_SIGN_IDENTITY" "$ROOT/scripts/mac-entitlements.plist"
     "$ROOT/scripts/mac-notarize.sh" "$APPPATH"
   else
     echo "[sign] AS_MAC_SIGN_IDENTITY not set — shipping an UNSIGNED .app (Gatekeeper will warn)."
