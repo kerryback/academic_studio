@@ -20,7 +20,7 @@ Academic Studio is a bundle of Claude Code, a file browser, a file viewer and ed
 
 ## Compared to Claude Desktop
 
-Academic Studio runs Claude Code like the Code mode of Claude Desktop. The principal benefits of Academic Studio relative to Claude Desktop Code for business professionals and students are the integrated file browser and file viewer/editor and the easy installation of Python and Node.js.
+Academic Studio runs Claude Code like the Code mode of Claude Desktop, which is the same as Claude Code CLI. The principal benefits of Academic Studio relative to Claude Desktop Code for business professionals and students are the integrated file browser and file viewer/editor and the easy installation of Python and Node.js.
 
 For faculty and researchers, the one-click run/build for LaTeX, Quarto, Python, R, and Jupyter are the most important benefits.
 
