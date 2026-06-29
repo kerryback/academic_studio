@@ -29,6 +29,7 @@ the app: on macOS, right-click the app and choose Open; on Windows, click
 - Use — or have Claude use — Python, Jupyter, R, LaTeX, and Quarto for data analysis, statistics, typesetting, and HTML document creation.
 - Easy setup. Help → Run Setup… lets you pick your profile (Faculty or Students & Professionals), and install supporting programs (Python, Node.js, Quarto, R, TinyTeX) and extensions with one click.
 - Key Python libraries — the scientific stack and libraries to create Office documents — are installed with Python.
+- Shares conversation histories, CLAUDE.md's, skills, and connectors with Claude Code CLI and Code mode of Claude Desktop.
 
 ## Compared to Claude Desktop
 
