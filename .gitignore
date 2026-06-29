@@ -19,3 +19,7 @@ diagnose-win.log
 # Quarto render artifacts of bundled help docs
 overlay/builtin-extensions/*/help.html
 overlay/builtin-extensions/*/*_files/
+
+# Quarto site: rendered output (deployed by CI) + cache
+site/_site/
+site/.quarto/

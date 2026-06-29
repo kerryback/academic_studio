@@ -1,0 +1,29 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+  resources:
+    - CNAME
+    - .nojekyll
+
+website:
+  title: "Academic Studio"
+  search: false
+  navbar: false
+
+format:
+  html:
+    theme:
+      light: flatly
+      dark: superhero
+    toc: true
+    include-after-body:
+      text: |
+        <hr>
+        <div style="text-align: center; font-size: 0.9em; padding-top: 1em;">
+        Kerry Back<br>
+        J. Howard Creekmore Professor of Finance, Jones Graduate School of Business<br>
+        Professor of Economics, School of Social Sciences<br>
+        Rice University
+        </div>
