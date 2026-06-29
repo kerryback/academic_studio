@@ -15,6 +15,33 @@ The version comes from `academicStudioVersion` in
 `overlay/product.overrides.json`. The release tag is `v<version>` (e.g. `v0.1`).
 To cut a new version, bump that field, rebuild, and re-run `make-release.sh`.
 
+## Automated release with GitHub Actions (recommended)
+
+`.github/workflows/release.yml` builds all three platforms on GitHub's hosted
+runners (macOS arm64, Windows x64, Windows ARM) and publishes them — so routine
+changes (e.g. editing `help.md` or bundling a new Claude Code version) become a
+Mac-only edit plus a tag push, with no need to touch the physical Windows
+machines.
+
+To cut a release:
+```
+# 1) bump academicStudioVersion in overlay/product.overrides.json (e.g. 0.2),
+#    commit and push to main, then:
+git tag v0.2
+git push origin v0.2
+```
+The workflow builds each platform, then a publish job runs `make-release.sh` to
+create the `v<version>` release with all installers + the version-less aliases.
+You can also trigger it by hand from the Actions tab (workflow_dispatch); it
+publishes to `v<academicStudioVersion>`.
+
+These CI builds are unsigned. Signing in CI needs repo secrets and a CI-friendly
+certificate (Apple notarization, Azure Trusted Signing, or SignPath). Certum's
+token/cloud signing isn't CI-friendly, so with Certum you'd still do a manual
+`SIGN_ONLY=yes` pass on a Windows machine (see docs/SIGNING.md).
+
+The manual, per-machine steps below remain valid as a fallback (and for signing).
+
 ## One-time setup per machine
 
 - Clone the repo, then create the gitignored build engine:
