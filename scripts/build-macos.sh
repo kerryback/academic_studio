@@ -63,14 +63,15 @@ echo "[build] app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"
 # Absolute paths, so it doesn't depend on the current directory.
 mac_sign_and_dmg() {
   local APPPATH="${ENGINE}/VSCode-darwin-${VSCODE_ARCH}/${APP_NAME}.app"
-  local SIGNTOOL="${ENGINE}/vscode/build/node_modules/.bin/electron-osx-sign"
+  local SIGNJS="${ENGINE}/vscode/build/node_modules/@electron/osx-sign/dist/sign.js"
   if [ -n "${AS_MAC_SIGN_IDENTITY:-}" ]; then
     [ -d "$APPPATH" ] || { echo "[sign] app bundle not found: $APPPATH"; exit 1; }
-    [ -x "$SIGNTOOL" ] || { echo "[sign] electron-osx-sign not found: $SIGNTOOL"; exit 1; }
+    [ -f "$SIGNJS" ] || { echo "[sign] @electron/osx-sign not found: $SIGNJS"; exit 1; }
     echo "[sign] codesigning ${APPPATH##*/} (hardened runtime, Electron entitlements)…"
     # Signs inside-out: every nested framework, helper, .node, and embedded
-    # binary (incl. the bundled claude binary), then the outer bundle.
-    "$SIGNTOOL" "$APPPATH" --identity="$AS_MAC_SIGN_IDENTITY"
+    # binary (incl. the bundled claude binary), then the outer bundle. Via the
+    # Node API (the 2.x CLI ignores --identity).
+    node "$ROOT/scripts/mac-codesign.mjs" "$SIGNJS" "$APPPATH" "$AS_MAC_SIGN_IDENTITY"
     "$ROOT/scripts/mac-notarize.sh" "$APPPATH"
   else
     echo "[sign] AS_MAC_SIGN_IDENTITY not set — shipping an UNSIGNED .app (Gatekeeper will warn)."
