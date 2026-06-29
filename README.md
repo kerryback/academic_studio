@@ -1,84 +1,88 @@
+<p align="center">
+  <img src="overlay/icons/academic-studio.png" width="160" alt="Academic Studio">
+</p>
+
 # Academic Studio
 
-A beginner-friendly fork of VS Code for academic workflows — Quarto, LaTeX,
-Python/R, Claude Code, and Office document viewing — with the clutter removed.
-Built on the open-source [VSCodium](https://github.com/VSCodium/vscodium)
-toolchain (so it ships without GitHub Copilot, without telemetry, and uses the
-[Open VSX](https://open-vsx.org) extension registry instead of Microsoft's).
+Academic Studio is a bundle of Claude Code, a file browser, a file viewer and
+editor, and a simplified install method for supporting software. It is designed
+for business professionals, students, faculty, and researchers. A paid Anthropic
+account (Pro, Max, or API) is required to use Claude Code. Enter `/login` in the
+prompt window on first use to connect to your Anthropic account.
 
-## Architecture
+## Download
 
-Two layers, kept separate so upstream updates stay clean. One product — a single
-"Academic Studio" — builds from the engine + overlay. (Audience-specific extension
-selection will become a first-run choice, not a build fork.)
+- [macOS (Apple Silicon)](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-macos-arm64.dmg) — M1 or later; does not run on older Macs with Intel chips
+- [Windows](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-x64-Setup.exe) — for most Windows computers
+- [Windows ARM](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-arm64-Setup.exe) — Microsoft Surface Pro laptops and other Windows ARM computers
 
-```
-academic_code/
-├── build-engine/        VSCodium clone (git remote: upstream). Kept pristine.
-├── overlay/             ALL Academic Studio customizations live here.
-│   ├── product.overrides.json   name / IDs / menu-trim lists
-│   ├── extensions.json          bundled extension list (Open VSX ids)
-│   ├── extensions/              fetched VSIX cache + builtin.<target>.json
-│   ├── builtin-extensions/academic-studio-defaults/   beginner default settings
-│   ├── patches/common/  menu removals + UI-trim filter
-│   └── icons/           academic-studio.icns / .ico (from AcademicStudio.png)
-└── scripts/
-    ├── setup-toolchain.sh        one-time: nvm + Node 22.22.1, rustup
-    ├── make-icon.py/make-icons.sh regenerate the app icon
-    ├── fetch-extensions.sh <target>   pull bundled exts from Open VSX
-    ├── apply-overlay.sh               inject overlay → engine (idempotent)
-    ├── build-macos.sh                 build the macOS .app + .dmg
-    └── build-windows.sh               build on Windows (see docs/)
-```
+All releases are on the [GitHub Releases page](https://github.com/kerryback/academic_studio/releases).
+These builds are not yet code-signed, so on first launch you may need to allow
+the app: on macOS, right-click the app and choose Open; on Windows, click
+"More info" then "Run anyway" on the SmartScreen prompt.
 
-`apply-overlay.sh` injects our files into the engine at build time; the engine
-itself is never hand-edited, so `git -C build-engine pull upstream master`
-brings in new VSCodium/VS Code releases without merge conflicts.
+## Features
 
-Build: `scripts/build-macos.sh`.
+- Claude Code, built in. The Claude Code assistant opens automatically and works alongside your files. Ask it to write, analyze data, build slides, or create documents.
+- Real documents. Claude can create and edit Excel, Word, PowerPoint, PDF, LaTeX, and Quarto files using its document skills.
+- A workspace, not just a chat. Open a folder and your files and your conversation history live with that project — your work persists.
+- Use — or have Claude use — Python, Jupyter, R, LaTeX, and Quarto for data analysis, statistics, typesetting, and HTML document creation.
+- Easy setup. Help → Run Setup… lets you pick your profile (Faculty or Students & Professionals), and install supporting programs (Python, Node.js, Quarto, R, TinyTeX) and extensions with one click.
+- Key Python libraries — the scientific stack and libraries to create Office documents — are installed with Python.
 
-### What's customized
+## Compared to Claude Desktop
 
-- Extensions (bundled, Open VSX): Quarto, LaTeX Workshop, Office viewer, Python,
-  basedpyright, Open Remote SSH, R (+ r-syntax), Rainbow CSV, Jupyter, Spell
-  Checker, PDF viewer, Claude Code.
-- Activity bar: Source Control, Run/Debug, and Tests hidden.
-- Menus: Selection/Go/Run removed; View/Terminal/Help trimmed.
+Academic Studio runs Claude Code like the Code mode of Claude Desktop. The
+principal benefits of Academic Studio relative to Claude Desktop Code for
+business professionals and students are the integrated file browser and file
+viewer/editor and the easy installation of Python and Node.js.
 
-UI trimming is data-driven: `overlay/product.overrides.json` carries
-`academicStudioHideViewContainers`, `academicStudioMenuHide`, and
-`academicStudioMenuKeepOnly`, read by a small filter in
-`patches/common/20-trim-menus-and-activitybar.patch`.
+For faculty and researchers, the one-click run/build for LaTeX, Quarto, Python,
+R, and Jupyter are the most important benefits.
 
-## Build (macOS)
+## Compared to VS Code
+
+Under the hood Academic Studio is VS Code (via the open-source
+[VSCodium](https://github.com/VSCodium/vscodium)), so it will feel familiar if
+you've used VS Code — but it's simplified for getting work done:
+
+- Menus and toolbars are trimmed, with beginner-friendly defaults.
+- Claude Code is built-in and opens on startup.
+- Easy installation of important tools — Office Viewer, PDF, Quarto, Python, Jupyter, R, LaTeX, Node.js.
+- No GitHub Copilot, no telemetry; extensions come from the open [Open VSX](https://open-vsx.org) registry.
+
+## Building from source
+
+Academic Studio is built from two layers kept separate so upstream updates stay
+clean: a pristine [VSCodium](https://github.com/VSCodium/vscodium) clone
+(`build-engine/`, gitignored) and an `overlay/` holding every customization
+(branding, bundled extensions, beginner defaults, menu trims, icons). At build
+time `scripts/apply-overlay.sh` injects the overlay into the engine, so the
+engine is never hand-edited and `git -C build-engine pull upstream master` brings
+in new VS Code releases without conflicts.
 
 ```bash
-scripts/setup-toolchain.sh     # once
-scripts/build-macos.sh         # produces build-engine/VSCode-darwin-arm64/
+# macOS (Apple Silicon)
+scripts/setup-toolchain.sh                 # once: nvm + Node 22.22.1, rustup
+scripts/build-macos.sh                     # -> build-engine/VSCode-darwin-arm64/
+SKIP_SOURCE=yes SKIP_ASSETS=no scripts/build-macos.sh   # faster re-build + .dmg
+
+# Windows (run from Git Bash on the target machine)
+scripts/build-windows-x64.sh               # or build-windows-arm64.sh
 ```
 
-Re-build faster after the first run by reusing fetched source:
-`SKIP_SOURCE=yes scripts/build-macos.sh`. Add `SKIP_ASSETS=no` to also package
-a `.dmg`/`.zip`.
+More detail:
 
-## Base versions
+- [`docs/WINDOWS-BUILD.md`](docs/WINDOWS-BUILD.md) — Windows prerequisites and build steps
+- [`docs/RELEASING.md`](docs/RELEASING.md) — building and publishing installers for every platform
+- [`docs/SIGNING.md`](docs/SIGNING.md) — optional code signing (macOS notarization, Windows Authenticode)
+- [`docs/CLAUDE-STARTUP-TAB.md`](docs/CLAUDE-STARTUP-TAB.md) — how Claude Code opens on startup
 
-- VS Code: `1.121.0` (pinned in `build-engine/upstream/stable.json`)
-- Node: `22.22.1` · Rust: stable
+Base versions: VS Code `1.121.0` (pinned in `build-engine/upstream/stable.json`),
+Node `22.22.1`.
 
-## Status
+## License
 
-- [x] Phase 1 — branded vanilla build on macOS
-- [x] Phase 2 — branding assets (mortarboard icon, bundle IDs, Open VSX)
-- [x] Phase 3 — bundle 12 default extensions (Quarto, LaTeX Workshop, Claude Code, Office Viewer, Python, Open Remote SSH, R + r-syntax, basedpyright, Rainbow CSV, Jupyter, Code Spell Checker)
-- [x] Phase 4 — beginner defaults (academic-studio-defaults built-in) + no Copilot + extension auto-updates
-- [x] Phase 5 — menu trimming (Selection/Go/Run removed; File/Edit/View/Terminal/Help kept)
-- [ ] Phase 6 — Windows build (`scripts/build-windows.sh`, see `docs/WINDOWS-BUILD.md`) — run on a Windows machine
-- [ ] Phase 7 — code signing + notarization (Apple Developer ID; Windows cert)
-- [ ] Phase 8 — releases + download page
-
-## Extras
-
-- `scripts/make-icon.py` / `make-icons.sh` — regenerate the placeholder icon (`.icns` + `.ico`). Replace `overlay/icons/academic-studio.png` with real art to rebrand.
-- `scripts/fetch-extensions.sh <target>` — download bundled extensions from Open VSX and emit the per-target `builtInExtensions` manifest.
-- R IntelliSense needs the R `languageserver` package: install R, then `install.packages("languageserver")`.
+MIT, following [VSCodium](https://github.com/VSCodium/vscodium) and
+[VS Code](https://github.com/microsoft/vscode). Bundled extensions and Claude
+Code are under their own licenses.
