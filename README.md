@@ -17,9 +17,9 @@ prompt window on first use to connect to your Anthropic account.
 - [Windows ARM](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-arm64-Setup.exe) — Microsoft Surface Pro laptops and other Windows ARM computers
 
 All releases are on the [GitHub Releases page](https://github.com/kerryback/academic_studio/releases).
-These builds are not yet code-signed, so on first launch you may need to allow
-the app: on macOS, right-click the app and choose Open; on Windows, click
-"More info" then "Run anyway" on the SmartScreen prompt.
+The macOS build is signed and notarized, so it opens with a normal double-click.
+The Windows builds aren't code-signed yet, so on first launch Windows may show a
+SmartScreen prompt — click "More info" then "Run anyway".
 
 ## Features
 

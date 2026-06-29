@@ -67,9 +67,9 @@ Download the installer for your computer:
 - Windows on ARM — for Microsoft Surface Pro laptops and other Windows ARM computers:
   Academic-Studio-windows-arm64-Setup.exe
 
-These builds are not yet code-signed, so on first launch you may need to allow
-the app: macOS — right-click the app and choose Open; Windows — click
-\"More info\" then \"Run anyway\" on the SmartScreen prompt."
+The macOS build is signed and notarized and opens with a normal double-click.
+The Windows builds aren't code-signed yet, so Windows may show a SmartScreen
+prompt on first launch — click \"More info\" then \"Run anyway\"."
 fi
 
 echo
