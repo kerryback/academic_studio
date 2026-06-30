@@ -25,8 +25,24 @@
         "command": "academicStudio.about",
         "title": "About Academic Studio",
         "category": "Help"
+      },
+      {
+        "command": "academicStudio.newLatexFile",
+        "title": "LaTeX File",
+        "category": "LaTeX"
+      },
+      {
+        "command": "academicStudio.newMarkdownFile",
+        "title": "Markdown File",
+        "category": "Markdown"
       }
     ],
+    "menus": {
+      "file/newFile": [
+        { "command": "academicStudio.newLatexFile", "group": "file" },
+        { "command": "academicStudio.newMarkdownFile", "group": "file" }
+      ]
+    },
     "configurationDefaults": {
       "files.autoSave": "afterDelay",
       "files.autoSaveDelay": 1000,
@@ -50,10 +66,35 @@
       "python.languageServer": "None",
       "python.terminal.activateEnvironment": true,
       "basedpyright.analysis.typeCheckingMode": "standard",
+      "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click",
+      "latex-workshop.view.autoFocus.enabled": true,
+      "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/*.aux": true,
+        "**/*.bbl": true,
+        "**/*.blg": true,
+        "**/*.bcf": true,
+        "**/*.run.xml": true,
+        "**/*.fdb_latexmk": true,
+        "**/*.fls": true,
+        "**/*.synctex.gz": true,
+        "**/*.toc": true,
+        "**/*.lof": true,
+        "**/*.lot": true,
+        "**/*.out": true,
+        "**/*.nav": true,
+        "**/*.snm": true,
+        "**/*.vrb": true
+      },
       "[markdown]": { "editor.wordWrap": "on", "editor.quickSuggestions": { "comments": "off", "strings": "off", "other": "off" } },
       "[quarto]": { "editor.wordWrap": "on" },
-      "[latex]": { "editor.wordWrap": "on" },
-      "[tex]": { "editor.wordWrap": "on" },
+      "[latex]": { "editor.wordWrap": "on", "editor.wrappingIndent": "indent" },
+      "[tex]": { "editor.wordWrap": "on", "editor.wrappingIndent": "indent" },
       "[bibtex]": { "editor.wordWrap": "on" }
     }
   }

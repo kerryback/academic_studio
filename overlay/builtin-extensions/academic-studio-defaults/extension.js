@@ -37,6 +37,19 @@ function activate(context) {
 		})
 	);
 
+	// File → New File entries for file types that don't add their own. Each opens
+	// a new untitled document in the right language (save it with the extension).
+	context.subscriptions.push(
+		vscode.commands.registerCommand('academicStudio.newLatexFile', async () => {
+			const doc = await vscode.workspace.openTextDocument({ language: 'latex' });
+			await vscode.window.showTextDocument(doc);
+		}),
+		vscode.commands.registerCommand('academicStudio.newMarkdownFile', async () => {
+			const doc = await vscode.workspace.openTextDocument({ language: 'markdown' });
+			await vscode.window.showTextDocument(doc);
+		})
+	);
+
 	openClaudeOnStartup();
 }
 
