@@ -96,7 +96,6 @@ function openClaudeOnStartup() {
 }
 
 // ---- Check for Updates -----------------------------------------------------
-const RELEASES_PAGE = 'https://github.com/kerryback/academic_studio/releases';
 const LATEST_API = 'https://api.github.com/repos/kerryback/academic_studio/releases/latest';
 const DL_BASE = 'https://github.com/kerryback/academic_studio/releases/latest/download/';
 
@@ -149,10 +148,8 @@ async function checkForUpdates(context) {
 	} catch (e) { /* offline or blocked — fall through */ }
 
 	if (!latest) {
-		const pick = await vscode.window.showWarningMessage(
-			'Could not check for updates (no connection?). Open the Releases page?',
-			'Open Releases page');
-		if (pick) open(RELEASES_PAGE);
+		vscode.window.showWarningMessage(
+			'Could not check for updates. Please check your connection and try again.');
 		return;
 	}
 
@@ -164,12 +161,14 @@ async function checkForUpdates(context) {
 
 	const have = current ? `you have ${current}` : 'a newer version is available';
 	const dl = platformInstallerUrl();
-	const buttons = dl ? ['Download', 'Open Releases page'] : ['Open Releases page'];
+	if (!dl) {
+		vscode.window.showInformationMessage(`Academic Studio ${latest} is available (${have}).`);
+		return;
+	}
 	const pick = await vscode.window.showInformationMessage(
 		`Academic Studio ${latest} is available (${have}). Download it, then run the installer to update.`,
-		...buttons);
-	if (pick === 'Download' && dl) open(dl);
-	else if (pick === 'Open Releases page') open(RELEASES_PAGE);
+		'Download');
+	if (pick === 'Download') open(dl);
 }
 
 function deactivate() {}
