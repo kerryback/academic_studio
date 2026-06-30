@@ -82,6 +82,13 @@ More detail:
 Base versions: VS Code `1.121.0` (pinned in `build-engine/upstream/stable.json`),
 Node `22.22.1`.
 
+## Maintainer
+
+Academic Studio is created and maintained by Kerry Back
+([github.com/kerryback](https://github.com/kerryback)), J. Howard Creekmore
+Professor of Finance at the Jones Graduate School of Business and Professor of
+Economics at Rice University. It is a free, non-commercial, open-source project.
+
 ## License
 
 MIT, following [VSCodium](https://github.com/VSCodium/vscodium) and
