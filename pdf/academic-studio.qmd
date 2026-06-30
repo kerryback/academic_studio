@@ -1,0 +1,52 @@
+---
+title: Academic Studio 
+format: pdf
+---
+
+
+![](academic-studio.png){fig-align="center" width=1.2in}
+
+[Jump to Downloads &darr;](#downloads)
+
+Academic Studio is designed for business professionals, students, faculty, and researchers. It bundles Claude Code with other useful tools.  A paid Anthropic account (Pro, Max, or API) is required to use Claude Code.  Enter `/login` in the prompt window on first use to connect to your Anthropic account.
+
+Academic Studio consists of a modified version of VS Code, the unmodified Claude Code CLI, and the VS Code extension for Claude Code.  It provides one-click installation of software and extensions needed to make full use of Claude Code and VS Code - Python, JavaScript, Office skills and related Python libraries, etc.  The motivation for creating it is to provide the power of Claude Code in VS Code in an easy-to-install and easy-to-use form.
+
+## Features
+
+- Claude Code, built in. The Claude Code assistant opens automatically and works alongside your files. Ask it to write, analyze data, build slides, or create documents.
+- Real documents. Claude can create and edit Excel, Word, PowerPoint, PDF, LaTeX, and Quarto files using its document skills.
+- A workspace, not just a chat. Open a folder and your files and your conversation history live with that project --- your work persists.
+- Use - or have Claude use - Python, Jupyter, R, LaTeX, and Quarto for data analysis, statistics, typesetting, and HTML document creation.
+- Easy setup. Help → Run Setup… lets you pick your profile (Faculty or Students & Professionals), and install supporting programs (Python, Node.js, Quarto, R, TinyTeX) and extensions with one click.
+- Key Python libraries - the scientific stack and libraries to create Office documents - are installed with Python.
+- Shares skills, connectors, and CLAUDE.md files with Claude Code CLI and the Code mode of Claude Desktop; conversation history is shared with the CLI.
+
+## Compared to Claude Desktop
+
+Academic Studio runs Claude Code like the Code mode of Claude Desktop, which is the same as Claude Code CLI. The principal benefits of Academic Studio relative to Claude Desktop Code for business professionals and students are the integrated file browser and file viewer/editor and the easy installation of Python and Node.js.
+
+For faculty and researchers, the one-click run/build for LaTeX, Quarto, Python, R, and Jupyter are the most important benefits.
+
+## Compared to VS Code
+
+Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it will feel familiar if you've used VS Code --- but it's simplified for getting work done:
+
+- Menus and toolbars are trimmed, with beginner-friendly defaults.
+- Claude Code is built-in and opens on startup.
+- Easy installation of important tools --- Office Viewer, PDF, Quarto, Python, Jupyter, R, LaTeX, Node.js.
+
+
+## Downloads {#downloads}
+
+
+
+- [macOS (Apple Silicon)](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-macos-arm64.dmg) --- M1 or later; does not run on older Macs with Intel chips
+- [Windows](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-x64-Setup.exe) --- for most Windows computers (x64)
+- [Windows ARM](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-arm64-Setup.exe) --- Microsoft Surface Pro and other Windows ARM computers
+
+All releases are available on the [GitHub Releases page](https://github.com/kerryback/academic_studio/releases).
+
+------------------------------------------------------------------------
+
+![](affiliation.png){fig-align="center" width=450}
