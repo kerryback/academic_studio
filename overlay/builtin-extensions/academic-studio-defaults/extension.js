@@ -7,6 +7,7 @@
 //    opening unconditionally stacked a duplicate Claude tab on every restart.
 const vscode = require('vscode');
 const path = require('path');
+const fs = require('fs');
 
 function activate(context) {
 	context.subscriptions.push(
@@ -27,14 +28,11 @@ function activate(context) {
 		})
 	);
 
-	// Help → Check for Updates… opens the GitHub Releases page in the browser.
-	// (The in-app auto-updater isn't wired to an Academic Studio feed yet, so we
-	// point users at the releases page to grab a newer installer.)
+	// Help → Check for Updates… compares the installed version against the latest
+	// GitHub release and offers a direct download of the right installer.
 	context.subscriptions.push(
-		vscode.commands.registerCommand('academicStudio.checkForUpdates', async () => {
-			await vscode.env.openExternal(
-				vscode.Uri.parse('https://github.com/kerryback/academic_studio/releases'));
-		})
+		vscode.commands.registerCommand('academicStudio.checkForUpdates',
+			() => checkForUpdates(context))
 	);
 
 	// File → New File entries for file types that don't add their own. Each opens
@@ -95,6 +93,83 @@ function openClaudeOnStartup() {
 		tick();
 	};
 	setTimeout(poll, STEP);
+}
+
+// ---- Check for Updates -----------------------------------------------------
+const RELEASES_PAGE = 'https://github.com/kerryback/academic_studio/releases';
+const LATEST_API = 'https://api.github.com/repos/kerryback/academic_studio/releases/latest';
+const DL_BASE = 'https://github.com/kerryback/academic_studio/releases/latest/download/';
+
+// Installed product version (academicStudioVersion lives in the app's
+// product.json, two levels up from this built-in extension's folder).
+function currentVersion(context) {
+	try {
+		const pj = JSON.parse(fs.readFileSync(
+			path.join(context.extensionPath, '..', '..', 'product.json'), 'utf8'));
+		return pj.academicStudioVersion || null;
+	} catch (e) { return null; }
+}
+
+// The version-less "latest" installer URL for the machine running the app.
+function platformInstallerUrl() {
+	if (process.platform === 'darwin') {
+		return DL_BASE + 'Academic-Studio-macos-arm64.dmg';
+	}
+	if (process.platform === 'win32') {
+		return DL_BASE + (process.arch === 'arm64'
+			? 'Academic-Studio-windows-arm64-Setup.exe'
+			: 'Academic-Studio-windows-x64-Setup.exe');
+	}
+	return null;
+}
+
+// Numeric dotted-version compare: returns >0 if a is newer than b.
+function cmpVersions(a, b) {
+	const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+	const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+	for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+		const d = (pa[i] || 0) - (pb[i] || 0);
+		if (d) return d;
+	}
+	return 0;
+}
+
+async function checkForUpdates(context) {
+	const open = (u) => vscode.env.openExternal(vscode.Uri.parse(u));
+
+	let latest = null;
+	try {
+		const res = await fetch(LATEST_API, {
+			headers: { 'User-Agent': 'Academic-Studio', 'Accept': 'application/vnd.github+json' },
+		});
+		if (res && res.ok) {
+			const data = await res.json();
+			latest = (data.tag_name || '').replace(/^v/i, '') || null;
+		}
+	} catch (e) { /* offline or blocked — fall through */ }
+
+	if (!latest) {
+		const pick = await vscode.window.showWarningMessage(
+			'Could not check for updates (no connection?). Open the Releases page?',
+			'Open Releases page');
+		if (pick) open(RELEASES_PAGE);
+		return;
+	}
+
+	const current = currentVersion(context);
+	if (current && cmpVersions(latest, current) <= 0) {
+		vscode.window.showInformationMessage(`Academic Studio ${current} is the latest version.`);
+		return;
+	}
+
+	const have = current ? `you have ${current}` : 'a newer version is available';
+	const dl = platformInstallerUrl();
+	const buttons = dl ? ['Download', 'Open Releases page'] : ['Open Releases page'];
+	const pick = await vscode.window.showInformationMessage(
+		`Academic Studio ${latest} is available (${have}). Download it, then run the installer to update.`,
+		...buttons);
+	if (pick === 'Download' && dl) open(dl);
+	else if (pick === 'Open Releases page') open(RELEASES_PAGE);
 }
 
 function deactivate() {}
