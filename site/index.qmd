@@ -6,8 +6,9 @@
 
 [Jump to Downloads &darr;](#downloads)
 
-Academic Studio is a bundle of Claude Code, a file browser, a file viewer and editor, and a simplified install method for supporting software.  It is designed for business professionals, students, faculty, and researchers. A paid Anthropic account (Pro, Max, or API) is required to use Claude Code.  Enter `/login` in the prompt window on first use to connect to your Anthropic account.
+Academic Studio is designed for business professionals, students, faculty, and researchers. It bundles Claude Code with other useful tools.  A paid Anthropic account (Pro, Max, or API) is required to use Claude Code.  Enter `/login` in the prompt window on first use to connect to your Anthropic account.
 
+Academic Studio consists of a modified version of VS Code, the unmodified Claude Code CLI, and the VS Code extension for Claude Code.  It provides one-click installation of software and extensions needed to make full use of Claude Code and VS Code - Python, JavaScript, Office skills and related Python libraries, etc.  The motivation for creating it is to provide the power of Claude Code in VS Code in an easy-to-install and easy-to-use form.
 
 ## Features
 
