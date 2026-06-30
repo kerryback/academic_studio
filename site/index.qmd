@@ -44,3 +44,7 @@ Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it 
 - [Windows ARM](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-arm64-Setup.exe) --- Microsoft Surface Pro and other Windows ARM computers
 
 All releases are available on the [GitHub Releases page](https://github.com/kerryback/academic_studio/releases).
+
+------------------------------------------------------------------------
+
+![](affiliation.png){fig-align="center" width=450}
