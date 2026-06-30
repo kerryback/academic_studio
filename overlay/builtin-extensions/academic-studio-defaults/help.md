@@ -95,6 +95,12 @@ different build recipe, ask Claude, or pick a recipe from the TeX panel.
 Everything is configurable in Settings (see below), or Claude can edit the
 configuration files for you.
 
+TinyTeX is a minimal version of TeXLive.  You will need to install packages.  The 
+current behavior is a bit irritating.  It errors out at the first uninstalled package
+you attempt to use.  When you install that and build again, it errors out at the next
+uninstalled package.  To avoid this, ask Claude to install the packages a file uses 
+before you attempt the first build.
+
 Some recommendations from [paulwintz.com/latex-in-vscode](https://paulwintz.com/latex-in-vscode/) have
 been built in: auxiliary files are suppressed in the file browser view, and
 double-clicking in a PDF moves your cursor to the corresponding line in the .tex
