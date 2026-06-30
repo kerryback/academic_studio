@@ -8,17 +8,18 @@
 
 Academic Studio is designed for business professionals, students, faculty, and researchers. It bundles Claude Code with other useful tools.  A paid Anthropic account (Pro, Max, or API) is required to use Claude Code.  Enter `/login` in the prompt window on first use to connect to your Anthropic account.
 
-Academic Studio consists of a modified version of VS Code, the unmodified Claude Code CLI, and the VS Code extension for Claude Code.  It provides one-click installation of software and extensions needed to make full use of Claude Code and VS Code - Python, JavaScript, Office skills and related Python libraries, etc.  The motivation for creating it is to provide the power of Claude Code in VS Code in an easy-to-install and easy-to-use form.
+Academic Studio consists of a modified version of VS Code, the unmodified Claude Code CLI, and the VS Code extension for Claude Code.  It provides one-click installation of software and extensions needed to make full use of Claude Code and VS Code --- Python, JavaScript, Office skills and related Python libraries, etc.  The motivation for creating it is to provide the power of Claude Code in VS Code in an easy-to-install and easy-to-use form.
 
 ## Features
 
 - Claude Code, built in. The Claude Code assistant opens automatically and works alongside your files. Ask it to write, analyze data, build slides, or create documents.
 - Real documents. Claude can create and edit Excel, Word, PowerPoint, PDF, LaTeX, and Quarto files using its document skills.
 - A workspace, not just a chat. Open a folder and your files and your conversation history live with that project --- your work persists.
-- Use - or have Claude use - Python, Jupyter, R, LaTeX, and Quarto for data analysis, statistics, typesetting, and HTML document creation.
+- Use --- or have Claude use --- Python, Jupyter, R, LaTeX, and Quarto for data analysis, statistics, typesetting, and HTML document creation.
 - Easy setup. Help → Run Setup… lets you pick your profile (Faculty or Students & Professionals), and install supporting programs (Python, Node.js, Quarto, R, TinyTeX) and extensions with one click.
 - Key Python libraries - the scientific stack and libraries to create Office documents - are installed with Python.
 - Shares skills, connectors, and CLAUDE.md files with Claude Code CLI and the Code mode of Claude Desktop; conversation history is shared with the CLI.
+- Help file (Help → Academic Studio Help) provides overviews of using LaTeX, Quarto, etc.
 
 ## Compared to Claude Desktop
 
