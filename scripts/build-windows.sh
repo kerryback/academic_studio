@@ -92,6 +92,9 @@ as_win_sign() {   # $@ = files to sign; no-op unless a cert is configured
   local st; st="$(as_find_signtool)"
   [ -n "$st" ] || { echo "WARN: signtool not found (install the Windows 10/11 SDK) — leaving files UNSIGNED."; return 0; }
   local ts="${AS_WIN_TIMESTAMP_URL:-http://timestamp.digicert.com}"
+  # Git Bash (MSYS) rewrites args that look like Unix paths when exec'ing a native
+  # .exe, mangling signtool's /fd /tr /td /sha1 flags so it errors "No file digest
+  # algorithm specified". Disable that conversion for the signtool call only.
   local f
   for f in "$@"; do
     [ -e "$f" ] || continue
