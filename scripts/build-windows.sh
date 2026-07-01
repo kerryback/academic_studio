@@ -96,7 +96,8 @@ as_win_sign() {   # $@ = files to sign; no-op unless a cert is configured
   for f in "$@"; do
     [ -e "$f" ] || continue
     echo "[sign] $f"
-    "$st" sign /fd SHA256 /tr "$ts" /td SHA256 "${cred[@]}" "$f" || echo "WARN: signing failed for $f"
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
+      "$st" sign /fd SHA256 /tr "$ts" /td SHA256 "${cred[@]}" "$f" || echo "WARN: signing failed for $f"
   done
 }
 if [ -z "${AS_WIN_CERT_FILE:-}${AS_WIN_CERT_SHA1:-}" ]; then
