@@ -12,6 +12,11 @@
   "contributes": {
     "commands": [
       {
+        "command": "academicStudio.openTour",
+        "title": "Tour of Academic Studio",
+        "category": "Help"
+      },
+      {
         "command": "academicStudio.openHelp",
         "title": "Academic Studio Help",
         "category": "Help"

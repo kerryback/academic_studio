@@ -18,6 +18,28 @@ function activate(context) {
 		})
 	);
 
+	// Help → Tour of Academic Studio (and Welcome page). Opens the bundled,
+	// self-contained reveal.js slide deck in an in-app webview. The HTML embeds
+	// all its images, fonts, and scripts, so no network or resource roots are
+	// needed; enableScripts lets reveal.js run.
+	context.subscriptions.push(
+		vscode.commands.registerCommand('academicStudio.openTour', async () => {
+			const panel = vscode.window.createWebviewPanel(
+				'academicStudioTour', 'Tour of Academic Studio',
+				vscode.ViewColumn.Active,
+				{ enableScripts: true, retainContextWhenHidden: true }
+			);
+			try {
+				panel.webview.html = fs.readFileSync(
+					path.join(context.extensionPath, 'tour.html'), 'utf8');
+			} catch (e) {
+				panel.webview.html = '<body style="font-family:sans-serif;padding:2em">'
+					+ 'Could not open the tour. You can view it online at '
+					+ '<a href="https://academic-studio.com/tour.html">academic-studio.com/tour.html</a>.</body>';
+			}
+		})
+	);
+
 	// Help → About Academic Studio. We use our own command id (rather than
 	// wiring the built-in workbench.action.showAboutDialog directly into the
 	// Help menu) because the native menu injects a "Check for Updates…" item

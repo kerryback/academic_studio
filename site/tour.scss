@@ -1,0 +1,75 @@
+/*-- scss:defaults --*/
+
+$brand:        #7a1420;   // deep icon red
+$brand-accent: #c0392b;   // brighter red used in charts
+
+$body-bg:        #ffffff;
+$body-color:     #22252a;
+$link-color:     $brand-accent;
+$selection-bg:   lighten($brand-accent, 35%);
+
+$presentation-heading-color:       $brand;
+$presentation-heading-font-weight: 600;
+$presentation-font-size-root:      30px;
+
+$presentation-slide-text-align: left;
+
+/*-- scss:rules --*/
+
+.reveal {
+  font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+.reveal h1, .reveal h2, .reveal h3 { letter-spacing: -0.01em; }
+
+.reveal .slides section { line-height: 1.35; }
+
+// Section-divider slides (dark background) get light text.
+.reveal section[data-background-color="#7a1420"] h1,
+.reveal section[data-background-color="#7a1420"] h2 { color: #ffffff; }
+
+// The big product screenshots: rounded corners, thin border, soft shadow.
+.reveal img.shot {
+  border: 1px solid #d5d8dd;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.16);
+  max-height: 66vh;
+  width: 100%;
+  object-fit: contain;
+}
+
+.reveal img.shotmini {
+  border: 1px solid #d5d8dd;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+  width: 100%;
+  max-height: 40vh;
+  object-fit: contain;
+}
+
+.reveal .small, .reveal ol.small, .reveal .small li { font-size: 0.8em; }
+
+// Little inline pill for activity-bar icon names.
+.reveal .ico {
+  display: inline-block;
+  width: 1.5em; text-align: center;
+  margin-right: 0.15em;
+}
+
+.reveal kbd {
+  background: #f0f1f3;
+  border: 1px solid #c7cbd1;
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 0.05em 0.4em;
+  font-size: 0.85em;
+  color: #22252a;
+}
+
+.reveal .slide-number { background: transparent; color: #b3b6bb; }
+
+.reveal .footer { color: #b3b6bb; font-size: 0.6em; }
+
+// Tighten column figures so captions sit close.
+.reveal .columns { align-items: center; }
+.reveal .column p { margin: 0.35em 0; }

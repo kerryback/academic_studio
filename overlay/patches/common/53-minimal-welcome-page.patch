@@ -1,7 +1,7 @@
 diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts b/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
 --- a/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
 +++ b/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStartedContent.ts
-@@ -150,9 +150,31 @@
+@@ -150,9 +150,42 @@
  		description: localize('gettingStarted.openFolder.description', "Open a folder to start working"),
  		icon: Codicon.folderOpened,
 -		when: '!isWeb && !isMac',
@@ -11,6 +11,17 @@ diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/common/gettingStarte
  			command: 'command:workbench.action.files.openFolder',
  		}
  	},
++	{
++		id: 'academicStudioTour',
++		title: localize('gettingStarted.academicStudioTour.title', "Take the Tour..."),
++		description: localize('gettingStarted.academicStudioTour.description', "A quick, illustrated walkthrough --- no experience needed"),
++		icon: Codicon.rocket,
++		when: '!isWeb',
++		content: {
++			type: 'startEntry',
++			command: 'command:academicStudio.openTour',
++		}
++	},
 +	{
 +		id: 'academicStudioSetup',
 +		title: localize('gettingStarted.academicStudioSetup.title', "Run Setup..."),
@@ -41,7 +52,7 @@ diff --git a/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStart
  			});
  
 -		startList.setEntries(parsedStartEntries);
-+		startList.setEntries(parsedStartEntries.filter(e => ['topLevelOpenFolder', 'academicStudioSetup', 'academicStudioHelp'].includes(e.id)));
++		startList.setEntries(parsedStartEntries.filter(e => ['topLevelOpenFolder', 'academicStudioTour', 'academicStudioSetup', 'academicStudioHelp'].includes(e.id)));
  		startList.onDidChange(() => this.registerDispatchListeners());
  		return startList;
 @@ -1261,5 +1261,5 @@

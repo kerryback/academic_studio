@@ -1,10 +1,19 @@
 diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/browser/actions/helpActions.ts
 --- a/src/vs/workbench/browser/actions/helpActions.ts
 +++ b/src/vs/workbench/browser/actions/helpActions.ts
-@@ -406,3 +406,39 @@
+@@ -406,3 +406,48 @@
  registerAction2(GetStartedWithAccessibilityFeatures);
- 
+
  registerAction2(AskVSCodeCopilot);
++
++MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {
++	command: {
++		id: 'academicStudio.openTour',
++		title: localize('academicStudioTour', "Tour of Academic Studio"),
++	},
++	group: '1_welcome',
++	order: 1,
++});
 +
 +MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {
 +	command: {
