@@ -107,6 +107,28 @@ Everything in Academic Studio happens inside a project folder. Choose one with F
 :::
 :::
 
+## Viewing spreadsheets, PDFs, and data {.smaller}
+
+You do not need Excel or a PDF reader --- Academic Studio previews these files for you.
+
+::: {.columns}
+::: {.column width="33%"}
+![](tour-img/csv.png){.shotmini}
+
+Spreadsheets and CSV data open as a clean table.
+:::
+::: {.column width="33%"}
+![](tour-img/pdf.png){.shotmini}
+
+PDFs open in a built-in reader.
+:::
+::: {.column width="33%"}
+![](tour-img/office-xlsx.png){.shotmini}
+
+Excel files show every sheet.
+:::
+:::
+
 # Claude, your assistant {background-color="#7a1420"}
 
 ## Claude is ready the moment you open the app
@@ -238,28 +260,6 @@ A skill is a ready-made ability Claude draws on by itself. Academic Studio bundl
 
 You never turn these on or call them by name --- when you ask for a spreadsheet or a deck, Claude picks the right skill on its own. Double-click the finished file in the Explorer to preview it, as shown here.
 
-## Viewing spreadsheets, PDFs, and data {.smaller}
-
-You do not need Excel or a PDF reader --- Academic Studio previews these files for you.
-
-::: {.columns}
-::: {.column width="33%"}
-![](tour-img/csv.png){.shotmini}
-
-Spreadsheets and CSV data open as a clean table.
-:::
-::: {.column width="33%"}
-![](tour-img/pdf.png){.shotmini}
-
-PDFs open in a built-in reader.
-:::
-::: {.column width="33%"}
-![](tour-img/office-xlsx.png){.shotmini}
-
-Excel files show every sheet.
-:::
-:::
-
 # Setup and help {background-color="#7a1420"}
 
 ## Run Setup: pick your profile, install the tools {.smaller}
@@ -291,7 +291,7 @@ The Help menu has:
 - Run Setup --- the setup screen from the last slide
 - Check for Updates --- downloads a newer version when one is out
 
-And of course, you can always just ask Claude how to do something.
+And of course, you can always just ask Claude how to do something. Tell Claude you are working in a version of VS Codium, and it will be better able to assist you.
 :::
 :::
 
