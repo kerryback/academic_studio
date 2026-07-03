@@ -4,11 +4,15 @@
 
 # Academic Studio
 
-[Take the Tour &rarr;](tour.html){.btn .btn-primary role="button"} &nbsp; 
+ 
 
 
-New to Academic Studio? The [Tour](tour.html) is a clickable, illustrated walkthrough --- assuming no prior experience with VS Code.
+New to Academic Studio? 
 
+[Take the Tour &rarr;](tour.html){.btn .btn-primary role="button"} &nbsp;  
+<br>
+
+---
 
 [Jump to Downloads &darr;](#downloads)
 
