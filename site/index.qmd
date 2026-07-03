@@ -4,9 +4,14 @@
 
 # Academic Studio
 
-[Take the Tour &rarr;](tour.html){.btn .btn-primary role="button"} &nbsp; [Jump to Downloads &darr;](#downloads)
+[Take the Tour &rarr;](tour.html){.btn .btn-primary role="button"} &nbsp; 
+
 
 New to Academic Studio? The [Tour](tour.html) is a clickable, illustrated walkthrough --- assuming no prior experience with VS Code.
+
+
+[Jump to Downloads &darr;](#downloads)
+
 
 Academic Studio is designed for business professionals, students, faculty, and researchers. It bundles Claude Code with other useful tools.  It is an easy-to-use and easy-to-install version of Claude Code in VS Code, which is a powerful framework for building things with AI.  A paid Anthropic account (Pro, Max, or API) is required to use Claude Code.  Enter `/login` in the prompt window on first use to connect to your Anthropic account.
 

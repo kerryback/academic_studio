@@ -180,33 +180,20 @@ When you do want it, the quickest way is the Command Palette: press <kbd>F1</kbd
 :::
 :::
 
-# Python and data {background-color="#7a1420"}
-
-## Write and run Python {.smaller}
-
-::: {.columns}
-::: {.column width="54%"}
-![](tour-img/editor-python.png){.shot}
-:::
-::: {.column width="46%"}
-Create a Python file (File → New File → Python File), write your code, and run it with the ▷ Run button at the top-right --- or ask Claude to write and run it for you.
-
-Python itself is installed for you by Help → Run Setup, so there is nothing to configure.
-:::
-:::
-
-## The output appears in the Terminal {.smaller}
+## The Terminal {.smaller}
 
 ::: {.columns}
 ::: {.column width="46%"}
-The Terminal is the panel at the bottom where a program's text output shows up. Open one any time with Terminal → New Terminal.
+A terminal is a place to type commands for your computer to run --- things like installing a program or checking a result.
 
-Here the script printed a revenue summary and saved a chart. You can type commands yourself, or let Claude run them and read the results.
+If you ever need to run a terminal command, open one with Terminal → New Terminal, then type the command and press Enter. Or, simplest of all, just ask Claude to run terminal commands for you --- it runs them and reads the results back.
 :::
 ::: {.column width="54%"}
 ![](tour-img/python-run.png){.shot}
 :::
 :::
+
+# Documents and data {background-color="#7a1420"}
 
 ## The Python libraries you get {.smaller}
 
@@ -231,34 +218,6 @@ This chart came from a few lines of Python reading a spreadsheet.
 :::
 
 You need not memorize these --- ask Claude to "analyze this spreadsheet" or "fit a regression," and it uses them for you.
-
-## Jupyter notebooks {.smaller}
-
-::: {.columns}
-::: {.column width="54%"}
-![](tour-img/jupyter.png){.shot}
-:::
-::: {.column width="46%"}
-A notebook mixes code, written notes, and results in one document --- charts and tables appear right under the code that made them.
-
-Create one with File → New File → Jupyter Notebook and run a cell with its ▷ play button. Notebooks are great for exploring data step by step, and for teaching. Claude can build and edit them too.
-:::
-:::
-
-# Documents and reports {background-color="#7a1420"}
-
-## Quarto: prose with live results {.smaller}
-
-::: {.columns}
-::: {.column width="46%"}
-A Quarto document (`.qmd`) mixes writing with code, so the numbers, tables, and charts in it come from code that runs when you render the document --- it never goes out of date.
-
-Use the Preview button to see it rendered. From one Quarto file you can produce a web page, a PDF, a Word document, a slide deck (like this one), or a whole website.
-:::
-::: {.column width="54%"}
-![](tour-img/quarto.png){.shot}
-:::
-:::
 
 ## Claude's installed skills {.smaller}
 
