@@ -7,7 +7,7 @@
  
 
 
-New to Academic Studio? 
+New to VS Code and Academic Studio? 
 
 [Take the Tour &rarr;](tour.html){.btn .btn-primary role="button"} &nbsp;  
 <br>
@@ -17,7 +17,7 @@ New to Academic Studio?
 [Jump to Downloads &darr;](#downloads)
 
 
-Academic Studio is designed for business professionals, students, faculty, and researchers. It bundles Claude Code with other useful tools.  It is an easy-to-use and easy-to-install version of Claude Code in VS Code, which is a powerful framework for building things with AI.  A paid Anthropic account (Pro, Max, or API) is required to use Claude Code.  Enter `/login` in the prompt window on first use to connect to your Anthropic account.
+Academic Studio is designed for business professionals, students, faculty, and researchers. It bundles Claude Code with other useful tools.  It is an easy-to-use and easy-to-install version of **Claude Code in VS Code**, which is a powerful framework for building things with AI.  A paid Anthropic account (Pro, Max, or API) is required to use Claude Code.  Enter `/login` in the prompt window on first use to connect to your Anthropic account.
 
 ## Features
 
