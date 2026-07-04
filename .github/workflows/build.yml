@@ -1,0 +1,114 @@
+name: Build (unsigned)
+
+# Build all three installers on GitHub's runners and upload them as workflow
+# ARTIFACTS (never published to a Release). You then download each artifact to
+# the right machine, sign it there, and publish with scripts/make-release.sh:
+#   - macOS arm64  -> this Mac (Developer ID + notarize)
+#   - Windows x64  -> Windows machine (signtool)
+#   - Windows arm64-> Windows machine (signtool)
+#
+# See the `academic-studio-release` skill for the full step-by-step.
+#
+# Run it by hand from the Actions tab, or:  gh workflow run build.yml
+# Version comes from academicStudioVersion in overlay/product.overrides.json, so
+# bump + commit that first if you're cutting a new version.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22.22.1'
+
+jobs:
+  # ---------------------------------------------------------------- macOS (arm64)
+  build-macos:
+    runs-on: macos-14   # Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.22.1' }
+      - name: Clone build engine (VSCodium)
+        run: |
+          git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
+          ( cd build-engine && git remote rename origin upstream )
+      - name: Build (unsigned .app + dmg)
+        run: SKIP_ASSETS=no bash scripts/build-macos.sh
+      # Ship the unsigned .app (not the dmg) so it can be signed + notarized on the
+      # Mac. ditto preserves the bundle's symlinks/xattrs, which a plain zip breaks.
+      - name: Archive unsigned .app
+        run: |
+          cd build-engine/VSCode-darwin-arm64
+          ditto -c -k --sequesterRsrc --keepParent "Academic Studio.app" \
+            "$GITHUB_WORKSPACE/AcademicStudio-macos-arm64-unsigned-app.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-unsigned-app
+          path: AcademicStudio-macos-arm64-unsigned-app.zip
+          if-no-files-found: error
+
+  # ------------------------------------------------------------- Windows x64
+  build-windows-x64:
+    runs-on: windows-latest
+    defaults:
+      run: { shell: bash }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable long paths
+        run: git config --global core.longpaths true
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.22.1' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install Inno Setup + 7-Zip + jq
+        shell: pwsh
+        run: choco install innosetup 7zip jq -y --no-progress
+      - name: Put Inno Setup + 7-Zip on PATH
+        run: |
+          echo "/c/Program Files (x86)/Inno Setup 6" >> "$GITHUB_PATH"
+          echo "/c/Program Files/7-Zip" >> "$GITHUB_PATH"
+      - name: Clone build engine (VSCodium)
+        run: |
+          git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
+          ( cd build-engine && git remote rename origin upstream )
+      - name: Build installer (x64, unsigned)
+        run: SKIP_ASSETS=no bash scripts/build-windows-x64.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64-unsigned
+          path: build-engine/assets/*.exe
+          if-no-files-found: error
+
+  # ------------------------------------------------------------- Windows ARM64
+  build-windows-arm64:
+    runs-on: windows-11-arm   # GitHub-hosted Windows-on-ARM runner
+    defaults:
+      run: { shell: bash }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable long paths
+        run: git config --global core.longpaths true
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.22.1' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install Inno Setup + 7-Zip + jq
+        shell: pwsh
+        run: choco install innosetup 7zip jq -y --no-progress
+      - name: Put Inno Setup + 7-Zip on PATH
+        run: |
+          echo "/c/Program Files (x86)/Inno Setup 6" >> "$GITHUB_PATH"
+          echo "/c/Program Files/7-Zip" >> "$GITHUB_PATH"
+      - name: Clone build engine (VSCodium)
+        run: |
+          git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
+          ( cd build-engine && git remote rename origin upstream )
+      - name: Build installer (arm64, unsigned)
+        run: SKIP_ASSETS=no bash scripts/build-windows-arm64.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64-unsigned
+          path: build-engine/assets/*.exe
+          if-no-files-found: error
