@@ -49,9 +49,55 @@ Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it 
 
 
 
-- [macOS (Apple Silicon)](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-macos-arm64.dmg) --- M1 or later; does not run on older Macs with Intel chips
-- [Windows](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-x64-Setup.exe) --- for most Windows computers (x64)
-- [Windows ARM](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-arm64-Setup.exe) --- Microsoft Surface Pro and other Windows ARM computers
+```{=html}
+<div id="as-downloads">
+  <p class="as-row">
+    <a class="as-dl" data-asset="Academic-Studio-macos-arm64.dmg"
+       href="https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-macos-arm64.dmg">macOS (Apple Silicon)</a>
+    <span class="as-desc">— M1 or later; does not run on older Macs with Intel chips</span>
+  </p>
+  <p class="as-row">
+    <a class="as-dl" data-asset="Academic-Studio-windows-x64-Setup.exe"
+       href="https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-x64-Setup.exe">Windows</a>
+    <span class="as-desc">— for most Windows computers (x64)</span>
+  </p>
+  <p class="as-row">
+    <a class="as-dl" data-asset="Academic-Studio-windows-arm64-Setup.exe"
+       href="https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-arm64-Setup.exe">Windows ARM</a>
+    <span class="as-desc">— Microsoft Surface Pro and other Windows ARM computers</span>
+  </p>
+</div>
+<style>
+  #as-downloads .as-row { margin: .45rem 0; }
+  #as-downloads .as-desc { color: #6c757d; }
+  #as-downloads .as-uc { font-style: italic; color: #8a6d3b; }
+  #as-downloads .as-uc::before { content: "🚧 "; font-style: normal; }
+</style>
+<script>
+  // Show a download link only when that installer is actually attached to the
+  // latest GitHub release; otherwise mark it "under construction". Fail open —
+  // if the API is unreachable or rate-limited, leave the plain links in place so
+  // a working download is never hidden.
+  (function () {
+    fetch("https://api.github.com/repos/kerryback/academic_studio/releases/latest",
+          { headers: { "Accept": "application/vnd.github+json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rel) {
+        if (!rel || !rel.assets) return;
+        var have = {};
+        rel.assets.forEach(function (a) { have[a.name] = true; });
+        document.querySelectorAll("#as-downloads .as-dl").forEach(function (el) {
+          if (have[el.getAttribute("data-asset")]) return;
+          var uc = document.createElement("span");
+          uc.className = "as-uc";
+          uc.textContent = el.textContent + " — under construction (coming soon)";
+          el.replaceWith(uc);
+        });
+      })
+      .catch(function () { /* offline / rate-limited — keep the links */ });
+  })();
+</script>
+```
 
 All releases are available on the [GitHub Releases page](https://github.com/kerryback/academic_studio/releases).
 
