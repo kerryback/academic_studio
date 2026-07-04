@@ -43,11 +43,13 @@ Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it 
 
 
 
-- [macOS (Apple Silicon)](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-macos-arm64.dmg) — M1 or later; does not run on older Macs with Intel chips
-- [Windows](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-x64-Setup.exe) — for most Windows computers (x64)
-- [Windows ARM](https://github.com/kerryback/academic_studio/releases/latest/download/Academic-Studio-windows-arm64-Setup.exe) — Microsoft Surface Pro and other Windows ARM computers
+Download Academic Studio from the **[Downloads page &rarr;](https://academic-studio.com/#downloads)**:
 
-All releases are available on the [GitHub Releases page](https://github.com/kerryback/academic_studio/releases).
+- macOS (Apple Silicon) — M1 or later; does not run on older Macs with Intel chips
+- Windows — for most Windows computers (x64)
+- Windows ARM — Microsoft Surface Pro and other Windows ARM computers
+
+All releases are also available on the [GitHub Releases page](https://github.com/kerryback/academic_studio/releases).
 
 ------------------------------------------------------------------------
 
