@@ -90,7 +90,7 @@ Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it 
           if (have[el.getAttribute("data-asset")]) return;
           var uc = document.createElement("span");
           uc.className = "as-uc";
-          uc.textContent = el.textContent + " — under construction (coming soon)";
+          uc.textContent = el.textContent + " — New Version Being Built";
           el.replaceWith(uc);
         });
       })
