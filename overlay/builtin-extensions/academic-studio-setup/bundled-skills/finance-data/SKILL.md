@@ -135,14 +135,18 @@ How to prompt:
 
 ## Dependencies
 
-The recipes use `pandas`, `yfinance`, `pandas-datareader`, `requests`, and
-`finnhub-python`. The scientific Python stack ships with Academic Studio, but
-`yfinance`, `pandas-datareader`, and `finnhub-python` may need installing. If an
-import fails, install into the active environment (e.g.
-`pip install yfinance pandas-datareader finnhub-python`) and retry.
+Assume these libraries are already installed — they ship with this skill as the
+Academic Studio "Finance Data" package, so don't probe for them or run
+`pip install` up front; just import and use them:
 
-On modern macOS/Homebrew Python this `pip install` often fails with an
-`externally-managed-environment` error (PEP 668). Handle it by preferring an
-active virtual environment or conda env; if the user is content to install into
-the system Python, `pip install --user --break-system-packages <pkgs>` works.
-Pick the venv route when you can — it's cleaner and avoids touching system Python.
+- `pandas`
+- `yfinance`
+- `pandas-datareader`
+- `fredapi`
+- `finnhub-python` (imported as `finnhub`)
+- `requests`
+
+Only if an import genuinely fails at runtime, tell the user to install the
+Finance Data package from Help → Run Setup (or, as a fallback,
+`pip install yfinance pandas-datareader fredapi finnhub-python requests`) — then
+retry. Don't check preemptively.

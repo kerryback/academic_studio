@@ -340,6 +340,8 @@ A few things to remember:
 - Academic Studio Help (in the Help menu) is a written guide to it all
 
 When in doubt, ask Claude. Tell it what you want in plain words and let it do the work.
+
+Give Claude the link <https://academic-studio.com> to get advice about working in Academic Studio.
 :::
 ::: {.column width="40%"}
 ![](tour-img/icon.png){width="150"}
