@@ -259,6 +259,40 @@ A skill is a ready-made ability Claude draws on by itself. Academic Studio bundl
 
 You never turn these on or call them by name --- when you ask for a spreadsheet or a deck, Claude picks the right skill on its own. Double-click the finished file in the Explorer to preview it, as shown here.
 
+## Getting financial and economic data {.smaller}
+
+Ask for market or economic data in plain words, and Claude fetches it from free, authoritative sources and saves it as a spreadsheet --- ready to chart or analyze.
+
+::: {.columns}
+::: {.column width="50%"}
+Claude knows where to look:
+
+- Stock, ETF, and index prices --- Yahoo Finance
+- Economic series: inflation, GDP, unemployment, interest rates --- FRED
+- The daily Treasury yield curve
+- Company financials and SEC filings --- EDGAR
+- Asset-pricing factors --- the Ken French library
+- Quotes and company news --- FinnHub
+:::
+::: {.column width="50%"}
+::: {style="border:1px solid #d8b3ba; border-radius:8px; padding:0.7em 1em; background:#faf3f4;"}
+::: {.small}
+You: *Get Tesla's yearly net income from its SEC filings.*
+
+Claude: *I'll pull that from SEC EDGAR --- the official audited filings. Saved `data/tesla_net_income.csv` (17 years, 2009--2025).*
+:::
+:::
+
+::: {.small style="color:#9a9da2; margin-top:0.5em;"}
+It picks the source, confirms with you if there is a real choice, downloads the data, and hands you a `.csv`.
+:::
+:::
+:::
+
+This comes from the Finance Data additional package, which Run Setup installs for you --- checked by default, so for most people it is already there. It gives Claude both the know-how (which source, and how to fetch it) and the Python libraries the code needs.
+
+You never name a source or write code --- say "get Apple's daily prices since 2015" and Claude does the rest (a couple of sources use a free key it helps you set up). If a request ever reports Finance Data is missing, install it from Help → Run Setup.
+
 # Setup and help {background-color="#7a1420"}
 
 ## Run Setup: pick your profile, install the tools {.smaller}

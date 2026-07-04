@@ -161,6 +161,26 @@ const PROGRAMS = [
 			'rm -rf "$TMP"',
 		],
 	},
+	// Additional packages — Python library bundles layered on top of Python, shown
+	// in their own section. group 'packages' is on by default for both profiles.
+	// Detection is a single all-or-nothing import check, so a bundle of several
+	// libraries still reads as one honest installed/not-installed state.
+	{
+		id: 'finance-data', label: 'Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub)',
+		group: 'packages', prereq: 'python',
+		// Installed = both the Python libraries AND the finance-data skill are in
+		// place. The skill (copied by installFinanceSkill during install) is what
+		// teaches Claude which source to use and how; the libraries are what its
+		// generated code imports. They ship and install together as one item.
+		detect: process.platform === 'win32'
+			? 'python -c "import yfinance, pandas_datareader, fredapi, finnhub"'
+			: 'python3 -c "import yfinance, pandas_datareader, fredapi, finnhub" && test -f "$HOME/.claude/skills/finance-data/SKILL.md"',
+		manualUrl: '',
+		manualSteps: 'Open a terminal and run: pip install yfinance pandas-datareader fredapi finnhub-python requests',
+		installMac: [
+			'python3 -m pip install yfinance pandas-datareader fredapi finnhub-python requests',
+		],
+	},
 ];
 
 // Claude Code document skills installed silently on first run into the shared
@@ -198,14 +218,34 @@ function autoInstallClaudeSkills() {
 		})
 	);
 }
+
+// The finance-data skill is bundled *inside this extension* (under
+// bundled-skills/) and installed into the shared ~/.claude/skills/ as part of the
+// "Finance Data" Additional package — NOT on startup. The package installs the
+// Python libraries and this skill together, so Claude never has the skill without
+// the libraries its generated code imports. Called from runInstall when
+// finance-data is in the install plan; a plain file copy (works on any OS).
+function installFinanceSkill(context) {
+	try {
+		const from = path.join(context.extensionPath, 'bundled-skills', 'finance-data');
+		if (!fs.existsSync(path.join(from, 'SKILL.md'))) { return false; }
+		const to = path.join(claudeSkillsDir(), 'finance-data');
+		fs.mkdirSync(claudeSkillsDir(), { recursive: true });
+		fs.rmSync(to, { recursive: true, force: true });
+		fs.cpSync(from, to, { recursive: true });
+		return true;
+	} catch (_) { return false; }
+}
+
 // Extra detections that aren't installable items themselves (none currently —
 // node is now a full program above, used as decktape's prerequisite).
 const PREREQ_DETECT = {};
 
 function programPresetFor(audience) {
-	// common for everyone, + faculty group for Faculty. optin is off by default.
+	// common for everyone, + faculty group for Faculty, + packages (Additional
+	// packages) for everyone. optin is off by default.
 	return PROGRAMS.filter(p =>
-		p.group === 'common' || (audience === 'faculty' && p.group === 'faculty')
+		p.group === 'common' || p.group === 'packages' || (audience === 'faculty' && p.group === 'faculty')
 	).map(p => p.id);
 }
 
@@ -275,7 +315,7 @@ function shq(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'"; }
 
 // Resolve prereqs + ordering. Returns { ordered, skipped:[{id,reason}] }.
 function planInstall(selectedIds, detected) {
-	const ORDER = ['python', 'node', 'quarto', 'r', 'git', 'gh', 'tinytex', 'decktape', 'libreoffice'];
+	const ORDER = ['python', 'finance-data', 'node', 'quarto', 'r', 'git', 'gh', 'tinytex', 'decktape', 'libreoffice'];
 	const selected = new Set(selectedIds);
 	const skipped = [];
 	const ordered = [];
@@ -300,6 +340,11 @@ async function runInstall(context, panel, selectedIds, detected) {
 		postReport(panel, [], plan.skipped, detected);
 		return;
 	}
+	// The Finance Data package installs the libraries (below, in the terminal) and
+	// the finance-data skill (these files) together. Copy the skill now so it's in
+	// place; the item's detect check requires both the libraries and this skill.
+	if (plan.ordered.includes('finance-data')) { installFinanceSkill(context); }
+
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'as-install-'));
 	const scriptPath = path.join(dir, 'install.sh');
 	const resultsPath = path.join(dir, 'results.txt');
@@ -409,9 +454,10 @@ function renderHtml(audience, enabledExt) {
 	const extRows = CATALOG.map(c =>
 		`<label class="row"><input type="checkbox" class="ext" value="${c.id}" data-excludes="${c.excludes || ''}"> <span>${c.label}</span> <em class="status" data-for="${c.id}"></em></label>`
 	).join('\n');
-	const progRows = PROGRAMS.map(p =>
-		`<label class="row" data-id="${p.id}"><input type="checkbox" class="prog" value="${p.id}"> <span>${p.label}</span> <em class="status" data-for="${p.id}">checking…</em></label>`
-	).join('\n');
+	const rowFor = p =>
+		`<label class="row" data-id="${p.id}"><input type="checkbox" class="prog" value="${p.id}"> <span>${p.label}</span> <em class="status" data-for="${p.id}">checking…</em></label>`;
+	const progRows = PROGRAMS.filter(p => p.group !== 'packages').map(rowFor).join('\n');
+	const pkgRows = PROGRAMS.filter(p => p.group === 'packages').map(rowFor).join('\n');
 
 	return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -469,9 +515,16 @@ function renderHtml(audience, enabledExt) {
 		<legend>Supporting programs</legend>
 		<p class="note">Programs your computer needs for some features. Only missing ones are checked. Installing runs the official installer in a terminal — you may be asked for your Mac password.</p>
 		${progRows}
-		<p><button id="install">Install selected programs</button></p>
-		<div id="report"></div>
 	</fieldset>
+
+	<fieldset id="packages">
+		<legend>Additional packages</legend>
+		<p class="note">Optional Python add-ons for specific kinds of work. Checked ones install together with the programs above. Only missing ones are checked.</p>
+		${pkgRows}
+	</fieldset>
+
+	<p><button id="install">Install selected programs &amp; packages</button></p>
+	<div id="report"></div>
 
 <script>
 	const vscode = acquireVsCodeApi();
@@ -482,7 +535,7 @@ function renderHtml(audience, enabledExt) {
 	let detected = {};
 
 	function extPreset(aud) { return DATA.catalog.filter(c => c.group === 'common' || c.group === aud).map(c => c.id); }
-	function progPreset(aud) { return DATA.programs.filter(p => p.group === 'common' || (aud === 'faculty' && p.group === 'faculty')).map(p => p.id); }
+	function progPreset(aud) { return DATA.programs.filter(p => p.group === 'common' || p.group === 'packages' || (aud === 'faculty' && p.group === 'faculty')).map(p => p.id); }
 	function setExt(ids) { extBoxes.forEach(b => { b.checked = ids.indexOf(b.value) !== -1; }); }
 	function setProg(aud) {
 		const pre = progPreset(aud);
@@ -533,7 +586,12 @@ function renderHtml(audience, enabledExt) {
 		const banner = document.getElementById('topbanner');
 		if (!Object.keys(detected).length) { banner.style.display = 'none'; return; }
 		const aud = (radios.find(r => r.checked) || {}).value || 'student';
-		const missing = progPreset(aud).filter(id => !(detected[id] && detected[id].found));
+		// Banner is about supporting programs only; Additional packages have their
+		// own section and shouldn't be described as "programs" here.
+		const missing = progPreset(aud).filter(id => {
+			const p = DATA.programs.find(x => x.id === id);
+			return p && p.group !== 'packages' && !(detected[id] && detected[id].found);
+		});
 		banner.style.display = 'block';
 		if (missing.length) {
 			const labels = missing.map(id => (DATA.programs.find(p => p.id === id) || {}).label || id);
