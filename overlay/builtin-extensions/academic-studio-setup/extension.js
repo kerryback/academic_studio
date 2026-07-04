@@ -18,6 +18,9 @@ const path = require('path');
 
 const SETUP_DONE_KEY = 'academicStudio.setupCompleted';
 const SELECTION_KEY = 'academicStudio.selection';
+// The app version seen on the last launch. Used to notice an update and prompt
+// for newly-added recommended packages the user wouldn't otherwise know about.
+const VERSION_KEY = 'academicStudio.lastSeenVersion';
 
 // ---- bundled extensions catalog (enable/disable) ---------------------------
 //   group: common -> everyone, faculty -> Faculty, student -> Students & Pros.
@@ -167,7 +170,7 @@ const PROGRAMS = [
 	// libraries still reads as one honest installed/not-installed state.
 	{
 		id: 'finance-data', label: 'Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub)',
-		group: 'packages', prereq: 'python',
+		group: 'packages', prereq: 'python', addedIn: '0.3',
 		// Installed = both the Python libraries AND the finance-data skill are in
 		// place. The skill (copied by installFinanceSkill during install) is what
 		// teaches Claude which source to use and how; the libraries are what its
@@ -394,11 +397,77 @@ function postReport(panel, results, skipped, detected, timedOut) {
 	panel.webview.postMessage({ type: 'installReport', rows, detected, timedOut: !!timedOut });
 }
 
+// ---- update / new-package prompt -------------------------------------------
+// Installed product version, read from the app's product.json (two levels up
+// from this built-in extension, i.e. vscode/product.json).
+function currentVersion(context) {
+	try {
+		const pj = JSON.parse(fs.readFileSync(
+			path.join(context.extensionPath, '..', '..', 'product.json'), 'utf8'));
+		return pj.academicStudioVersion || null;
+	} catch (_) { return null; }
+}
+
+// Numeric dotted-version compare: >0 if a is newer than b.
+function cmpVersions(a, b) {
+	const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+	const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+	for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+		const d = (pa[i] || 0) - (pb[i] || 0);
+		if (d) return d;
+	}
+	return 0;
+}
+
+// Short display name for a program/package (the part before the em dash).
+function shortName(p) { return String(p.label || p.id).split('—')[0].trim(); }
+
+// After an update, packages added since the version the user last ran are things
+// they'd have no reason to know about. Open Run Setup (where they're pre-selected)
+// and say what's new, so nothing new sits uninstalled and undiscovered. A package
+// is flagged with `addedIn: "<version>"`; we treat an unknown last-seen version as
+// "before everything" so users upgrading from before this feature still get told.
+// Only prompt for ones actually missing, so a user who already installed a package
+// isn't nagged about it after a later update.
+async function promptNewPackages(context, lastSeen, current) {
+	const prev = lastSeen || '0';
+	const added = PROGRAMS.filter(p => p.addedIn && cmpVersions(p.addedIn, prev) > 0);
+	if (!added.length) { return; }
+
+	const missing = [];
+	for (const p of added) {
+		const r = await shellExec(p.detect);
+		if (!r.ok) { missing.push(p); }
+	}
+	if (!missing.length) { return; }
+
+	openSetupPanel(context);
+
+	const names = missing.map(shortName).join(', ');
+	const many = missing.length > 1;
+	vscode.window.showInformationMessage(
+		`Academic Studio ${current} adds ${names}. ${many ? 'They are' : 'It is'} pre-selected in `
+		+ `Run Setup — click "Install selected programs & packages" to install ${many ? 'them' : 'it'}.`,
+		'Open Run Setup'
+	).then(choice => { if (choice === 'Open Run Setup') { openSetupPanel(context); } });
+}
+
 // ---- panel -----------------------------------------------------------------
 function activate(context) {
 	const open = () => openSetupPanel(context);
 	context.subscriptions.push(vscode.commands.registerCommand('academicStudio.openSetup', open));
 	autoInstallClaudeSkills();
+
+	// First launch after an update: if this version added recommended packages the
+	// user hasn't seen, surface them. Record the version either way so we prompt
+	// once per update, not every launch. Delay slightly so the panel lands on top
+	// after the workbench (and Claude) finish restoring.
+	const current = currentVersion(context);
+	const lastSeen = context.globalState.get(VERSION_KEY);
+	if (current && current !== lastSeen) {
+		setTimeout(() => { promptNewPackages(context, lastSeen, current).catch(() => {}); }, 1500);
+		context.globalState.update(VERSION_KEY, current);
+	}
 }
 
 function openSetupPanel(context) {
