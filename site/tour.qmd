@@ -1,6 +1,5 @@
 ---
 title: "A Tour of Academic Studio"
-subtitle: "A first look, for people who have never used VS Code"
 format:
   revealjs:
     theme: [default, tour.scss]
