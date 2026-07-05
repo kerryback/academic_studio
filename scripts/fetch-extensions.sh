@@ -94,9 +94,11 @@ if [ "$MODE" = "pinned" ]; then
   [ -f "$MANIFEST" ] || { echo "missing $MANIFEST — run once without --pinned to create it, review, and commit."; exit 1; }
   echo "[fetch] target=$TARGET (pinned from overlay/extensions/builtin.$TARGET.json) -> $OUTDIR"
   fail=0
+  # tr -d '\r': jq on Windows (Git Bash) emits CRLF, which would leave a
+  # trailing \r on the last field and make every sha comparison fail.
   while IFS=$'\t' read -r folder version sha; do
     fetch_pinned_one "$folder" "$version" "$sha" || fail=1
-  done < <(jq -r '.builtInExtensions[] | [.name, .version, .sha256] | @tsv' "$MANIFEST")
+  done < <(jq -r '.builtInExtensions[] | [.name, .version, .sha256] | @tsv' "$MANIFEST" | tr -d '\r')
   [ "$fail" -eq 0 ] || { echo "[fetch] FAILED — one or more pinned extensions could not be fetched/verified."; exit 1; }
   echo "[fetch] pinned fetch complete ($(jq '.builtInExtensions | length' "$MANIFEST") extensions)"
   exit 0
