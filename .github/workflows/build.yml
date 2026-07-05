@@ -40,6 +40,10 @@ jobs:
       - name: Fetch bundled extensions (Open VSX)
         run: bash scripts/fetch-extensions.sh darwin-arm64
       - name: Build (unsigned .app + dmg)
+        env:
+          # @vscode/ripgrep downloads its prebuilt binary from GitHub during the
+          # build; unauthenticated requests get 403 rate-limited. Authenticate.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: SKIP_ASSETS=no bash scripts/build-macos.sh
       # Ship the unsigned .app (not the dmg) so it can be signed + notarized on the
       # Mac. ditto preserves the bundle's symlinks/xattrs, which a plain zip breaks.
@@ -95,6 +99,8 @@ jobs:
       - name: Fetch bundled extensions (Open VSX)
         run: bash scripts/fetch-extensions.sh win32-x64
       - name: Build installer (x64, unsigned)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # @vscode/ripgrep download (avoid 403 rate-limit)
         run: SKIP_ASSETS=no bash scripts/build-windows-x64.sh
       - uses: actions/upload-artifact@v4
         with:
@@ -140,6 +146,8 @@ jobs:
       - name: Fetch bundled extensions (Open VSX)
         run: bash scripts/fetch-extensions.sh win32-arm64
       - name: Build installer (arm64, unsigned)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # @vscode/ripgrep download (avoid 403 rate-limit)
         run: SKIP_ASSETS=no bash scripts/build-windows-arm64.sh
       - uses: actions/upload-artifact@v4
         with:
