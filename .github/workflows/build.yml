@@ -19,8 +19,12 @@ on:
 permissions:
   contents: read
 
+# Pinned versions — keep in sync with scripts/versions.sh. Bump VSCODIUM_REF
+# deliberately (it drags in a new VS Code version and new patch context; test a
+# local build first), never implicitly.
 env:
   NODE_VERSION: '22.22.1'
+  VSCODIUM_REF: 'eb5d6e23a9abe76460a22e41cccacf7a7d5fea96'
 
 jobs:
   # ---------------------------------------------------------------- macOS (arm64)
@@ -29,16 +33,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '22.22.1' }
-      - name: Clone build engine (VSCodium)
+        with: { node-version: "${{ env.NODE_VERSION }}" }
+      - name: Clone build engine (VSCodium, pinned)
         run: |
-          git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
-          ( cd build-engine && git remote rename origin upstream )
+          mkdir build-engine && cd build-engine
+          git init -q
+          git remote add upstream https://github.com/VSCodium/vscodium.git
+          git fetch --depth 1 upstream "$VSCODIUM_REF"
+          git checkout -q FETCH_HEAD
       # The bundled .vsix extensions are gitignored (regenerable); a fresh CI
-      # checkout has none, and the build only auto-fetches when the manifest is
-      # missing (it's committed). So fetch them explicitly.
-      - name: Fetch bundled extensions (Open VSX)
-        run: bash scripts/fetch-extensions.sh darwin-arm64
+      # checkout has none. --pinned downloads exactly the versions in the
+      # committed manifest and verifies their sha256, so CI builds are
+      # reproducible (never a silent "latest").
+      - name: Fetch bundled extensions (Open VSX, pinned)
+        run: bash scripts/fetch-extensions.sh darwin-arm64 --pinned
       - name: Build (unsigned .app + dmg)
         env:
           # @vscode/ripgrep downloads its prebuilt binary from GitHub during the
@@ -71,7 +79,7 @@ jobs:
       - name: Enable long paths
         run: git config --global core.longpaths true
       - uses: actions/setup-node@v4
-        with: { node-version: '22.22.1' }
+        with: { node-version: "${{ env.NODE_VERSION }}" }
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - name: Install Inno Setup + 7-Zip + jq + unzip
@@ -92,12 +100,15 @@ jobs:
           if (-not $vs) { Write-Error "No Visual Studio install found via vswhere"; exit 1 }
           "vs2022_install=$vs" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "vs2022_install=$vs"
-      - name: Clone build engine (VSCodium)
+      - name: Clone build engine (VSCodium, pinned)
         run: |
-          git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
-          ( cd build-engine && git remote rename origin upstream )
-      - name: Fetch bundled extensions (Open VSX)
-        run: bash scripts/fetch-extensions.sh win32-x64
+          mkdir build-engine && cd build-engine
+          git init -q
+          git remote add upstream https://github.com/VSCodium/vscodium.git
+          git fetch --depth 1 upstream "$VSCODIUM_REF"
+          git checkout -q FETCH_HEAD
+      - name: Fetch bundled extensions (Open VSX, pinned)
+        run: bash scripts/fetch-extensions.sh win32-x64 --pinned
       - name: Build installer (x64, unsigned)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # @vscode/ripgrep download (avoid 403 rate-limit)
@@ -118,7 +129,7 @@ jobs:
       - name: Enable long paths
         run: git config --global core.longpaths true
       - uses: actions/setup-node@v4
-        with: { node-version: '22.22.1' }
+        with: { node-version: "${{ env.NODE_VERSION }}" }
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - name: Install Inno Setup + 7-Zip + jq + unzip
@@ -139,12 +150,15 @@ jobs:
           if (-not $vs) { Write-Error "No Visual Studio install found via vswhere"; exit 1 }
           "vs2022_install=$vs" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "vs2022_install=$vs"
-      - name: Clone build engine (VSCodium)
+      - name: Clone build engine (VSCodium, pinned)
         run: |
-          git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
-          ( cd build-engine && git remote rename origin upstream )
-      - name: Fetch bundled extensions (Open VSX)
-        run: bash scripts/fetch-extensions.sh win32-arm64
+          mkdir build-engine && cd build-engine
+          git init -q
+          git remote add upstream https://github.com/VSCodium/vscodium.git
+          git fetch --depth 1 upstream "$VSCODIUM_REF"
+          git checkout -q FETCH_HEAD
+      - name: Fetch bundled extensions (Open VSX, pinned)
+        run: bash scripts/fetch-extensions.sh win32-arm64 --pinned
       - name: Build installer (arm64, unsigned)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # @vscode/ripgrep download (avoid 403 rate-limit)

@@ -15,39 +15,77 @@ The version comes from `academicStudioVersion` in
 `overlay/product.overrides.json`. The release tag is `v<version>` (e.g. `v0.1`).
 To cut a new version, bump that field, rebuild, and re-run `make-release.sh`.
 
-## Automated release with GitHub Actions (recommended)
+## The standard flow: CI build + local signing (recommended)
 
-`.github/workflows/release.yml` builds all three platforms on GitHub's hosted
-runners (macOS arm64, Windows x64, Windows ARM) and publishes them — so routine
-changes (e.g. editing `help.md` or bundling a new Claude Code version) become a
-Mac-only edit plus a tag push, with no need to touch the physical Windows
-machines.
+`.github/workflows/build.yml` (manual trigger: Actions tab, or
+`gh workflow run build.yml`) builds all three installers UNSIGNED on GitHub's
+hosted runners and uploads them as workflow ARTIFACTS — it does not publish a
+release. You then sign each artifact on the right machine and publish:
 
-To cut a release:
+1. Bump `academicStudioVersion` in `overlay/product.overrides.json`, commit,
+   push, and run the workflow.
+2. macOS: download the `macos-arm64-unsigned-app` artifact onto the Mac,
+   unzip into `build-engine/VSCode-darwin-arm64/`, then
+   `SIGN_ONLY=yes scripts/build-macos.sh` (signs + notarizes + repackages the
+   dmg) and `scripts/make-release.sh`.
+3. Windows: download the two `windows-*-unsigned` artifacts into
+   `build-engine/assets/` on the Windows machine, then
+   `scripts/sign-windows-installers.sh` and `scripts/make-release.sh`.
+
+The `academic-studio-release` skill walks through these steps end to end.
+`make-release.sh` verifies signatures before uploading and refuses unsigned
+artifacts (override with `ALLOW_UNSIGNED=1`).
+
+## Staging: test on every OS before going public
+
+To try the installers on different machines WITHOUT touching the public
+downloads, publish to a staging prerelease first:
+
 ```
-# 1) bump academicStudioVersion in overlay/product.overrides.json (e.g. 0.2),
-#    commit and push to main, then:
-git tag v0.2
-git push origin v0.2
+scripts/make-release.sh --staging     # per machine, same as a normal publish
 ```
-The workflow builds each platform, then a publish job runs `make-release.sh` to
-create the `v<version>` release with all installers + the version-less aliases.
-You can also trigger it by hand from the Actions tab (workflow_dispatch); it
-publishes to `v<academicStudioVersion>`.
 
-These CI builds are unsigned. Signing in CI needs repo secrets and a CI-friendly
-certificate (Apple notarization, Azure Trusted Signing, or SignPath). Certum's
-token/cloud signing isn't CI-friendly, so with Certum you'd still do a manual
-`SIGN_ONLY=yes` pass on a Windows machine (see docs/SIGNING.md).
+This creates the prerelease `staging-v<version>` and prints direct download
+URLs for the test machines. A prerelease never changes what
+`releases/latest/download/...` serves (the site's permanent links), and the
+in-app Check for Updates ignores prereleases too — so users see nothing new.
+It does appear on the GitHub Releases page badged "Pre-release"; that's the
+only public trace. Staging skips the signature gate by default
+(`ALLOW_UNSIGNED=0` to enforce it).
 
-The manual, per-machine steps below remain valid as a fallback (and for signing).
+When every platform checks out, publish the exact files you tested:
+
+```
+scripts/make-release.sh --promote     # once, from any machine
+```
+
+`--promote` downloads the staging assets and uploads them to the public
+`v<version>` release (no rebuild, no re-sign), then suggests deleting the
+staging prerelease.
+
+Signing entirely in CI would need repo secrets and a CI-friendly certificate
+(Apple notarization, Azure Trusted Signing, or SignPath). Certum's token/cloud
+signing isn't CI-friendly, so the Windows signing pass stays manual.
+
+Note: packages (Claude skills, Python library bundles, MCP connectors) do NOT
+require an app release at all — they ship from the online catalog. See
+`scripts/make-package.sh`: edit `packages/<id>/`, bump the version in
+`site/packages.json`, run the script, push.
+
+The manual, per-machine full-build steps below remain valid as a fallback.
 
 ## One-time setup per machine
 
-- Clone the repo, then create the gitignored build engine:
+- Clone the repo, then create the gitignored build engine at the PINNED
+  VSCodium commit (see `AS_VSCODIUM_REF` in `scripts/versions.sh` — keep local
+  machines and CI on the same ref):
   ```
-  git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
-  cd build-engine && git remote rename origin upstream && cd ..
+  mkdir build-engine && cd build-engine
+  git init
+  git remote add upstream https://github.com/VSCodium/vscodium.git
+  git fetch --depth 1 upstream <AS_VSCODIUM_REF from scripts/versions.sh>
+  git checkout FETCH_HEAD
+  cd ..
   ```
 - Install GitHub CLI and sign in: `gh auth login` (choose the web-browser option).
 - macOS prerequisites: Node 22.22.1 (nvm), jq. See `scripts/build-macos.sh`.

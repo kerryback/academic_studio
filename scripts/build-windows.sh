@@ -18,6 +18,8 @@ set -e
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENGINE="$ROOT/build-engine"
+# shellcheck disable=SC1091
+. "$ROOT/scripts/versions.sh"
 
 # --- preflight: required tools (fail clearly, not with a cryptic crash) ------
 missing=""
@@ -28,18 +30,18 @@ if [ -n "$missing" ]; then
   echo "ERROR: missing required tool(s):$missing"
   echo "Install them, reopen Git Bash, and re-run. See docs/WINDOWS-BUILD.md."
   echo "  jq:     winget install jqlang.jq"
-  echo "  node:   https://nodejs.org/dist/v22.22.1/  (need v22.22.1)"
+  echo "  node:   https://nodejs.org/dist/v${AS_NODE_VERSION}/  (need v${AS_NODE_VERSION})"
   echo "  python: install 3.11 and check 'Add to PATH'"
   exit 1
 fi
 # Node version: the build's native modules expect Node 22.x (the macOS build
-# pins 22.22.1 via nvm). A mismatched Node is the #1 cause of cryptic
+# pins $AS_NODE_VERSION via nvm). A mismatched Node is the #1 cause of cryptic
 # native-module build failures, so fail fast with a clear message instead.
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
-if [ "$NODE_MAJOR" != "22" ]; then
-  echo "ERROR: Node $(node --version 2>/dev/null) detected, but the build needs Node 22.x (22.22.1)."
-  echo "Install it from https://nodejs.org/dist/v22.22.1/ (or via nvm-windows:"
-  echo "  nvm install 22.22.1 && nvm use 22.22.1), reopen Git Bash, and re-run."
+if [ "$NODE_MAJOR" != "${AS_NODE_VERSION%%.*}" ]; then
+  echo "ERROR: Node $(node --version 2>/dev/null) detected, but the build needs Node ${AS_NODE_VERSION%%.*}.x (${AS_NODE_VERSION})."
+  echo "Install it from https://nodejs.org/dist/v${AS_NODE_VERSION}/ (or via nvm-windows:"
+  echo "  nvm install ${AS_NODE_VERSION} && nvm use ${AS_NODE_VERSION}), reopen Git Bash, and re-run."
   echo "See docs/WINDOWS-BUILD.md."
   exit 1
 fi
@@ -190,8 +192,13 @@ if [ "$SIGN_ONLY" = "yes" ]; then
 fi
 
 # --- fetch bundled extensions for this target -------------------------------
+# No manifest: resolve latest (first-ever run; commit the manifest it writes).
+# Manifest present: fetch the PINNED versions (fills a fresh clone's gitignored
+# vsix cache; cached files that already match their sha are skipped).
 if [ ! -f "$EXTDIR/builtin.${EXT_TARGET}.json" ]; then
   "$ROOT/scripts/fetch-extensions.sh" "$EXT_TARGET"
+else
+  "$ROOT/scripts/fetch-extensions.sh" "$EXT_TARGET" --pinned
 fi
 
 # --- inject overlay (branding + patches + icons) ----------------------------
@@ -200,13 +207,21 @@ fi
 cd "$ENGINE"
 
 # --- apply build-engine patches (npm platform fixes for Windows) -----------
+# Distinguish "already applied" (fine) from "does not apply" (the engine moved
+# under us — failing here beats a cryptic native-module error an hour in).
 BEPATCH="$ROOT/build-engine-npm-platform-fixes.patch"
 if [ -f "$BEPATCH" ]; then
   if git apply --check "$BEPATCH" 2>/dev/null; then
     echo "[patch] applying build-engine-npm-platform-fixes.patch"
     git apply "$BEPATCH"
+  elif git apply --check --reverse "$BEPATCH" 2>/dev/null; then
+    echo "[patch] build-engine-npm-platform-fixes.patch already applied"
   else
-    echo "[patch] build-engine-npm-platform-fixes.patch already applied or does not apply cleanly — skipping"
+    echo "ERROR: build-engine-npm-platform-fixes.patch no longer applies (and is not already applied)."
+    echo "  The VSCodium ref changed under it — regenerate the patch for the new"
+    echo "  VSCODIUM_REF (see BUILD-ENGINE-PATCHES.md), or set AS_SKIP_BEPATCH=1"
+    echo "  to build without it at your own risk."
+    [ "${AS_SKIP_BEPATCH:-0}" = "1" ] || exit 1
   fi
 fi
 

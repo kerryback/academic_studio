@@ -1,26 +1,45 @@
-// Academic Studio Setup — first-run audience picker, extension enablement, and
-// optional installation of supporting programs (Python, Quarto, R, TinyTeX,
-// decktape, GitHub CLI).
+// Academic Studio Setup — first-run audience picker, extension enablement,
+// installation of supporting programs (Python, Quarto, R, TinyTeX, decktape,
+// GitHub CLI), and catalog-driven "Additional packages".
 //
 // - Audience radio seeds an editable extension checklist; "Apply" enables the
 //   chosen extensions + disables the rest (academicStudio.setExtensionsEnablement,
 //   patch 52) and reloads.
 // - "Supporting programs" lists external tools with detected status; "Install
-//   selected programs" runs each tool's official installer in a visible terminal
-//   (continue-on-error) and reports what succeeded / failed with manual links.
+//   selected programs & packages" runs each tool's official installer in a
+//   visible terminal (continue-on-error) and reports what succeeded / failed
+//   with manual links.
+// - "Additional packages" come from an ONLINE CATALOG (packages.json on
+//   academic-studio.com, with a bundled snapshot as offline fallback), so new
+//   packages ship without an app release. A package is declarative data —
+//   pip libraries, an optional Claude skill tarball (sha256-verified), an
+//   optional MCP server config — never remote shell commands. On startup the
+//   catalog is checked and new/updated packages are offered once.
 //
 // Re-openable any time via the "Academic Studio Setup…" command.
 const vscode = require('vscode');
 const cp = require('child_process');
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
 const SETUP_DONE_KEY = 'academicStudio.setupCompleted';
 const SELECTION_KEY = 'academicStudio.selection';
-// The app version seen on the last launch. Used to notice an update and prompt
-// for newly-added recommended packages the user wouldn't otherwise know about.
-const VERSION_KEY = 'academicStudio.lastSeenVersion';
+// Package offers the user has already seen (array of "id@version"). A catalog
+// version bump makes a new key, so updated packages are offered again.
+const SEEN_PACKAGES_KEY = 'academicStudio.seenPackages';
+
+// Live package catalog. Served by GitHub Pages (site/packages.json in the repo);
+// NOT api.github.com, whose unauthenticated limit (60/hr/IP) breaks classrooms.
+const CATALOG_URL = 'https://academic-studio.com/packages.json';
+// A payload (skill tarball) may only come from hosts we publish to.
+const PAYLOAD_URL_ALLOW = [
+	'https://academic-studio.com/',
+	'https://www.academic-studio.com/',
+	'https://github.com/kerryback/',
+	'https://raw.githubusercontent.com/kerryback/',
+];
 
 // ---- bundled extensions catalog (enable/disable) ---------------------------
 //   group: common -> everyone, faculty -> Faculty, student -> Students & Pros.
@@ -49,6 +68,8 @@ function presetFor(audience) {
 }
 
 // ---- supporting programs catalog (detect + install) ------------------------
+// System programs stay baked in (they run official installers, often with
+// sudo). Only "Additional packages" come from the online catalog.
 //   detect: shell command; exit 0 => present (stdout/stderr => version)
 //   installMac: array of bash lines run inside a `( set -e … )` subshell
 //   group: common -> everyone, faculty -> Faculty, optin -> off by default
@@ -140,7 +161,9 @@ const PROGRAMS = [
 	},
 	{
 		id: 'decktape', label: 'decktape (HTML slides → PDF/PPTX)', group: 'optin', prereq: 'node',
-		detect: 'npx decktape version',
+		// NOT `npx decktape version`: when decktape is missing, npx tries to
+		// download and run it — slow, networked, and wrong exit semantics.
+		detect: process.platform === 'win32' ? 'where decktape' : 'command -v decktape',
 		manualUrl: 'https://github.com/astefanutti/decktape',
 		manualSteps: 'With Node.js installed, run: npm install -g decktape',
 		installMac: [
@@ -164,98 +187,271 @@ const PROGRAMS = [
 			'rm -rf "$TMP"',
 		],
 	},
-	// Additional packages — Python library bundles layered on top of Python, shown
-	// in their own section. group 'packages' is on by default for both profiles.
-	// Detection is a single all-or-nothing import check, so a bundle of several
-	// libraries still reads as one honest installed/not-installed state.
-	{
-		id: 'finance-data', label: 'Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub)',
-		group: 'packages', prereq: 'python', addedIn: '0.3',
-		// Installed = both the Python libraries AND the finance-data skill are in
-		// place. The skill (copied by installFinanceSkill during install) is what
-		// teaches Claude which source to use and how; the libraries are what its
-		// generated code imports. They ship and install together as one item.
-		detect: process.platform === 'win32'
-			? 'python -c "import yfinance, pandas_datareader, fredapi, finnhub"'
-			: 'python3 -c "import yfinance, pandas_datareader, fredapi, finnhub" && test -f "$HOME/.claude/skills/finance-data/SKILL.md"',
-		manualUrl: '',
-		manualSteps: 'Open a terminal and run: pip install yfinance pandas-datareader fredapi finnhub-python requests',
-		installMac: [
-			'python3 -m pip install yfinance pandas-datareader fredapi finnhub-python requests',
-		],
-		installWin: [
-			'python -m pip install yfinance pandas-datareader fredapi finnhub-python requests',
-		],
-	},
 ];
 
-// Claude Code document skills installed silently on first run into the shared
-// ~/.claude/skills/ (these are NOT active in the local CLI otherwise). macOS/
-// Linux only for now (bash + curl + tar).
-const CLAUDE_SKILLS = ['xlsx', 'docx', 'pptx', 'pdf', 'skill-creator'];
+// ---- small helpers ----------------------------------------------------------
+function firstLine(s) { return (s || '').split('\n')[0].trim(); }
+function shq(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'"; }   // bash single-quote
+function psq(s) { return "'" + String(s).replace(/'/g, "''") + "'"; }      // PowerShell single-quote
+function escHtml(s) {
+	return String(s).replace(/[&<>"']/g, ch => (
+		{ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+	));
+}
+function safeHttpsUrl(u) { return typeof u === 'string' && /^https:\/\//.test(u) ? u : ''; }
 
+// Installed product version, read from the app's product.json (two levels up
+// from this built-in extension, i.e. vscode/product.json).
+// NOTE: deliberately duplicated in academic-studio-defaults/extension.js —
+// built-in extensions are packaged as separate folders and cannot share a
+// module. Keep the two copies identical.
+function currentVersion(context) {
+	try {
+		const pj = JSON.parse(fs.readFileSync(
+			path.join(context.extensionPath, '..', '..', 'product.json'), 'utf8'));
+		return pj.academicStudioVersion || null;
+	} catch (_) { return null; }
+}
+
+// Numeric dotted-version compare: >0 if a is newer than b. (Duplicated in
+// academic-studio-defaults — see note on currentVersion.)
+function cmpVersions(a, b) {
+	const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+	const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+	for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+		const d = (pa[i] || 0) - (pb[i] || 0);
+		if (d) return d;
+	}
+	return 0;
+}
+
+// Short display name for a program/package (the part before the em dash).
+function shortName(p) { return String(p.label || p.id).split('—')[0].trim(); }
+
+function httpGet(url, timeoutMs) {
+	const ctl = new AbortController();
+	const t = setTimeout(() => ctl.abort(), timeoutMs || 15000);
+	return fetch(url, { signal: ctl.signal, headers: { 'User-Agent': 'Academic-Studio' } })
+		.finally(() => clearTimeout(t));
+}
+
+// ---- package catalog ---------------------------------------------------------
+// A package is DATA the app acts on — never remote shell. Schema per entry:
+//   id            kebab-case identifier (required)
+//   label         display label (required)
+//   version       positive integer; bump to re-offer updates (required)
+//   minAppVersion oldest app that understands the entry (optional)
+//   prereq        a PROGRAMS id that must be present/selected first (optional)
+//   pip           pip package names to install (optional)
+//   pipImports    module names for the import detection check (optional)
+//   skill         { name, url, sha256 } Claude skill tarball (optional)
+//   mcp           { name, config } MCP server for ~/.claude.json (optional)
+//   manualUrl / manualSteps   fallback instructions (optional)
+const RE_PKG_ID = /^[a-z0-9][a-z0-9-]*$/;
+const RE_PIP_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const RE_PY_MODULE = /^[A-Za-z_][A-Za-z0-9_.]*$/;
+const RE_SHA256 = /^[0-9a-f]{64}$/;
+const RE_MCP_NAME = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
+
+function payloadUrlAllowed(u) {
+	return typeof u === 'string' && PAYLOAD_URL_ALLOW.some(p => u.startsWith(p));
+}
+
+// Strict validation: a malformed or tampered catalog entry is dropped, never
+// "best-effort" installed. Every string that reaches a shell or the filesystem
+// is pattern-checked here.
+function validPackage(p) {
+	if (!p || typeof p !== 'object') { return false; }
+	if (typeof p.id !== 'string' || !RE_PKG_ID.test(p.id)) { return false; }
+	if (typeof p.label !== 'string' || !p.label.trim()) { return false; }
+	if (!Number.isInteger(p.version) || p.version < 1) { return false; }
+	if (p.prereq !== undefined && !PROGRAMS.some(x => x.id === p.prereq)) { return false; }
+	if (p.pip !== undefined && !(Array.isArray(p.pip) && p.pip.every(n => typeof n === 'string' && RE_PIP_NAME.test(n)))) { return false; }
+	if (p.pipImports !== undefined && !(Array.isArray(p.pipImports) && p.pipImports.every(n => typeof n === 'string' && RE_PY_MODULE.test(n)))) { return false; }
+	if (p.skill !== undefined) {
+		const s = p.skill;
+		if (!s || typeof s !== 'object') { return false; }
+		if (typeof s.name !== 'string' || !RE_PKG_ID.test(s.name)) { return false; }
+		if (!payloadUrlAllowed(s.url)) { return false; }
+		if (typeof s.sha256 !== 'string' || !RE_SHA256.test(s.sha256)) { return false; }
+	}
+	if (p.mcp !== undefined) {
+		const m = p.mcp;
+		if (!m || typeof m !== 'object') { return false; }
+		if (typeof m.name !== 'string' || !RE_MCP_NAME.test(m.name)) { return false; }
+		if (!m.config || typeof m.config !== 'object') { return false; }
+	}
+	return true;
+}
+
+function parseCatalog(raw, appVersion) {
+	let data;
+	try { data = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (_) { return null; }
+	if (!data || !Array.isArray(data.packages)) { return null; }
+	return data.packages
+		.filter(validPackage)
+		.filter(p => !p.minAppVersion || !appVersion || cmpVersions(p.minAppVersion, appVersion) <= 0);
+}
+
+// Fetch the live catalog; fall back to the snapshot bundled with the app so the
+// panel still lists known packages offline. Result: { packages, live }.
+async function loadPackageCatalog(context) {
+	const appVersion = currentVersion(context);
+	try {
+		const res = await httpGet(CATALOG_URL, 8000);
+		if (res && res.ok) {
+			const pkgs = parseCatalog(await res.text(), appVersion);
+			if (pkgs) { return { packages: pkgs, live: true }; }
+		}
+	} catch (_) { /* offline or blocked — fall through to snapshot */ }
+	try {
+		const snap = fs.readFileSync(path.join(context.extensionPath, 'packages.snapshot.json'), 'utf8');
+		const pkgs = parseCatalog(snap, appVersion);
+		if (pkgs) { return { packages: pkgs, live: false }; }
+	} catch (_) { /* no snapshot */ }
+	return { packages: [], live: false };
+}
+
+// ---- skill payloads ----------------------------------------------------------
 function claudeSkillsDir() { return path.join(os.homedir(), '.claude', 'skills'); }
+const SKILL_MARKER = '.academic-studio-package.json';
+
+// The catalog version of an installed skill. A skill installed by an old app
+// build (no marker) reads as 0, so the first catalog version re-offers it —
+// which delivers the newest files, exactly what we want.
+function installedSkillVersion(skillName) {
+	const dir = path.join(claudeSkillsDir(), skillName);
+	try {
+		if (!fs.existsSync(path.join(dir, 'SKILL.md'))) { return -1; }   // not installed
+		const m = JSON.parse(fs.readFileSync(path.join(dir, SKILL_MARKER), 'utf8'));
+		return Number.isInteger(m.version) ? m.version : 0;
+	} catch (_) { return 0; }   // installed, version unknown (legacy)
+}
+
+// Download → sha256-verify → untar → copy into ~/.claude/skills/<name>.
+// tar ships with macOS and with Windows 10 1803+ (bsdtar in System32).
+async function installPackageSkill(pkg) {
+	const skill = pkg.skill;
+	if (!skill) { return { ok: true }; }
+	let buf;
+	try {
+		const res = await httpGet(skill.url, 60000);
+		if (!res || !res.ok) { return { ok: false, error: 'download failed (' + (res ? res.status : 'no response') + ')' }; }
+		buf = Buffer.from(await res.arrayBuffer());
+	} catch (_) { return { ok: false, error: 'download failed (offline?)' }; }
+	const sha = crypto.createHash('sha256').update(buf).digest('hex');
+	if (sha !== skill.sha256) { return { ok: false, error: 'checksum mismatch — refusing to install' }; }
+
+	const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'as-skill-'));
+	try {
+		const tarball = path.join(tmp, 'skill.tar.gz');
+		fs.writeFileSync(tarball, buf);
+		const extractDir = path.join(tmp, 'x');
+		fs.mkdirSync(extractDir);
+		await new Promise((resolve, reject) => {
+			cp.execFile('tar', ['-xzf', tarball, '-C', extractDir], { timeout: 60000 },
+				(err) => err ? reject(err) : resolve());
+		});
+		// Accept both layouts: files at the archive root, or one top-level folder.
+		let src = extractDir;
+		if (!fs.existsSync(path.join(src, 'SKILL.md'))) {
+			const sub = fs.readdirSync(src).map(n => path.join(src, n))
+				.find(d => { try { return fs.existsSync(path.join(d, 'SKILL.md')); } catch (_) { return false; } });
+			if (!sub) { return { ok: false, error: 'archive has no SKILL.md' }; }
+			src = sub;
+		}
+		const to = path.join(claudeSkillsDir(), skill.name);
+		fs.mkdirSync(claudeSkillsDir(), { recursive: true });
+		fs.rmSync(to, { recursive: true, force: true });
+		fs.cpSync(src, to, { recursive: true });
+		fs.writeFileSync(path.join(to, SKILL_MARKER),
+			JSON.stringify({ id: pkg.id, version: pkg.version }, null, 2));
+		return { ok: true };
+	} catch (e) {
+		return { ok: false, error: 'could not unpack skill (' + (e && e.message ? e.message : e) + ')' };
+	} finally {
+		try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_) { /* best effort */ }
+	}
+}
+
+// ---- MCP connectors ----------------------------------------------------------
+// Claude Code's user-scope MCP servers live in ~/.claude.json under mcpServers.
+function mcpConfigPath() { return path.join(os.homedir(), '.claude.json'); }
+
+function mcpInstalled(pkg) {
+	if (!pkg.mcp) { return true; }
+	try {
+		const cfg = JSON.parse(fs.readFileSync(mcpConfigPath(), 'utf8'));
+		return !!(cfg.mcpServers && cfg.mcpServers[pkg.mcp.name]);
+	} catch (_) { return false; }
+}
+
+function installMcpServer(pkg) {
+	if (!pkg.mcp) { return { ok: true }; }
+	try {
+		const file = mcpConfigPath();
+		let cfg = {};
+		if (fs.existsSync(file)) {
+			cfg = JSON.parse(fs.readFileSync(file, 'utf8'));   // parse failure -> catch: never clobber
+			fs.copyFileSync(file, file + '.academic-studio-backup');
+		}
+		if (!cfg.mcpServers || typeof cfg.mcpServers !== 'object') { cfg.mcpServers = {}; }
+		cfg.mcpServers[pkg.mcp.name] = pkg.mcp.config;
+		fs.writeFileSync(file, JSON.stringify(cfg, null, 2));
+		return { ok: true };
+	} catch (e) {
+		return { ok: false, error: 'could not update ~/.claude.json (' + (e && e.message ? e.message : e) + ')' };
+	}
+}
+
+// ---- Claude Code document skills (startup, silent) ---------------------------
+// Installed into the shared ~/.claude/skills/ on first run. Cross-platform now:
+// plain HTTPS download + tar (present on macOS and Windows 10 1803+).
+const CLAUDE_SKILLS = ['xlsx', 'docx', 'pptx', 'pdf', 'skill-creator'];
+const CLAUDE_SKILLS_TARBALL = 'https://github.com/anthropics/skills/archive/refs/heads/main.tar.gz';
+
 function allClaudeSkillsPresent() {
 	return CLAUDE_SKILLS.every(s => {
 		try { return fs.existsSync(path.join(claudeSkillsDir(), s, 'SKILL.md')); } catch (_) { return false; }
 	});
 }
 
-function autoInstallClaudeSkills() {
-	if (process.platform === 'win32') { return; }
+async function autoInstallClaudeSkills() {
 	if (allClaudeSkillsPresent()) { return; }
-	const script = [
-		'set -e',
-		'mkdir -p "$HOME/.claude/skills"',
-		'TMP=$(mktemp -d)',
-		'curl -fsSL -L https://github.com/anthropics/skills/archive/refs/heads/main.tar.gz | tar xz -C "$TMP"',
-		'for s in ' + CLAUDE_SKILLS.join(' ') + '; do rm -rf "$HOME/.claude/skills/$s"; cp -R "$TMP/skills-main/skills/$s" "$HOME/.claude/skills/$s"; done',
-		'rm -rf "$TMP"',
-	].join('\n');
-	vscode.window.withProgress(
+	await vscode.window.withProgress(
 		{ location: vscode.ProgressLocation.Notification, title: 'Academic Studio: installing Claude Code document skills…' },
-		() => new Promise((resolve) => {
-			cp.execFile('/bin/bash', ['-lc', script], { timeout: 180000 }, (err) => {
-				if (err && !allClaudeSkillsPresent()) {
-					vscode.window.showWarningMessage('Could not install Claude Code document skills automatically; reload the window to retry.');
+		async () => {
+			try {
+				const res = await httpGet(CLAUDE_SKILLS_TARBALL, 120000);
+				if (!res || !res.ok) { throw new Error('download failed'); }
+				const buf = Buffer.from(await res.arrayBuffer());
+				const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'as-claude-skills-'));
+				try {
+					const tarball = path.join(tmp, 'skills.tar.gz');
+					fs.writeFileSync(tarball, buf);
+					await new Promise((resolve, reject) => {
+						cp.execFile('tar', ['-xzf', tarball, '-C', tmp], { timeout: 120000 },
+							(err) => err ? reject(err) : resolve());
+					});
+					fs.mkdirSync(claudeSkillsDir(), { recursive: true });
+					for (const s of CLAUDE_SKILLS) {
+						const from = path.join(tmp, 'skills-main', 'skills', s);
+						if (!fs.existsSync(path.join(from, 'SKILL.md'))) { continue; }
+						const to = path.join(claudeSkillsDir(), s);
+						fs.rmSync(to, { recursive: true, force: true });
+						fs.cpSync(from, to, { recursive: true });
+					}
+				} finally {
+					try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_) { /* best effort */ }
 				}
-				resolve();
-			});
-		})
-	);
+			} catch (_) { /* fall through to the presence check */ }
+			if (!allClaudeSkillsPresent()) {
+				vscode.window.showWarningMessage('Could not install Claude Code document skills automatically; reload the window to retry.');
+			}
+		});
 }
 
-// The finance-data skill is bundled *inside this extension* (under
-// bundled-skills/) and installed into the shared ~/.claude/skills/ as part of the
-// "Finance Data" Additional package — NOT on startup. The package installs the
-// Python libraries and this skill together, so Claude never has the skill without
-// the libraries its generated code imports. Called from runInstall when
-// finance-data is in the install plan; a plain file copy (works on any OS).
-function installFinanceSkill(context) {
-	try {
-		const from = path.join(context.extensionPath, 'bundled-skills', 'finance-data');
-		if (!fs.existsSync(path.join(from, 'SKILL.md'))) { return false; }
-		const to = path.join(claudeSkillsDir(), 'finance-data');
-		fs.mkdirSync(claudeSkillsDir(), { recursive: true });
-		fs.rmSync(to, { recursive: true, force: true });
-		fs.cpSync(from, to, { recursive: true });
-		return true;
-	} catch (_) { return false; }
-}
-
-// Extra detections that aren't installable items themselves (none currently —
-// node is now a full program above, used as decktape's prerequisite).
-const PREREQ_DETECT = {};
-
-function programPresetFor(audience) {
-	// common for everyone, + faculty group for Faculty, + packages (Additional
-	// packages) for everyone. optin is off by default.
-	return PROGRAMS.filter(p =>
-		p.group === 'common' || p.group === 'packages' || (audience === 'faculty' && p.group === 'faculty')
-	).map(p => p.id);
-}
-
-// ---- detection -------------------------------------------------------------
+// ---- detection ---------------------------------------------------------------
 function shellExec(command) {
 	// On macOS, run through a login shell so the user's full PATH (Homebrew,
 	// /usr/local, pyenv, etc.) is visible — GUI apps otherwise get a minimal PATH.
@@ -270,55 +466,126 @@ function shellExec(command) {
 		});
 	});
 }
-// Keep old name as alias so nothing else breaks
-const loginShellExec = shellExec;
 
-async function detectPrograms() {
+// Import-check command for a package's Python libraries.
+function pipImportsDetect(pkg) {
+	const py = process.platform === 'win32' ? 'python' : 'python3';
+	const mods = pkg.pipImports || [];
+	if (!mods.length) { return null; }
+	return py + ' -c "import ' + mods.join(', ') + '"';
+}
+
+async function detectPackage(pkg) {
+	let libsOk = true;
+	const cmd = pipImportsDetect(pkg);
+	if (cmd) { libsOk = (await shellExec(cmd)).ok; }
+	const skillOk = !pkg.skill || installedSkillVersion(pkg.skill.name) >= pkg.version;
+	const mcpOk = mcpInstalled(pkg);
+	const found = libsOk && skillOk && mcpOk;
+	return { found, version: found ? 'v' + pkg.version : '' };
+}
+
+// Detect all programs and packages IN PARALLEL — serially this took up to
+// 8 s × items with the panel stuck on "checking…".
+async function detectAll(packages) {
+	const progEntries = PROGRAMS.map(async p => {
+		const r = await shellExec(p.detect);
+		return [p.id, { found: r.ok, version: r.ok ? firstLine(r.out) : '' }];
+	});
+	const pkgEntries = (packages || []).map(async p => [p.id, await detectPackage(p)]);
+	const entries = await Promise.all(progEntries.concat(pkgEntries));
 	const result = {};
-	for (const p of PROGRAMS) {
-		const r = await loginShellExec(p.detect);
-		result[p.id] = { found: r.ok, version: r.ok ? firstLine(r.out) : '' };
-	}
-	for (const id of Object.keys(PREREQ_DETECT)) {
-		const r = await loginShellExec(PREREQ_DETECT[id]);
-		result[id] = { found: r.ok, version: r.ok ? firstLine(r.out) : '' };
-	}
+	for (const [id, st] of entries) { result[id] = st; }
 	return result;
 }
 
-function firstLine(s) { return (s || '').split('\n')[0].trim(); }
+// ---- install planning ----------------------------------------------------------
+// Items = baked-in programs + catalog packages, unified for ordering/report.
+function allItems(packages) {
+	return PROGRAMS.map(p => ({ kind: 'program', ...p }))
+		.concat((packages || []).map(p => ({ kind: 'package', ...p })));
+}
 
-// ---- install flow ----------------------------------------------------------
-function buildInstallScript(orderedIds, resultsPath) {
+// Dependency-ordered plan. Every selected id is accounted for: it lands in
+// `ordered` or in `skipped` with a reason — nothing is silently dropped.
+function planInstall(selectedIds, detected, packages) {
+	const items = allItems(packages);
+	const byId = new Map(items.map(i => [i.id, i]));
+	const selected = new Set(selectedIds);
+	const skipped = [];
+	const ordered = [];
+	const placed = new Set();
+
+	for (const id of selected) {
+		if (!byId.has(id)) { skipped.push({ id, reason: 'unknown item' }); }
+	}
+	// Topological placement over the prereq edges; declared order is the tiebreak.
+	let progress = true;
+	while (progress) {
+		progress = false;
+		for (const item of items) {
+			if (!selected.has(item.id) || placed.has(item.id)) { continue; }
+			if (item.prereq) {
+				const haveAlready = detected[item.prereq] && detected[item.prereq].found;
+				const selectedToo = selected.has(item.prereq) && byId.has(item.prereq);
+				if (!haveAlready && !selectedToo) {
+					placed.add(item.id);
+					skipped.push({ id: item.id, reason: 'needs ' + item.prereq + ' first' });
+					progress = true;
+					continue;
+				}
+				if (selectedToo && !haveAlready && !ordered.includes(item.prereq)) { continue; } // wait for prereq placement
+			}
+			placed.add(item.id);
+			ordered.push(item.id);
+			progress = true;
+		}
+	}
+	for (const item of items) {   // anything left = unplaceable dependency chain
+		if (selected.has(item.id) && !placed.has(item.id)) {
+			skipped.push({ id: item.id, reason: 'dependency could not be resolved' });
+		}
+	}
+	return { ordered, skipped };
+}
+
+// Terminal-run install commands for one item on this platform, or null if the
+// platform has no automatic installer (→ manual link).
+function commandsFor(item) {
 	const isWin = process.platform === 'win32';
-	// In the bash script, use forward slashes for the results path on Windows.
-	const safeResults = isWin ? resultsPath.replace(/\\/g, '/') : resultsPath;
+	if (item.kind === 'package') {
+		const cmds = [];
+		if (item.pip && item.pip.length) {
+			cmds.push((isWin ? 'python' : 'python3') + ' -m pip install ' + item.pip.join(' '));
+		}
+		return cmds.length ? cmds : [];   // skill/mcp are handled in-process
+	}
+	const cmds = isWin ? item.installWin : item.installMac;
+	return (cmds && cmds.length) ? cmds : null;
+}
+
+// ---- install scripts (generated from the plan) --------------------------------
+function buildInstallScriptBash(items, resultsPath) {
 	const lines = [
 		'#!/bin/bash',
 		'set +e',
+		'export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"',
+		'R=' + shq(resultsPath),
+		': > "$R"',
+		'echo "Academic Studio — installing selected programs and packages."',
 	];
-	if (!isWin) {
-		lines.push('export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"');
-	}
-	lines.push('R=' + shq(safeResults));
-	lines.push(': > "$R"');
-	lines.push('echo "Academic Studio — installing selected programs."');
-	if (!isWin) {
+	if (items.some(i => i.kind === 'program')) {
 		lines.push('echo "You may be prompted for your Mac password (needed by system installers)."');
 		lines.push('echo');
 		lines.push('sudo -v');
 	}
 	lines.push('');
-	for (const id of orderedIds) {
-		const p = PROGRAMS.find(x => x.id === id);
-		if (!p) { continue; }
-		const cmds = isWin ? p.installWin : p.installMac;
-		if (!cmds || !cmds.length) { continue; }
-		lines.push('echo "=== Installing ' + p.label + ' ==="');
+	for (const item of items) {
+		lines.push('printf \'=== Installing %s ===\\n\' ' + shq(item.label));
 		lines.push('( set -e');
-		for (const l of cmds) { lines.push('  ' + l); }
+		for (const l of item.cmds) { lines.push('  ' + l); }
 		lines.push(')');
-		lines.push('if [ $? -eq 0 ]; then echo "RESULT ' + id + ' ok" >> "$R"; else echo "RESULT ' + id + ' fail" >> "$R"; fi');
+		lines.push('if [ $? -eq 0 ]; then echo "RESULT ' + item.id + ' ok" >> "$R"; else echo "RESULT ' + item.id + ' fail" >> "$R"; fi');
 		lines.push('echo');
 	}
 	lines.push('echo "DONE" >> "$R"');
@@ -326,61 +593,101 @@ function buildInstallScript(orderedIds, resultsPath) {
 	return lines.join('\n') + '\n';
 }
 
-function shq(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'"; }
-
-// Resolve prereqs + ordering. Returns { ordered, skipped:[{id,reason}] }.
-function planInstall(selectedIds, detected) {
-	const ORDER = ['python', 'finance-data', 'node', 'quarto', 'r', 'git', 'gh', 'tinytex', 'decktape', 'libreoffice'];
-	const selected = new Set(selectedIds);
-	const skipped = [];
-	const ordered = [];
-	for (const id of ORDER) {
-		if (!selected.has(id)) { continue; }
-		const p = PROGRAMS.find(x => x.id === id);
-		if (p && p.prereq) {
-			const have = (detected[p.prereq] && detected[p.prereq].found) || selected.has(p.prereq);
-			if (!have) {
-				skipped.push({ id, reason: 'needs ' + p.prereq + ' first' });
-				continue;
-			}
+function buildInstallScriptPS(items, resultsPath) {
+	const lines = [
+		"$ErrorActionPreference = 'Continue'",
+		'$R = ' + psq(resultsPath),
+		'Set-Content -Path $R -Value $null',
+		"Write-Host 'Academic Studio - installing selected programs and packages.'",
+		"Write-Host ''",
+	];
+	for (const item of items) {
+		lines.push('Write-Host (' + psq('=== Installing ' + item.label + ' ===') + ')');
+		lines.push('$ok = $true');
+		for (const l of item.cmds) {
+			lines.push(l);
+			lines.push('if ($LASTEXITCODE -ne 0) { $ok = $false }');
 		}
-		ordered.push(id);
+		lines.push('if ($ok) { Add-Content -Path $R -Value ' + psq('RESULT ' + item.id + ' ok')
+			+ ' } else { Add-Content -Path $R -Value ' + psq('RESULT ' + item.id + ' fail') + ' }');
+		lines.push("Write-Host ''");
 	}
-	return { ordered, skipped };
+	lines.push("Add-Content -Path $R -Value 'DONE'");
+	lines.push("Write-Host 'All done - you can close this terminal.'");
+	return lines.join('\r\n') + '\r\n';
 }
 
-async function runInstall(context, panel, selectedIds, detected) {
-	const plan = planInstall(selectedIds, detected);
-	if (!plan.ordered.length) {
-		postReport(panel, [], plan.skipped, detected);
-		return;
-	}
-	// The Finance Data package installs the libraries (below, in the terminal) and
-	// the finance-data skill (these files) together. Copy the skill now so it's in
-	// place; the item's detect check requires both the libraries and this skill.
-	if (plan.ordered.includes('finance-data')) { installFinanceSkill(context); }
+function parseResults(text, ids) {
+	const status = {};
+	(text || '').split('\n').forEach(line => {
+		const m = line.trim().match(/^RESULT (\S+) (ok|fail)$/);
+		if (m) { status[m[1]] = m[2]; }
+	});
+	return ids.map(id => ({ id, status: status[id] || 'fail' }));
+}
 
+// ---- install flow --------------------------------------------------------------
+// reporter(rows, detected, timedOut) — the panel posts to the webview; the
+// startup notification path summarizes in a message instead.
+async function runInstall(context, selectedIds, detected, packages, reporter) {
+	const plan = planInstall(selectedIds, detected, packages);
+	const items = allItems(packages);
+	const byId = new Map(items.map(i => [i.id, i]));
+	const preFailed = [];   // {id, reason}
+	const runnable = [];    // {id, kind, label, cmds}
+
+	for (const id of plan.ordered) {
+		const item = byId.get(id);
+		const cmds = commandsFor(item);
+		if (cmds === null) {
+			plan.skipped.push({ id, reason: 'no automatic installer for this platform — use the manual link' });
+			continue;
+		}
+		// Packages: skill download + MCP config happen in-process, before the
+		// terminal runs pip. A failure fails the whole package (atomic install).
+		if (item.kind === 'package') {
+			const s = await installPackageSkill(item);
+			if (!s.ok) { preFailed.push({ id, reason: s.error }); continue; }
+			const m = installMcpServer(item);
+			if (!m.ok) { preFailed.push({ id, reason: m.error }); continue; }
+			if (!cmds.length) { preFailed.push({ id, reason: null, forcedOk: true }); continue; }   // nothing to run in terminal
+		}
+		runnable.push({ id, kind: item.kind, label: item.label, cmds });
+	}
+
+	const finish = async (terminalResults, timedOut) => {
+		const results = terminalResults
+			.concat(preFailed.map(f => ({ id: f.id, status: f.forcedOk ? 'ok' : 'fail', reason: f.reason })));
+		const redetect = await detectAll(packages);
+		reporter(reportRows(results, plan.skipped, packages), redetect, timedOut);
+	};
+
+	if (!runnable.length) { await finish([], false); return; }
+
+	const isWin = process.platform === 'win32';
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'as-install-'));
-	const scriptPath = path.join(dir, 'install.sh');
 	const resultsPath = path.join(dir, 'results.txt');
-	fs.writeFileSync(scriptPath, buildInstallScript(plan.ordered, resultsPath), { mode: 0o755 });
+	const scriptPath = path.join(dir, isWin ? 'install.ps1' : 'install.sh');
+	fs.writeFileSync(scriptPath,
+		isWin ? buildInstallScriptPS(runnable, resultsPath) : buildInstallScriptBash(runnable, resultsPath),
+		{ mode: 0o755 });
 
 	const term = vscode.window.createTerminal('Academic Studio — Install');
 	term.show(true);
-	// On Windows the terminal is PowerShell; bash interprets backslash paths
-	// as escape sequences, so convert to forward slashes.
-	const safePath = process.platform === 'win32' ? scriptPath.replace(/\\/g, '/') : scriptPath;
-	term.sendText('bash ' + shq(safePath));
+	// -File + double quotes works whether the terminal is PowerShell or cmd;
+	// -ExecutionPolicy Bypass sidesteps the client-default Restricted policy.
+	term.sendText(isWin
+		? 'powershell -NoProfile -ExecutionPolicy Bypass -File "' + scriptPath + '"'
+		: 'bash ' + shq(scriptPath));
 
 	// Poll the results file until DONE (or timeout ~45 min for big downloads).
 	const deadline = Date.now() + 45 * 60 * 1000;
 	const tick = async () => {
 		let text = '';
 		try { text = fs.readFileSync(resultsPath, 'utf8'); } catch (_) { /* not yet */ }
-		if (text.indexOf('DONE') !== -1 || Date.now() > deadline) {
-			const results = parseResults(text, plan.ordered);
-			const redetect = await detectPrograms();
-			postReport(panel, results, plan.skipped, redetect, Date.now() > deadline && text.indexOf('DONE') === -1);
+		const timedOut = Date.now() > deadline && text.indexOf('DONE') === -1;
+		if (text.indexOf('DONE') !== -1 || timedOut) {
+			await finish(parseResults(text, runnable.map(r => r.id)), timedOut);
 			return;
 		}
 		setTimeout(tick, 1500);
@@ -388,119 +695,124 @@ async function runInstall(context, panel, selectedIds, detected) {
 	setTimeout(tick, 1500);
 }
 
-function parseResults(text, orderedIds) {
-	const status = {};
-	(text || '').split('\n').forEach(line => {
-		const m = line.match(/^RESULT (\S+) (ok|fail)$/);
-		if (m) { status[m[1]] = m[2]; }
-	});
-	return orderedIds.map(id => ({ id, status: status[id] || 'fail' }));
-}
-
-function postReport(panel, results, skipped, detected, timedOut) {
+function reportRows(results, skipped, packages) {
+	const items = allItems(packages);
+	const byId = new Map(items.map(i => [i.id, i]));
 	const rows = [];
 	for (const r of results) {
-		const p = PROGRAMS.find(x => x.id === r.id);
-		rows.push({ id: r.id, label: p ? p.label : r.id, status: r.status,
-			manualUrl: p && p.manualUrl, manualSteps: p && p.manualSteps });
+		const p = byId.get(r.id);
+		rows.push({
+			id: r.id, label: p ? p.label : r.id, status: r.status, reason: r.reason || '',
+			manualUrl: p ? safeHttpsUrl(p.manualUrl) : '', manualSteps: p ? (p.manualSteps || '') : '',
+		});
 	}
 	for (const s of skipped) {
-		const p = PROGRAMS.find(x => x.id === s.id);
-		rows.push({ id: s.id, label: p ? p.label : s.id, status: 'skipped', reason: s.reason,
-			manualUrl: p && p.manualUrl, manualSteps: p && p.manualSteps });
+		const p = byId.get(s.id);
+		rows.push({
+			id: s.id, label: p ? p.label : s.id, status: 'skipped', reason: s.reason || '',
+			manualUrl: p ? safeHttpsUrl(p.manualUrl) : '', manualSteps: p ? (p.manualSteps || '') : '',
+		});
 	}
-	panel.webview.postMessage({ type: 'installReport', rows, detected, timedOut: !!timedOut });
+	return rows;
 }
 
-// ---- update / new-package prompt -------------------------------------------
-// Installed product version, read from the app's product.json (two levels up
-// from this built-in extension, i.e. vscode/product.json).
-function currentVersion(context) {
-	try {
-		const pj = JSON.parse(fs.readFileSync(
-			path.join(context.extensionPath, '..', '..', 'product.json'), 'utf8'));
-		return pj.academicStudioVersion || null;
-	} catch (_) { return null; }
-}
+// ---- startup: offer new/updated catalog packages -------------------------------
+// Every launch: fetch the catalog and offer anything the user hasn't seen and
+// doesn't have. "Seen" is per id@version, so bumping a package's version in the
+// catalog re-offers it (that's how skill fixes reach existing users). Explicit
+// buttons mark seen; dismissing with Esc re-offers next launch.
+async function checkForNewPackages(context) {
+	const { packages, live } = await loadPackageCatalog(context);
+	if (!live || !packages.length) { return; }   // offline — nothing useful to offer
 
-// Numeric dotted-version compare: >0 if a is newer than b.
-function cmpVersions(a, b) {
-	const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
-	const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
-	for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-		const d = (pa[i] || 0) - (pb[i] || 0);
-		if (d) return d;
+	const seen = new Set(context.globalState.get(SEEN_PACKAGES_KEY) || []);
+	const fresh = [];
+	for (const p of packages) {
+		const key = p.id + '@' + p.version;
+		if (seen.has(key)) { continue; }
+		const d = await detectPackage(p);
+		if (d.found) { seen.add(key); continue; }   // already have it — never offer
+		fresh.push(p);
 	}
-	return 0;
-}
+	await context.globalState.update(SEEN_PACKAGES_KEY, Array.from(seen));
+	if (!fresh.length) { return; }
 
-// Short display name for a program/package (the part before the em dash).
-function shortName(p) { return String(p.label || p.id).split('—')[0].trim(); }
+	const names = fresh.map(shortName).join(', ');
+	const many = fresh.length > 1;
+	const isUpdate = fresh.some(p => p.skill && installedSkillVersion(p.skill.name) >= 0);
+	const verb = isUpdate ? 'updated' : 'new';
+	const choice = await vscode.window.showInformationMessage(
+		`Academic Studio: ${many ? verb + ' packages are' : 'a ' + verb + ' package is'} available — ${names}.`,
+		'Install', 'View in Setup', 'Not now');
 
-// After an update, packages added since the version the user last ran are things
-// they'd have no reason to know about. Open Run Setup (where they're pre-selected)
-// and say what's new, so nothing new sits uninstalled and undiscovered. A package
-// is flagged with `addedIn: "<version>"`; we treat an unknown last-seen version as
-// "before everything" so users upgrading from before this feature still get told.
-// Only prompt for ones actually missing, so a user who already installed a package
-// isn't nagged about it after a later update.
-async function promptNewPackages(context, lastSeen, current) {
-	const prev = lastSeen || '0';
-	const added = PROGRAMS.filter(p => p.addedIn && cmpVersions(p.addedIn, prev) > 0);
-	if (!added.length) { return; }
+	const markSeen = async () => {
+		const s = new Set(context.globalState.get(SEEN_PACKAGES_KEY) || []);
+		fresh.forEach(p => s.add(p.id + '@' + p.version));
+		await context.globalState.update(SEEN_PACKAGES_KEY, Array.from(s));
+	};
 
-	const missing = [];
-	for (const p of added) {
-		const r = await shellExec(p.detect);
-		if (!r.ok) { missing.push(p); }
+	if (choice === 'Install') {
+		await markSeen();
+		const detected = await detectAll(packages);
+		await runInstall(context, fresh.map(p => p.id), detected, packages, (rows) => {
+			const ok = rows.filter(r => r.status === 'ok').map(r => shortName(r));
+			const bad = rows.filter(r => r.status !== 'ok');
+			if (!bad.length) {
+				vscode.window.showInformationMessage('Academic Studio: installed ' + ok.join(', ') + '.');
+			} else {
+				const why = bad.map(r => shortName(r) + (r.reason ? ' (' + r.reason + ')' : '')).join(', ');
+				vscode.window.showWarningMessage(
+					'Academic Studio: some packages did not install — ' + why + '. Open Run Setup to retry.',
+					'Open Run Setup'
+				).then(c => { if (c === 'Open Run Setup') { openSetupPanel(context); } });
+			}
+		});
+	} else if (choice === 'View in Setup') {
+		await markSeen();
+		openSetupPanel(context);
+	} else if (choice === 'Not now') {
+		await markSeen();
 	}
-	if (!missing.length) { return; }
-
-	openSetupPanel(context);
-
-	const names = missing.map(shortName).join(', ');
-	const many = missing.length > 1;
-	vscode.window.showInformationMessage(
-		`Academic Studio ${current} adds ${names}. ${many ? 'They are' : 'It is'} pre-selected in `
-		+ `Run Setup — click "Install selected programs & packages" to install ${many ? 'them' : 'it'}.`,
-		'Open Run Setup'
-	).then(choice => { if (choice === 'Open Run Setup') { openSetupPanel(context); } });
+	// dismissed (Esc / timeout): not marked seen — offered again next launch
 }
 
 // ---- panel -----------------------------------------------------------------
+let currentPanel = null;   // singleton: re-running the command reveals, never duplicates
+
 function activate(context) {
 	const open = () => openSetupPanel(context);
 	context.subscriptions.push(vscode.commands.registerCommand('academicStudio.openSetup', open));
 	autoInstallClaudeSkills();
-
-	// First launch after an update: if this version added recommended packages the
-	// user hasn't seen, surface them. Record the version either way so we prompt
-	// once per update, not every launch. Delay slightly so the panel lands on top
-	// after the workbench (and Claude) finish restoring.
-	const current = currentVersion(context);
-	const lastSeen = context.globalState.get(VERSION_KEY);
-	if (current && current !== lastSeen) {
-		setTimeout(() => { promptNewPackages(context, lastSeen, current).catch(() => {}); }, 1500);
-		context.globalState.update(VERSION_KEY, current);
-	}
+	// Delay slightly so the notification lands after the workbench (and Claude)
+	// finish restoring.
+	setTimeout(() => { checkForNewPackages(context).catch(() => {}); }, 3000);
 }
 
-function openSetupPanel(context) {
+async function openSetupPanel(context) {
+	if (currentPanel) { currentPanel.reveal(vscode.ViewColumn.One); return; }
+
 	const panel = vscode.window.createWebviewPanel(
 		'academicStudioSetup', 'Academic Studio Setup', vscode.ViewColumn.One,
 		{ enableScripts: true, retainContextWhenHidden: true }
 	);
+	currentPanel = panel;
+	panel.onDidDispose(() => { if (currentPanel === panel) { currentPanel = null; } },
+		undefined, context.subscriptions);
+
+	const { packages, live } = await loadPackageCatalog(context);
 
 	const stored = context.globalState.get(SELECTION_KEY) || {};
 	const audience = stored.audience || 'student';
 	// Currently-enabled extensions: vscode.extensions.all excludes disabled ones.
 	const enabledExt = {};
 	vscode.extensions.all.forEach(e => { enabledExt[(e.id || '').toLowerCase()] = true; });
-	panel.webview.html = renderHtml(audience, enabledExt);
+	panel.webview.html = renderHtml(audience, enabledExt, packages, live);
 
 	let lastDetected = {};
-	// run program detection and push statuses to the webview
-	detectPrograms().then(d => { lastDetected = d; panel.webview.postMessage({ type: 'programStatus', detected: d }); });
+	detectAll(packages).then(d => {
+		lastDetected = d;
+		panel.webview.postMessage({ type: 'programStatus', detected: d });
+	});
 
 	panel.webview.onDidReceiveMessage(async (msg) => {
 		if (!msg) { return; }
@@ -508,7 +820,9 @@ function openSetupPanel(context) {
 		if (msg.type === 'installPrograms') {
 			const ids = Array.isArray(msg.ids) ? msg.ids : [];
 			if (!ids.length) { return; }
-			await runInstall(context, panel, ids, lastDetected);
+			await runInstall(context, ids, lastDetected, packages, (rows, detected, timedOut) => {
+				panel.webview.postMessage({ type: 'installReport', rows, detected, timedOut: !!timedOut });
+			});
 			return;
 		}
 
@@ -533,15 +847,22 @@ function openSetupPanel(context) {
 	}, undefined, context.subscriptions);
 }
 
-function renderHtml(audience, enabledExt) {
-	const data = JSON.stringify({ catalog: CATALOG.map(c => ({ id: c.id, label: c.label, group: c.group, excludes: c.excludes || '' })), programs: PROGRAMS.map(p => ({ id: p.id, label: p.label, group: p.group, prereq: p.prereq || '', manualUrl: p.manualUrl })), audience, enabledExt });
+function renderHtml(audience, enabledExt, packages, catalogLive) {
+	const data = JSON.stringify({
+		catalog: CATALOG.map(c => ({ id: c.id, label: c.label, group: c.group, excludes: c.excludes || '' })),
+		programs: PROGRAMS.map(p => ({ id: p.id, label: p.label, group: p.group, prereq: p.prereq || '' })),
+		packages: packages.map(p => ({ id: p.id, label: p.label, prereq: p.prereq || '' })),
+		audience, enabledExt,
+	}).replace(/</g, '\\u003c');   // keep </script> in labels from closing our tag
+
 	const extRows = CATALOG.map(c =>
-		`<label class="row"><input type="checkbox" class="ext" value="${c.id}" data-excludes="${c.excludes || ''}"> <span>${c.label}</span> <em class="status" data-for="${c.id}"></em></label>`
+		`<label class="row"><input type="checkbox" class="ext" value="${escHtml(c.id)}" data-excludes="${escHtml(c.excludes || '')}"> <span>${escHtml(c.label)}</span> <em class="status" data-for="${escHtml(c.id)}"></em></label>`
 	).join('\n');
 	const rowFor = p =>
-		`<label class="row" data-id="${p.id}"><input type="checkbox" class="prog" value="${p.id}"> <span>${p.label}</span> <em class="status" data-for="${p.id}">checking…</em></label>`;
-	const progRows = PROGRAMS.filter(p => p.group !== 'packages').map(rowFor).join('\n');
-	const pkgRows = PROGRAMS.filter(p => p.group === 'packages').map(rowFor).join('\n');
+		`<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span> <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
+	const progRows = PROGRAMS.map(rowFor).join('\n');
+	const pkgRows = packages.length ? packages.map(rowFor).join('\n')
+		: `<p class="note">${catalogLive ? 'No packages are available yet.' : 'Could not reach the package catalog — check your connection and reopen Setup.'}</p>`;
 
 	return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -603,7 +924,7 @@ function renderHtml(audience, enabledExt) {
 
 	<fieldset id="packages">
 		<legend>Additional packages</legend>
-		<p class="note">Optional Python add-ons for specific kinds of work. Checked ones install together with the programs above. Only missing ones are checked.</p>
+		<p class="note">Optional add-ons for specific kinds of work, delivered from academic-studio.com — new ones appear here without updating the app. Checked ones install together with the programs above. Only missing ones are checked.</p>
 		${pkgRows}
 	</fieldset>
 
@@ -619,7 +940,12 @@ function renderHtml(audience, enabledExt) {
 	let detected = {};
 
 	function extPreset(aud) { return DATA.catalog.filter(c => c.group === 'common' || c.group === aud).map(c => c.id); }
-	function progPreset(aud) { return DATA.programs.filter(p => p.group === 'common' || p.group === 'packages' || (aud === 'faculty' && p.group === 'faculty')).map(p => p.id); }
+	// Programs: common for everyone + faculty group for Faculty. Packages: on by
+	// default for every audience.
+	function progPreset(aud) {
+		return DATA.programs.filter(p => p.group === 'common' || (aud === 'faculty' && p.group === 'faculty')).map(p => p.id)
+			.concat(DATA.packages.map(p => p.id));
+	}
 	function setExt(ids) { extBoxes.forEach(b => { b.checked = ids.indexOf(b.value) !== -1; }); }
 	function setProg(aud) {
 		const pre = progPreset(aud);
@@ -657,7 +983,7 @@ function renderHtml(audience, enabledExt) {
 	renderExtStatus();
 
 	function renderStatus() {
-		DATA.programs.forEach(p => {
+		DATA.programs.concat(DATA.packages).forEach(p => {
 			const el = document.querySelector('.status[data-for="' + p.id + '"]');
 			const d = detected[p.id];
 			if (!el) return;
@@ -672,21 +998,22 @@ function renderHtml(audience, enabledExt) {
 		const aud = (radios.find(r => r.checked) || {}).value || 'student';
 		// Banner is about supporting programs only; Additional packages have their
 		// own section and shouldn't be described as "programs" here.
-		const missing = progPreset(aud).filter(id => {
-			const p = DATA.programs.find(x => x.id === id);
-			return p && p.group !== 'packages' && !(detected[id] && detected[id].found);
-		});
+		const missing = DATA.programs
+			.filter(p => p.group === 'common' || (aud === 'faculty' && p.group === 'faculty'))
+			.filter(p => !(detected[p.id] && detected[p.id].found));
 		banner.style.display = 'block';
+		banner.textContent = '';
 		if (missing.length) {
-			const labels = missing.map(id => (DATA.programs.find(p => p.id === id) || {}).label || id);
 			banner.className = 'banner';
-			banner.innerHTML = '⚠ ' + missing.length + ' supporting program' + (missing.length > 1 ? 's' : '') +
-				' not installed yet (' + labels.join(', ') + '). <a href="#" id="jumpInstall">Set them up below ↓</a>';
-			const j = document.getElementById('jumpInstall');
-			if (j) { j.addEventListener('click', e => { e.preventDefault(); document.getElementById('programs').scrollIntoView({ behavior: 'smooth' }); }); }
+			banner.appendChild(document.createTextNode('⚠ ' + missing.length + ' supporting program' + (missing.length > 1 ? 's' : '') +
+				' not installed yet (' + missing.map(p => p.label).join(', ') + '). '));
+			const j = document.createElement('a');
+			j.href = '#'; j.textContent = 'Set them up below ↓';
+			j.addEventListener('click', e => { e.preventDefault(); document.getElementById('programs').scrollIntoView({ behavior: 'smooth' }); });
+			banner.appendChild(j);
 		} else {
 			banner.className = 'banner ok';
-			banner.innerHTML = '✓ All recommended supporting programs are installed.';
+			banner.textContent = '✓ All recommended supporting programs are installed.';
 		}
 	}
 
@@ -696,15 +1023,30 @@ function renderHtml(audience, enabledExt) {
 		if (m.type === 'installReport') {
 			detected = m.detected || detected; renderStatus(); updateBanner();
 			const rep = document.getElementById('report');
-			let html = '<p class="note">' + (m.timedOut ? 'Install timed out or the terminal was closed. Re-run if needed.' : 'Install finished.') + ' A new terminal/window may be needed before some tools are callable.</p>';
+			rep.textContent = '';
+			const note = document.createElement('p');
+			note.className = 'note';
+			note.textContent = (m.timedOut ? 'Install timed out or the terminal was closed. Re-run if needed.' : 'Install finished.')
+				+ ' A new terminal/window may be needed before some tools are callable.';
+			rep.appendChild(note);
+			// Built with DOM APIs (never innerHTML): labels/reasons/urls come from
+			// the online catalog and must not be interpreted as markup.
 			m.rows.forEach(r => {
+				const div = document.createElement('div');
+				div.className = 'r';
 				const icon = r.status === 'ok' ? '✓' : (r.status === 'skipped' ? '•' : '✗');
-				let line = '<div class="r">' + icon + ' ' + r.label + (r.status === 'ok' ? ' — installed' : (r.status === 'skipped' ? ' — skipped (' + (r.reason || '') + ')' : ' — failed'));
-				if (r.status !== 'ok' && r.manualUrl) { line += ' · <a href="' + r.manualUrl + '">install manually</a>'; }
-				line += '</div>';
-				html += line;
+				let text = icon + ' ' + r.label + (r.status === 'ok' ? ' — installed'
+					: (r.status === 'skipped' ? ' — skipped' : ' — failed'));
+				if (r.status !== 'ok' && r.reason) { text += ' (' + r.reason + ')'; }
+				div.appendChild(document.createTextNode(text));
+				if (r.status !== 'ok' && r.manualUrl && /^https:\\/\\//.test(r.manualUrl)) {
+					div.appendChild(document.createTextNode(' · '));
+					const a = document.createElement('a');
+					a.href = r.manualUrl; a.textContent = 'install manually';
+					div.appendChild(a);
+				}
+				rep.appendChild(div);
 			});
-			rep.innerHTML = html;
 		}
 	});
 
@@ -714,7 +1056,11 @@ function renderHtml(audience, enabledExt) {
 	});
 	document.getElementById('install').addEventListener('click', () => {
 		const ids = progBoxes.filter(b => b.checked).map(b => b.value);
-		document.getElementById('report').innerHTML = '<p class="note">Starting install in the terminal…</p>';
+		const rep = document.getElementById('report');
+		rep.textContent = '';
+		const p = document.createElement('p');
+		p.className = 'note'; p.textContent = 'Starting install in the terminal…';
+		rep.appendChild(p);
 		vscode.postMessage({ type: 'installPrograms', ids: ids });
 	});
 </script>

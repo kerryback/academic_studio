@@ -19,8 +19,17 @@ OVERRIDES="$OVERLAY/product.overrides.json"
 # staging step (it needs the checked-out vscode tree to read the base js-debug
 # entries and union ours onto them — jq '*' replaces arrays, so a naive merge
 # here would drop js-debug).
-if [ ! -f "$ENGINE/product.json.vscodium" ]; then
+# Refresh the pristine snapshot whenever product.json is actually pristine —
+# i.e. has no academicStudioVersion marker (fresh clone, or an upstream pull /
+# checkout replaced it). A once-only snapshot goes stale on long-lived build
+# machines and would merge old upstream branding forever.
+if ! jq -e 'has("academicStudioVersion")' "$ENGINE/product.json" >/dev/null 2>&1; then
   cp "$ENGINE/product.json" "$ENGINE/product.json.vscodium"
+elif [ ! -f "$ENGINE/product.json.vscodium" ]; then
+  echo "ERROR: build-engine/product.json already contains Academic Studio overrides,"
+  echo "but the pristine snapshot (product.json.vscodium) is missing. Restore the"
+  echo "upstream file first:  cd build-engine && git checkout -- product.json"
+  exit 1
 fi
 jq -s '.[0] * .[1]' \
   "$ENGINE/product.json.vscodium" \

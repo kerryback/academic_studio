@@ -43,7 +43,9 @@ for f in "${files[@]}"; do
   echo "[sign] $(basename "$f")"
   # MSYS_NO_PATHCONV stops Git Bash from mangling signtool's /fd /tr /td flags into paths.
   MSYS_NO_PATHCONV=1 "$st" sign /fd SHA256 /tr "$ts" /td SHA256 "${cred[@]}" "$f"
-  MSYS_NO_PATHCONV=1 "$st" verify /pa "$f" || echo "WARN: verify failed for $(basename "$f")"
+  # A failed verify means the file would ship unsigned-in-effect — hard error,
+  # since make-release.sh (and the release notes) assume these are signed.
+  MSYS_NO_PATHCONV=1 "$st" verify /pa "$f" || { echo "ERROR: signature verify failed for $(basename "$f")" >&2; exit 1; }
 done
 
 echo "[sign] done. Next: scripts/make-release.sh"

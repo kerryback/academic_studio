@@ -1,4 +1,5 @@
 {
+  "_academicStudioNote": "VSCodium's native updater is a deliberate no-op here: we don't set updateUrl and our release tags/assets don't match its expectations. Update checks go through academicStudio.checkForUpdates (Help menu) instead. Packages are NOT part of app updates — they come from the online catalog (site/packages.json).",
   "nameShort": "Academic Studio",
   "nameLong": "Academic Studio",
   "applicationName": "academic-studio",

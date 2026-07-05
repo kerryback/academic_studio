@@ -70,7 +70,7 @@ function activate(context) {
 		})
 	);
 
-	openClaudeOnStartup();
+	openClaudeOnStartup(context);
 }
 
 // True if a Claude Code tab is already open in the editor area (e.g. restored
@@ -90,18 +90,29 @@ function claudeTabIsOpen() {
 	return false;
 }
 
-function openClaudeOnStartup() {
+function openClaudeOnStartup(context) {
 	// Give session-restore a chance to reopen an existing Claude tab; only open
-	// our own if none shows up, so we never duplicate the restored one.
-	let waited = 0;
-	// MAX_WAIT must stay comfortably longer than session-restore takes to reopen
-	// the Claude tab, or a slow restore lets us open a duplicate. 1.5s is a safe
-	// floor on normal hardware; don't drop much below ~1s.
-	const STEP = 300, MAX_WAIT = 1500;
-	const poll = () => {
+	// our own if none shows up, so we never duplicate the restored one. A fixed
+	// short delay loses this race on slow machines / big sessions, so watch tab
+	// events and use a generous fallback deadline instead.
+	if (claudeTabIsOpen()) { return; }
+	let settled = false;
+	let listener = null;
+	try {
+		listener = vscode.window.tabGroups.onDidChangeTabs(() => {
+			if (!settled && claudeTabIsOpen()) {
+				settled = true;
+				if (listener) { listener.dispose(); }
+			}
+		});
+		if (context) { context.subscriptions.push(listener); }
+	} catch (e) { /* tabGroups events unavailable — the deadline check still runs */ }
+	const MAX_WAIT = 3000;
+	setTimeout(() => {
+		if (settled) { return; }
+		settled = true;
+		if (listener) { listener.dispose(); }
 		if (claudeTabIsOpen()) { return; }
-		waited += STEP;
-		if (waited < MAX_WAIT) { setTimeout(poll, STEP); return; }
 		// Nothing restored a Claude tab — open one. Retry a few times in case the
 		// Claude Code extension hasn't registered its command yet.
 		let tries = 0;
@@ -113,8 +124,7 @@ function openClaudeOnStartup() {
 			);
 		};
 		tick();
-	};
-	setTimeout(poll, STEP);
+	}, MAX_WAIT);
 }
 
 // ---- Check for Updates -----------------------------------------------------

@@ -24,6 +24,18 @@ AS_WIN_CERT_SHA1="<thumbprint>" SIGN_ONLY=yes scripts/build-windows-x64.sh   # o
 ```
 
 Then re-run `scripts/make-release.sh` to replace the unsigned files in the release.
+(`make-release.sh` verifies signatures before uploading and refuses unsigned
+artifacts unless you set `ALLOW_UNSIGNED=1`.)
+
+Prerequisite: `SIGN_ONLY=yes` needs that platform's FULL BUILD TREE on the
+machine, not just the artifact. On macOS it uses
+`build-engine/vscode/build/node_modules/@electron/osx-sign` from a prior local
+build; on Windows it repackages from `build-engine/VSCode-win32-<arch>/`. A
+clean machine cannot `SIGN_ONLY` a CI artifact — that's what
+`scripts/sign-windows-installers.sh` is for on Windows (signs the downloaded
+installers only; the binaries inside remain unsigned, which SmartScreen
+accepts because it keys on the installer's signature).
+
 The rest of this document is the one-time cert setup for each platform.
 
 ## macOS

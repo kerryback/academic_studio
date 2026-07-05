@@ -49,12 +49,14 @@ else
 fi
 export NODE_OPTIONS="--max-old-space-size=8192"
 
-# --- pin Node 22.22.1 via nvm ----------------------------------------------
+# --- pin Node via nvm (version from scripts/versions.sh) --------------------
+# shellcheck disable=SC1091
+. "$ROOT/scripts/versions.sh"
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 # shellcheck disable=SC1091
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 if command -v nvm >/dev/null 2>&1; then
-  nvm use 22.22.1 >/dev/null 2>&1 || { nvm install 22.22.1 && nvm use 22.22.1; }
+  nvm use "$AS_NODE_VERSION" >/dev/null 2>&1 || { nvm install "$AS_NODE_VERSION" && nvm use "$AS_NODE_VERSION"; }
 fi
 echo "[build] app='$APP_NAME'  node $(node --version)  arch=${VSCODE_ARCH}"
 
@@ -114,10 +116,15 @@ if [ "$SIGN_ONLY" = "yes" ]; then
   exit 0
 fi
 
-# --- fetch bundled extensions for this target (if not cached) ---------------
+# --- fetch bundled extensions for this target --------------------------------
+# No manifest: resolve latest (first-ever run; commit the manifest it writes).
+# Manifest but empty/partial vsix cache (fresh clone: the cache is gitignored):
+# fetch the PINNED versions so the build matches the committed manifest.
 EXT_TARGET="darwin-${VSCODE_ARCH}"
 if [ ! -f "$EXTDIR/builtin.${EXT_TARGET}.json" ]; then
   "$ROOT/scripts/fetch-extensions.sh" "$EXT_TARGET"
+else
+  "$ROOT/scripts/fetch-extensions.sh" "$EXT_TARGET" --pinned
 fi
 
 # --- inject our overlay (branding + patches + icons) ------------------------
@@ -193,25 +200,27 @@ done
 # VSCodium's build_cli.sh copies the tunnel binary into "${nameShort}.app", but
 # VS Code names the macOS bundle after nameLong (= APP_NAME). When short != long
 # (our editions) that path is wrong and the CLI step fails. Point it at APP_NAME.
+# If neither the original line nor our replacement is present, upstream changed
+# the script — fail loudly instead of building a broken CLI step.
 if grep -q 'VSCode-darwin-${VSCODE_ARCH}/${NAME_SHORT}.app' build_cli.sh; then
   sed -i '' 's|VSCode-darwin-${VSCODE_ARCH}/${NAME_SHORT}.app|VSCode-darwin-${VSCODE_ARCH}/${APP_NAME}.app|g' build_cli.sh
   echo "[build] patched build_cli.sh to use APP_NAME for the .app bundle"
+elif grep -q 'VSCode-darwin-${VSCODE_ARCH}/${APP_NAME}.app' build_cli.sh; then
+  echo "[build] build_cli.sh already patched (APP_NAME)"
+else
+  echo "ERROR: build_cli.sh no longer contains the expected app-bundle path."
+  echo "  Upstream VSCodium changed build_cli.sh — update the sed patch in"
+  echo "  scripts/build-macos.sh for the new VSCODIUM_REF before building."
+  exit 1
 fi
 
-# --- macOS native build include --------------------------------------------
-if [ -f "./include_${OS_NAME}.gypi" ]; then
-  mkdir -p ~/.gyp
-  [ -f ~/.gyp/include.gypi ] && mv ~/.gyp/include.gypi ~/.gyp/include.gypi.pre-as
-  cp ./build/osx/include.gypi ~/.gyp/include.gypi
-fi
+# NOTE: upstream dev/build.sh has an include.gypi block guarded by a file
+# (include_osx.gypi) that no longer exists in the repo — dead in upstream and
+# here alike. Deliberately not replicated; macOS builds succeed without it.
 
 # --- compile + package the .app --------------------------------------------
 # shellcheck disable=SC1091
 . build.sh
-
-if [ -f ~/.gyp/include.gypi.pre-as ]; then
-  mv ~/.gyp/include.gypi.pre-as ~/.gyp/include.gypi
-fi
 
 # --- code sign + notarize the .app, then package + sign the .dmg ------------
 # No-op signing when AS_MAC_SIGN_IDENTITY is unset (ships unsigned); .dmg only
