@@ -29,8 +29,22 @@ Repo: `kerryback/academic_studio`. Version lives in
 ## Prerequisites
 
 - `gh` authenticated on each machine used (`gh auth status`).
-- macOS (this Mac): the notarization creds `make-mac-release.sh` expects —
-  `AS_MAC_SIGN_IDENTITY` (Developer ID hash) and the `AS_NOTARY` keychain profile.
+- macOS (this Mac): the creds `make-mac-release.sh` expects —
+  - `AS_MAC_SIGN_IDENTITY` — Developer ID Application cert hash (defaulted in the script).
+  - `AS_NOTARY` — a notarytool keychain profile backed by an **App Store Connect
+    API key** (durable; an app-specific password kept getting revoked and hanging
+    the notarize step). The key file lives at the repo root:
+    `AuthKey_Q9PUJZWRZ6.p8` — gitignored, never commit; the `.p8` is the only
+    secret. Key ID `Q9PUJZWRZ6`, Issuer `dca426cf-788e-4206-8eb1-f4e1c75e350d`.
+    Verify with `xcrun notarytool history --keychain-profile AS_NOTARY`. If it
+    ever breaks, re-store (no rebuild needed afterward):
+    ```
+    xcrun notarytool store-credentials AS_NOTARY \
+      --key AuthKey_Q9PUJZWRZ6.p8 --key-id Q9PUJZWRZ6 \
+      --issuer dca426cf-788e-4206-8eb1-f4e1c75e350d
+    ```
+    A replacement key comes from App Store Connect → Users and Access →
+    Integrations → App Store Connect API (Team Keys); the `.p8` downloads once.
 - Windows machine: the Windows 10/11 SDK (`signtool`) and your code-signing cert,
   referenced by `AS_WIN_CERT_SHA1` (thumbprint in the store, EV token) or
   `AS_WIN_CERT_FILE`/`AS_WIN_CERT_PASSWORD` (`.pfx`). See `docs/SIGNING.md`.
