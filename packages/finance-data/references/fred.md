@@ -5,55 +5,41 @@ unemployment, interest rates, money supply, spreads, exchange rates, and tens of
 thousands more. Each series has a code (e.g. `CPIAUCSL`, `GDP`, `UNRATE`,
 `DGS10`, `FEDFUNDS`).
 
-Prefer the official FRED API via the `fredapi` package. It needs a free key, so
-if one isn't set, prompt the user to get it — this takes a minute and unlocks
-search and metadata that the keyless path can't do. See the "API keys" section of
-`SKILL.md`. Only fall back to the keyless `pandas-datareader` path (bottom of this
-file) if the user would rather not get a key.
+Fetch FRED through `pandas-datareader` — keyless, no signup, no API key. Do not
+prompt the user for a FRED key.
 
-## Primary path — `fredapi` (needs `FRED_API_KEY`)
+## Fetching series — `pandas-datareader`
 
 ```python
 import os
-import pandas as pd
-from fredapi import Fred
+import pandas_datareader.data as web
 
 os.makedirs("data", exist_ok=True)
-fred = Fred(api_key=os.environ["FRED_API_KEY"])
-
-codes = ["CPIAUCSL", "UNRATE"]
-df = pd.DataFrame({c: fred.get_series(c, observation_start="2000-01-01") for c in codes})
+df = web.DataReader(["CPIAUCSL", "UNRATE"], "fred", start="2000-01-01")
 df.index.name = "DATE"
 df.to_csv("data/fred_series.csv")
 print(df.shape, list(df.columns), df.index.min().date(), "->", df.index.max().date())
 print("missing per column:\n", df.isna().sum())   # surface unreleased months / data gaps
 ```
 
+`start` defaults to only ~5 years back — pass an explicit `start` (and `end` if
+needed) so you don't silently truncate history the user expects.
+
 ## Finding the right series
 
-If the user names a concept rather than a code, either use the common one (CPI →
-`CPIAUCSL`, real GDP → `GDPC1`, unemployment rate → `UNRATE`, fed funds →
-`FEDFUNDS`, 10-yr Treasury → `DGS10`) or search — the API makes this easy:
+`pandas-datareader` fetches by series code; it has no search. When the user
+names a concept rather than a code:
 
-```python
-res = fred.search("unemployment rate")          # DataFrame indexed by series id
-print(res[["title", "frequency", "units"]].head())
-```
-
-Confirm the series with the user when there's ambiguity — e.g. seasonally
-adjusted CPI-U (`CPIAUCSL`) vs not-seasonally-adjusted (`CPIAUCNS`) vs core
-(`CPILFESL`).
-
-## Keyless fallback — `pandas-datareader`
-
-Only if the user declines to get a key. No key needed for known series codes, but
-no search or metadata.
-
-```python
-import pandas_datareader.data as web
-df = web.DataReader(["CPIAUCSL", "UNRATE"], "fred", start="2000-01-01")
-df.to_csv("data/fred_series.csv")
-```
+- Use the common code when it's unambiguous: CPI → `CPIAUCSL`, real GDP →
+  `GDPC1`, nominal GDP → `GDP`, unemployment rate → `UNRATE`, fed funds →
+  `FEDFUNDS`, 10-yr Treasury → `DGS10`, 2-yr → `DGS2`, 3-mo T-bill → `TB3MS`,
+  PCE inflation index → `PCEPI`, core CPI → `CPILFESL`, M2 → `M2SL`,
+  recession indicator → `USREC`, EUR/USD → `DEXUSEU`.
+- Otherwise, look the code up on the FRED website — series pages are
+  `https://fred.stlouisfed.org/series/<CODE>` and search is
+  `https://fred.stlouisfed.org/searchresults/?st=<terms>`. Ask the user to
+  confirm when there's real ambiguity — e.g. seasonally adjusted CPI-U
+  (`CPIAUCSL`) vs not-seasonally-adjusted (`CPIAUCNS`) vs core (`CPILFESL`).
 
 ## Gotchas
 

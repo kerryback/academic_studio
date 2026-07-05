@@ -52,7 +52,7 @@ silently retrying forever.
 | Stock / ETF / index prices, OHLCV, dividends, splits | Yahoo Finance (`yfinance`) | Stooq | No |
 | Company fundamentals (income statement, balance sheet, cash flow) | Yahoo Finance (`yfinance`) | FinnHub, SEC EDGAR (XBRL) | No / FinnHub key |
 | SEC filings, exact reported figures, XBRL facts, filing text | SEC EDGAR | — | No (User-Agent required) |
-| Macroeconomic / financial time series (CPI, GDP, unemployment, rates, money supply, spreads) | FRED (FRED API / `fredapi`) | — | Free key (prompt user) |
+| Macroeconomic / financial time series (CPI, GDP, unemployment, rates, money supply, spreads) | FRED (`pandas-datareader`) | — | No |
 | Interest rates / the Treasury yield curve | US Treasury (daily par yields) | FRED (`DGS10`, `DGS2`, …) | No |
 | Asset-pricing factor returns & sorted portfolios (Fama-French, momentum, industry) | Ken French Data Library | — | No |
 | Real-time-ish quotes, company news, analyst recommendations, earnings | FinnHub | Yahoo Finance | FinnHub free key |
@@ -79,8 +79,8 @@ you need when you get there — don't preload them all.
   fundamentals, crypto/FX.
 - `references/stooq.md` — Stooq via `pandas-datareader`: keyless price fallback,
   symbol suffixes.
-- `references/fred.md` — FRED: the FRED API via `fredapi` (free key) for series,
-  search, and metadata; keyless `pandas-datareader` fallback.
+- `references/fred.md` — FRED via `pandas-datareader`: keyless series fetch,
+  common series codes, finding codes on the FRED website.
 - `references/ken_french.md` — Ken French Data Library via `pandas-datareader`:
   factors and sorted portfolios, listing available datasets, the percent-units
   gotcha.
@@ -92,34 +92,28 @@ you need when you get there — don't preload them all.
 
 ## API keys
 
-Two sources use a free API key: FRED and FinnHub. Both keys are free and take
-about a minute to obtain. When the user's request routes to one of these and the
-key isn't already set, walk them through getting it rather than silently routing
-around it — the keyed path is the better experience (FRED's official API adds
-search and metadata; FinnHub requires a key at all).
+One source uses a free API key: FinnHub (FRED is keyless via
+`pandas-datareader` — never look for or prompt for a FRED key). When a request
+routes to FinnHub and the key isn't already set, walk the user through getting
+it rather than silently routing around it.
 
-- FRED — get a free key at https://fredaccount.stlouisfed.org/apikeys and store it
-  as the `FRED_API_KEY` environment variable. Use the FRED API via the `fredapi`
-  package (see `references/fred.md`). Only if the user declines the key, fall back
-  to the keyless `pandas-datareader` path.
 - FinnHub — register for a free key at https://finnhub.io/register and store it as
   `FINNHUB_API_KEY` (the recipe also accepts the common misspelling
   `FINHUB_API_KEY`).
 
 How to prompt:
 
-1. Check `os.environ` first — the key may already be set. FRED reads
-   `FRED_API_KEY`; FinnHub reads `FINNHUB_API_KEY` or `FINHUB_API_KEY`.
+1. Check `os.environ` first — the key may already be set (`FINNHUB_API_KEY` or
+   `FINHUB_API_KEY`).
 2. If it's missing, give the user the signup link above and ask them to paste the
    key back, or to set the environment variable themselves.
 3. Prefer an environment variable over hard-coding the key in a script, so it
    isn't committed or shared. On macOS/Linux they can add
-   `export FRED_API_KEY=...` to their shell profile (`~/.zshrc`), or set it for
-   one session. In a Jupyter/analysis context, reading from `os.environ` and
+   `export FINNHUB_API_KEY=...` to their shell profile (`~/.zshrc`), or set it
+   for one session. In a Jupyter/analysis context, reading from `os.environ` and
    prompting once with `getpass.getpass()` is a reasonable middle ground.
 4. If the user would rather not get a key at all, offer the keyless alternative
-   from the routing table (Yahoo instead of FinnHub for a quote; keyless
-   `pandas-datareader` instead of `fredapi` for FRED).
+   from the routing table (e.g. Yahoo instead of FinnHub for a quote).
 
 ## Output conventions
 
@@ -142,11 +136,10 @@ Academic Studio "Finance Data" package, so don't probe for them or run
 - `pandas`
 - `yfinance`
 - `pandas-datareader`
-- `fredapi`
 - `finnhub-python` (imported as `finnhub`)
 - `requests`
 
 Only if an import genuinely fails at runtime, tell the user to install the
 Finance Data package from Help → Run Setup (or, as a fallback,
-`pip install yfinance pandas-datareader fredapi finnhub-python requests`) — then
+`pip install yfinance pandas-datareader finnhub-python requests`) — then
 retry. Don't check preemptively.

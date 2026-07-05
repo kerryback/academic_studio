@@ -49,9 +49,12 @@ if [ "$HAS_SKILL" = "true" ]; then
   URL="$BASE_URL/$ID-$VER.tar.gz"
 
   TMP="$(mktemp)"
-  jq --arg id "$ID" --arg url "$URL" --arg sha "$SHA" \
+  # Also retarget manualUrl when it points at one of our own tarballs, so the
+  # manual-install link never lags the current version.
+  jq --arg id "$ID" --arg url "$URL" --arg sha "$SHA" --arg base "$BASE_URL/$ID-" \
     '(.packages[] | select(.id == $id) | .skill.url) = $url
-     | (.packages[] | select(.id == $id) | .skill.sha256) = $sha' \
+     | (.packages[] | select(.id == $id) | .skill.sha256) = $sha
+     | (.packages[] | select(.id == $id) | select(.manualUrl != null and (.manualUrl | startswith($base))) | .manualUrl) = $url' \
     "$CATALOG" > "$TMP" && mv "$TMP" "$CATALOG"
   echo "[package] $ID v$VER"
   echo "  tarball : site/packages/$ID-$VER.tar.gz  ($(du -h "$OUT" | cut -f1 | tr -d ' '))"

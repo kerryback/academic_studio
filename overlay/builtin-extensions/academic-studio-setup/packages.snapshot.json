@@ -5,29 +5,27 @@
     {
       "id": "finance-data",
       "label": "Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub)",
-      "version": 1,
+      "version": 2,
       "minAppVersion": "0.4",
       "prereq": "python",
       "pip": [
         "yfinance",
         "pandas-datareader",
-        "fredapi",
         "finnhub-python",
         "requests"
       ],
       "pipImports": [
         "yfinance",
         "pandas_datareader",
-        "fredapi",
         "finnhub"
       ],
       "skill": {
         "name": "finance-data",
-        "url": "https://academic-studio.com/packages/finance-data-1.tar.gz",
-        "sha256": "394d834e9a12d8f9cf81d8f83996be0dc64a4953a986892305a91fe73b778b01"
+        "url": "https://academic-studio.com/packages/finance-data-2.tar.gz",
+        "sha256": "8955fbc2612fe5c2ad89c1eabee452ca211a249d409c0f9bcf8f822fe10b64ba"
       },
-      "manualUrl": "https://academic-studio.com/packages/finance-data-1.tar.gz",
-      "manualSteps": "Open a terminal and run: pip install yfinance pandas-datareader fredapi finnhub-python requests (if you see an 'externally-managed-environment' error, run PIP_BREAK_SYSTEM_PACKAGES=1 pip install … instead) — then download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/finance-data."
+      "manualUrl": "https://academic-studio.com/packages/finance-data-2.tar.gz",
+      "manualSteps": "Open a terminal and run: pip install yfinance pandas-datareader finnhub-python requests (if you see an 'externally-managed-environment' error, run PIP_BREAK_SYSTEM_PACKAGES=1 pip install … instead) — then download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/finance-data."
     }
   ]
 }
