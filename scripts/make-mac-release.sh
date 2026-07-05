@@ -14,7 +14,9 @@
 #   REBUILD=yes scripts/make-mac-release.sh  # repackage from compiled source first, then sign+publish
 #   FULL=yes    scripts/make-mac-release.sh  # full source rebuild first (slow), then sign+publish
 #
-# Any extra argument is passed to make-release.sh as the tag (default v<version>).
+# Extra arguments pass through to make-release.sh — e.g. `--staging` publishes
+# to the staging prerelease instead of the public release, or a tag name
+# overrides the default v<version>.
 set -e
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

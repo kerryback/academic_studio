@@ -3,32 +3,47 @@ name: academic-studio-release
 description: >-
   Cut a signed Academic Studio release using the GitHub Actions build pipeline.
   Use whenever the user wants to build, sign, and publish a new version of
-  Academic Studio (e.g. "cut the 0.4 release", "release Academic Studio", "build
-  and publish a new version", "ship the installers"). Builds all three installers
-  (macOS arm64, Windows x64, Windows arm64) unsigned on GitHub's runners, then
-  signs each on the right machine and publishes to the GitHub Release: macOS is
-  signed + notarized on this Mac; the two Windows installers are signed with
-  signtool on a Windows machine. Covers the version bump, the CI build, artifact
-  download, per-machine signing, and publishing so the site download links go
-  live one platform at a time.
+  Academic Studio (e.g. "cut the 0.5 release", "release Academic Studio", "build
+  and publish a new version", "ship the installers", "make a staging release").
+  Builds all three installers (macOS arm64, Windows x64, Windows arm64) unsigned
+  on GitHub's runners, then signs each on the right machine: macOS is signed +
+  notarized on this Mac; the two Windows installers are signed with signtool on
+  a Windows machine. Default flow publishes to a staging prerelease first
+  (testable on every OS, invisible to the public download links), then promotes
+  the tested files to the public release with one command.
 ---
 
 # Cutting an Academic Studio release
 
 The heavy builds run for free on GitHub's runners (public repo). Only the fast
-signing steps happen on your machines. Nothing unsigned is ever published.
+signing steps happen on your machines. `make-release.sh` refuses unsigned
+artifacts for public releases (signature gate; staging skips it by default).
 
-Pipeline: bump version → CI builds 3 unsigned installers → download each to the
-right machine → sign there → `make-release.sh` uploads it → the site's download
-links flip live per platform as each is published.
+Default pipeline: bump version → CI builds 3 unsigned installers → download each
+to the right machine → sign there → `make-release.sh --staging` uploads to a
+prerelease → test the staging downloads on real machines →
+`make-release.sh --promote` publishes those exact files publicly.
+
+A staging prerelease never touches what users see: the site's
+`releases/latest/download/...` links and the in-app Check for Updates both
+ignore prereleases. Its only public trace is a "Pre-release" entry on the
+GitHub Releases page.
 
 Repo: `kerryback/academic_studio`. Version lives in
-`overlay/product.overrides.json` (`academicStudioVersion`); the release tag is
-`v<version>`.
+`overlay/product.overrides.json` (`academicStudioVersion`); tags are
+`staging-v<version>` (prerelease) and `v<version>` (public).
+
+NOTE — packages don't need any of this: Claude skills / pip bundles / MCP
+connectors ship from the online catalog (`site/packages.json` +
+`scripts/make-package.sh` + git push). Only changes to the app itself need a
+release.
 
 ## Prerequisites
 
 - `gh` authenticated on each machine used (`gh auth status`).
+- Both machines on a current `git pull` — the release scripts evolve, and the
+  Windows machine especially needs the same `make-release.sh`/`sign-windows-
+  installers.sh` as the Mac.
 - macOS (this Mac): the creds `make-mac-release.sh` expects —
   - `AS_MAC_SIGN_IDENTITY` — Developer ID Application cert hash (defaulted in the script).
   - `AS_NOTARY` — a notarytool keychain profile backed by an **App Store Connect
@@ -55,23 +70,9 @@ Edit `academicStudioVersion` in `overlay/product.overrides.json` to the new
 number, then commit and push:
 
 ```
-git add overlay/product.overrides.json && git commit -m "release: bump to <X.Y>"
+git add overlay/product.overrides.json && git commit -m "version: <X.Y>"
 git push origin main
 ```
-
-## Step 2 — put the site into "New Version Being Built" (optional, this Mac)
-
-To show every platform as "New Version Being Built" on the site while you build,
-publish an empty release for the new version (it becomes "latest", and the site
-downgrades all links until assets are attached):
-
-```
-gh release create v<X.Y> --title "Academic Studio <X.Y>" \
-  --notes "Installers are being built and will appear here shortly."
-```
-
-Skip this if you'd rather keep the previous version downloadable until the new
-one is ready. Either way, `make-release.sh` will upload into this same tag later.
 
 ## Pre-flight checks (run before building)
 
@@ -98,7 +99,7 @@ PY
 If it prints anything under MISSING, add those ids to the `MenubarHelpMenu` list
 and re-commit before building.
 
-## Step 3 — build all three on GitHub (from anywhere)
+## Step 2 — build all three on GitHub (from anywhere)
 
 ```
 gh workflow run build.yml
@@ -106,66 +107,105 @@ gh workflow run build.yml
 
 This runs three jobs and uploads three artifacts (nothing is published):
 `macos-arm64-unsigned-app`, `windows-x64-unsigned`, `windows-arm64-unsigned`.
+The build uses the pinned VSCodium ref and the pinned, sha256-verified
+extension manifests (see `scripts/versions.sh` and
+`scripts/fetch-extensions.sh --pinned`), so a green run is reproducible.
 
 Knowing when it finishes — pick one:
-- `gh run watch` — attach to the running build; it streams job status and returns
-  (with a terminal bell) when the run completes. Add `--exit-status` to fail the
-  shell if the run failed. This is the simplest "tell me when it's done."
-- `gh run list --workflow build.yml` — one-shot status (queued / in_progress /
-  completed) without blocking.
-- GitHub emails you on a failed run by default; to also be notified on success,
-  turn on GitHub → Settings → Notifications → Actions. The GitHub mobile app
-  pushes these too.
+- `gh run watch` — attach to the running build; returns when the run completes
+  (`--exit-status` to fail the shell if the run failed).
+- `gh run list --workflow build.yml` — one-shot status without blocking.
+- Periodic check for silent per-job failures:
+  `gh api repos/kerryback/academic_studio/actions/runs/<RID>/jobs --jq '.jobs[] | .name + ": " + .status + "/" + (.conclusion // "-")'`
 
-A full run is typically ~15–30 min (the Windows jobs dominate). Wait for
-`completed`/success before downloading artifacts.
+Timing observed in practice (2026-07): macOS ~35 min, Windows x64 ~55 min,
+Windows arm64 ~75 min — budget about 1–1.5 hours for the whole run. Jobs can be
+used as they finish (macOS completes first).
 
-## Step 4 — macOS: sign, notarize, publish (this Mac)
-
-Downloading artifacts is `gh run download`. Find the run id, then pull the macOS
-artifact:
+## Step 3 — macOS: sign, notarize, publish to staging (this Mac)
 
 ```
 RID=$(gh run list --workflow build.yml --limit 1 --json databaseId --jq '.[0].databaseId')
 gh run download "$RID" -n macos-arm64-unsigned-app -D /tmp/asrel
 
 # Restore the .app where the signing step expects it (ditto keeps the bundle intact):
-rm -rf build-engine/VSCode-darwin-arm64 && mkdir -p build-engine/VSCode-darwin-arm64
+rm -rf "build-engine/VSCode-darwin-arm64/Academic Studio.app"
+mkdir -p build-engine/VSCode-darwin-arm64
 ditto -x -k /tmp/asrel/AcademicStudio-macos-arm64-unsigned-app.zip build-engine/VSCode-darwin-arm64/
 
-# Sign + notarize + staple + package the dmg, then publish it to v<version>:
-scripts/make-mac-release.sh
+# Sanity: confirm it's the new version
+jq -r .academicStudioVersion "build-engine/VSCode-darwin-arm64/Academic Studio.app/Contents/Resources/app/product.json"
+
+# Sign + notarize + staple + package the dmg, then upload to the staging prerelease:
+scripts/make-mac-release.sh --staging
 ```
 
-`make-mac-release.sh` in its default mode signs the already-built `.app`
-(the one you just restored), notarizes, packages the signed `.dmg`, and runs
-`make-release.sh` to upload it. The macOS download link goes live.
+`make-mac-release.sh` signs the restored `.app`, notarizes, packages the signed
+`.dmg`, and passes `--staging` through to `make-release.sh`, which uploads to
+the `staging-v<version>` prerelease and prints direct download URLs. Notarize
+alone typically takes ~5–15 min. Don't worry about older dmgs sitting in
+`build-engine/assets/` — stale versions and stale version-less aliases are
+filtered automatically.
 
-## Step 5 — Windows x64 + arm64: sign and publish (Windows machine)
+## Step 4 — Windows x64 + arm64: sign and publish to staging (Windows machine)
 
-On the Windows machine (Git Bash), in a clone of the repo at the same tagged
-commit (`git pull`), pull both Windows artifacts into `build-engine/assets/` and
-sign them:
+On the Windows machine, from Git Bash in the repo (after `git pull` and with the
+SimplySign session logged in if using the Certum token):
 
 ```
+git pull
 RID=$(gh run list --workflow build.yml --limit 1 --json databaseId --jq '.[0].databaseId')
 mkdir -p build-engine/assets
-gh run download "$RID" -n windows-x64-unsigned   -D /tmp/win
-gh run download "$RID" -n windows-arm64-unsigned -D /tmp/win
-cp /tmp/win/*.exe build-engine/assets/
+gh run download "$RID" -n windows-x64-unsigned   -D build-engine/assets
+gh run download "$RID" -n windows-arm64-unsigned -D build-engine/assets
 
-# Sign both installers (set your cert env vars first — see docs/SIGNING.md):
+# Sign both installers (signtool handles either target arch from one machine):
 AS_WIN_CERT_SHA1="<thumbprint>" scripts/sign-windows-installers.sh
 
-# Publish both into the same release:
-scripts/make-release.sh
+# Upload to the same staging prerelease:
+scripts/make-release.sh --staging
 ```
 
-`sign-windows-installers.sh` signs every `*Setup.exe` in `build-engine/assets/`
-with signtool; `make-release.sh` uploads them (plus the version-less aliases) to
-`v<version>`. The two Windows download links go live.
+Browser alternative for the artifact download (needs a signed-in GitHub
+session — artifacts are never anonymous): the run page
+`https://github.com/kerryback/academic_studio/actions/runs/<RID>` lists the
+artifacts at the bottom; extract the zips into `build-engine/assets/`.
 
-## Step 6 — verify
+`sign-windows-installers.sh` signs every `*Setup.exe` in `build-engine/assets/`
+and hard-fails if signtool's verify does (so a bad signature can't slip
+through).
+
+## Step 5 — test the staging build on real machines
+
+Download from the URLs `--staging` printed (anonymous, works on any machine):
+
+```
+https://github.com/kerryback/academic_studio/releases/download/staging-v<X.Y>/Academic-Studio-<X.Y>-macos-arm64.dmg
+https://github.com/kerryback/academic_studio/releases/download/staging-v<X.Y>/Academic-Studio-<X.Y>-windows-x64-Setup.exe
+https://github.com/kerryback/academic_studio/releases/download/staging-v<X.Y>/Academic-Studio-<X.Y>-windows-arm64-Setup.exe
+```
+
+Install and check at least: app launches clean (no Gatekeeper/SmartScreen
+block), Run Setup opens and the "Additional packages" section loads from the
+live catalog, the startup new-package prompt behaves, and on Windows the
+install button runs the PowerShell flow in a terminal.
+
+## Step 6 — promote to public (once, from any machine)
+
+```
+scripts/make-release.sh --promote
+```
+
+This downloads the staging assets and uploads those exact files (byte-for-byte
+what you tested) to the public `v<version>` release, with the version-less
+aliases the site links to. The public download links flip to the new version
+the moment the release exists. Then optionally clean up:
+
+```
+gh release delete staging-v<X.Y> --repo kerryback/academic_studio --yes
+```
+
+## Verify
 
 ```
 gh release view v<X.Y> --json assets --jq '.assets[].name'
@@ -174,8 +214,18 @@ gh release view v<X.Y> --json assets --jq '.assets[].name'
 Expect the versioned dmg + two Setup.exe, plus the three version-less aliases
 (`Academic-Studio-macos-arm64.dmg`, `-windows-x64-Setup.exe`,
 `-windows-arm64-Setup.exe`). Load https://academic-studio.com/#downloads — every
-platform should now be a live link; any still building shows "New Version Being
-Built".
+platform should be a live link.
+
+## Direct publish (skip staging)
+
+For a hotfix you've already validated, `scripts/make-mac-release.sh` and
+`scripts/make-release.sh` without flags publish straight to `v<version>` —
+same steps as above minus `--staging`/`--promote`. The signature gate is strict
+here: unsigned or unverifiable files abort the upload (`ALLOW_UNSIGNED=1`
+overrides deliberately). Avoid pre-creating an empty public `v<X.Y>` release to
+get "New Version Being Built" on the site — it makes the empty release "latest"
+and takes every platform's download dark while you build; with the staging flow
+the public links simply stay on the old version until promote.
 
 ## Notes and caveats
 
@@ -188,7 +238,13 @@ Built".
   SmartScreen keys on the installer signature — adequate for the download/run
   experience. Full inner-binary signing needs the build tree + `SIGN_ONLY` on
   Windows (heavier); add later if required.
+- `SIGN_ONLY` requires that platform's full build tree on the machine (macOS
+  needs `build-engine/vscode/build/node_modules/@electron/osx-sign` from a past
+  local build) — a clean machine can't SIGN_ONLY a CI artifact.
 - CI artifacts are retained ~90 days; re-run `build.yml` if they've expired.
 - `make-release.sh` is idempotent and clobbers same-named assets, so you can
-  publish macOS and Windows from different machines into the same release, in any
-  order.
+  publish macOS and Windows from different machines into the same release
+  (staging or public), in any order.
+- Bumping the pinned VSCodium ref (`scripts/versions.sh` + the env block in
+  `build.yml`, kept in sync by hand) is a deliberate act: new ref = new VS Code
+  version + new patch context. Test a local build first.
