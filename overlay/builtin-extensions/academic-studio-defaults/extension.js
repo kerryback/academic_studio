@@ -119,7 +119,11 @@ function openClaudeOnStartup() {
 
 // ---- Check for Updates -----------------------------------------------------
 const LATEST_API = 'https://api.github.com/repos/kerryback/academic_studio/releases/latest';
-const DL_BASE = 'https://github.com/kerryback/academic_studio/releases/latest/download/';
+// Open the downloads page rather than a direct installer URL: it always resolves
+// to something useful (it shows "New Version Being Built" for a platform whose
+// installer isn't published yet, instead of a 404), and lets the user pick the
+// right build for their machine.
+const DOWNLOADS_PAGE = 'https://academic-studio.com/#downloads';
 
 // Installed product version (academicStudioVersion lives in the app's
 // product.json, two levels up from this built-in extension's folder).
@@ -129,19 +133,6 @@ function currentVersion(context) {
 			path.join(context.extensionPath, '..', '..', 'product.json'), 'utf8'));
 		return pj.academicStudioVersion || null;
 	} catch (e) { return null; }
-}
-
-// The version-less "latest" installer URL for the machine running the app.
-function platformInstallerUrl() {
-	if (process.platform === 'darwin') {
-		return DL_BASE + 'Academic-Studio-macos-arm64.dmg';
-	}
-	if (process.platform === 'win32') {
-		return DL_BASE + (process.arch === 'arm64'
-			? 'Academic-Studio-windows-arm64-Setup.exe'
-			: 'Academic-Studio-windows-x64-Setup.exe');
-	}
-	return null;
 }
 
 // Numeric dotted-version compare: returns >0 if a is newer than b.
@@ -182,15 +173,13 @@ async function checkForUpdates(context) {
 	}
 
 	const have = current ? `you have ${current}` : 'a newer version is available';
-	const dl = platformInstallerUrl();
-	if (!dl) {
-		vscode.window.showInformationMessage(`Academic Studio ${latest} is available (${have}).`);
-		return;
-	}
+	// The message text isn't clickable — only the button is. Label it clearly so
+	// it's obvious where to click.
 	const pick = await vscode.window.showInformationMessage(
-		`Academic Studio ${latest} is available (${have}). Download it, then run the installer to update.`,
-		'Download');
-	if (pick === 'Download') open(dl);
+		`Academic Studio ${latest} is available (${have}). Open the downloads page, `
+		+ `then download and run the installer to update.`,
+		'Open Downloads Page');
+	if (pick === 'Open Downloads Page') open(DOWNLOADS_PAGE);
 }
 
 function deactivate() {}
