@@ -355,11 +355,45 @@ async function runInstall(context, panel, selectedIds, detected) {
 		postReport(panel, [], plan.skipped, detected);
 		return;
 	}
-	// The Finance Data package installs the libraries (below, in the terminal) and
-	// the finance-data skill (these files) together. Copy the skill now so it's in
-	// place; the item's detect check requires both the libraries and this skill.
 	if (plan.ordered.includes('finance-data')) { installFinanceSkill(context); }
 
+	if (process.platform === 'win32') {
+		await runInstallWindows(context, panel, plan);
+	} else {
+		await runInstallMac(context, panel, plan);
+	}
+}
+
+// Windows: run each item's installWin commands directly via child_process.
+// No bash scripts, no terminal — just run pip (or whatever) and report.
+async function runInstallWindows(context, panel, plan) {
+	await vscode.window.withProgress(
+		{ location: vscode.ProgressLocation.Notification, title: 'Academic Studio', cancellable: false },
+		async (progress) => {
+			const results = [];
+			for (const id of plan.ordered) {
+				const p = PROGRAMS.find(x => x.id === id);
+				if (!p || !p.installWin || !p.installWin.length) { continue; }
+				progress.report({ message: 'Installing ' + shortName(p) + '…' });
+				const cmd = p.installWin.join(' && ');
+				try {
+					await new Promise((resolve, reject) => {
+						cp.exec(cmd, { timeout: 300000 }, (err) => err ? reject(err) : resolve());
+					});
+					results.push({ id, status: 'ok' });
+				} catch (_) {
+					results.push({ id, status: 'fail' });
+				}
+			}
+			const redetect = await detectPrograms();
+			postReport(panel, results, plan.skipped, redetect);
+		}
+	);
+}
+
+// macOS: build a bash install script and run it in a visible terminal
+// (many items need sudo for .pkg installers).
+async function runInstallMac(context, panel, plan) {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'as-install-'));
 	const scriptPath = path.join(dir, 'install.sh');
 	const resultsPath = path.join(dir, 'results.txt');
@@ -367,10 +401,7 @@ async function runInstall(context, panel, selectedIds, detected) {
 
 	const term = vscode.window.createTerminal('Academic Studio — Install');
 	term.show(true);
-	// On Windows the terminal is PowerShell; bash interprets backslash paths
-	// as escape sequences, so convert to forward slashes.
-	const safePath = process.platform === 'win32' ? scriptPath.replace(/\\/g, '/') : scriptPath;
-	term.sendText('bash ' + shq(safePath));
+	term.sendText('bash ' + shq(scriptPath));
 
 	// Poll the results file until DONE (or timeout ~45 min for big downloads).
 	const deadline = Date.now() + 45 * 60 * 1000;
