@@ -75,13 +75,18 @@ Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it 
 </style>
 <script>
   // Show a download link only when that installer is actually attached to the
-  // latest GitHub release; otherwise mark it "under construction". Fail open —
-  // if the API is unreachable or rate-limited, leave the plain links in place so
-  // a working download is never hidden.
+  // latest GitHub release; otherwise mark it "New Version Being Built".
+  //   - 404 (no published release at all) -> treat as zero assets, so every
+  //     platform shows "being built".
+  //   - genuine network error / rate limit -> fail open, leaving the plain links
+  //     so a working download is never hidden by a transient hiccup.
   (function () {
     fetch("https://api.github.com/repos/kerryback/academic_studio/releases/latest",
           { headers: { "Accept": "application/vnd.github+json" } })
-      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (r) {
+        if (r.status === 404) { return { assets: [] }; }   // no release yet -> all building
+        return r.ok ? r.json() : null;                     // other non-OK -> fail open
+      })
       .then(function (rel) {
         if (!rel || !rel.assets) return;
         var have = {};
