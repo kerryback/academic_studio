@@ -176,9 +176,15 @@ async function checkForUpdates(context) {
 	const have = current ? `you have ${current}` : 'a newer version is available';
 	// The message text isn't clickable — only the button is. Label it clearly so
 	// it's obvious where to click.
+	// "Install" is deliberately generic: on Windows you run the Setup.exe, on macOS
+	// you drag the app onto Applications (a .dmg is not a run-it installer). Quit
+	// first so the update replaces the running copy rather than reopening it.
+	const macHint = process.platform === 'darwin'
+		? ' On the Mac: quit Academic Studio, then drag the new app onto your Applications folder.'
+		: '';
 	const pick = await vscode.window.showInformationMessage(
-		`Academic Studio ${latest} is available (${have}). Open the downloads page, `
-		+ `then download and run the installer to update.`,
+		`Academic Studio ${latest} is available (${have}). Open the downloads page to `
+		+ `download and install it.` + macHint,
 		'Open Downloads Page');
 	if (pick === 'Open Downloads Page') open(DOWNLOADS_PAGE);
 }
