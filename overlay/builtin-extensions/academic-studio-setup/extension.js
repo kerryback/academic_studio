@@ -85,8 +85,8 @@ const PROGRAMS = [
 			'[ -n "$V" ] || { echo "Could not find a Python installer URL."; exit 1; }',
 			'TMP=$(mktemp -d); curl -fsSL "https://www.python.org/ftp/python/$V/python-$V-macos11.pkg" -o "$TMP/python.pkg"',
 			'sudo installer -pkg "$TMP/python.pkg" -target /',
-			'python3 -m pip install --upgrade pip',
-			'python3 -m pip install numpy pandas matplotlib scipy jupyter scikit-learn seaborn statsmodels sympy openpyxl python-pptx python-docx plotly',
+			'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pip',
+			'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install numpy pandas matplotlib scipy jupyter scikit-learn seaborn statsmodels sympy openpyxl python-pptx python-docx plotly',
 		],
 	},
 	{
@@ -556,7 +556,13 @@ function commandsFor(item) {
 	if (item.kind === 'package') {
 		const cmds = [];
 		if (item.pip && item.pip.length) {
-			cmds.push((isWin ? 'python' : 'python3') + ' -m pip install ' + item.pip.join(' '));
+			// PEP 668: Homebrew/Debian Pythons are "externally managed" and refuse
+			// system pip installs. The PIP_BREAK_SYSTEM_PACKAGES=1 env var lifts
+			// that on pip >= 23 and is silently ignored by older pips — unlike the
+			// --break-system-packages flag, which errors on pips that predate it.
+			cmds.push(isWin
+				? "$env:PIP_BREAK_SYSTEM_PACKAGES = '1'; python -m pip install " + item.pip.join(' ')
+				: 'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install ' + item.pip.join(' '));
 		}
 		return cmds.length ? cmds : [];   // skill/mcp are handled in-process
 	}

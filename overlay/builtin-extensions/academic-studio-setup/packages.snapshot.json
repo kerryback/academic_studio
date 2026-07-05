@@ -27,7 +27,7 @@
         "sha256": "394d834e9a12d8f9cf81d8f83996be0dc64a4953a986892305a91fe73b778b01"
       },
       "manualUrl": "https://academic-studio.com/packages/finance-data-1.tar.gz",
-      "manualSteps": "Open a terminal and run: pip install yfinance pandas-datareader fredapi finnhub-python requests — then download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/finance-data."
+      "manualSteps": "Open a terminal and run: pip install yfinance pandas-datareader fredapi finnhub-python requests (if you see an 'externally-managed-environment' error, run PIP_BREAK_SYSTEM_PACKAGES=1 pip install … instead) — then download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/finance-data."
     }
   ]
 }
