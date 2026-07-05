@@ -74,6 +74,17 @@ jobs:
         run: |
           echo "/c/Program Files (x86)/Inno Setup 6" >> "$GITHUB_PATH"
           echo "/c/Program Files/7-Zip" >> "$GITHUB_PATH"
+      # The runner's node (via Git Bash) doesn't always expose ProgramFiles, so
+      # VSCodium's preinstall.ts can't find Visual Studio ("Invalid C/C++ Compiler
+      # Toolchain"). Locate VS with vswhere and set vs2022_install explicitly.
+      - name: Point the build at Visual Studio (vs2022_install)
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * -property installationPath
+          if (-not $vs) { Write-Error "No Visual Studio install found via vswhere"; exit 1 }
+          "vs2022_install=$vs" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "vs2022_install=$vs"
       - name: Clone build engine (VSCodium)
         run: |
           git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
@@ -108,6 +119,17 @@ jobs:
         run: |
           echo "/c/Program Files (x86)/Inno Setup 6" >> "$GITHUB_PATH"
           echo "/c/Program Files/7-Zip" >> "$GITHUB_PATH"
+      # The runner's node (via Git Bash) doesn't always expose ProgramFiles, so
+      # VSCodium's preinstall.ts can't find Visual Studio ("Invalid C/C++ Compiler
+      # Toolchain"). Locate VS with vswhere and set vs2022_install explicitly.
+      - name: Point the build at Visual Studio (vs2022_install)
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * -property installationPath
+          if (-not $vs) { Write-Error "No Visual Studio install found via vswhere"; exit 1 }
+          "vs2022_install=$vs" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "vs2022_install=$vs"
       - name: Clone build engine (VSCodium)
         run: |
           git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
