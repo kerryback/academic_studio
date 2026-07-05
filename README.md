@@ -38,6 +38,31 @@ Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it 
 - Claude Code is built-in and opens on startup.
 - Easy installation of important tools — Office Viewer, PDF, Quarto, Python, Jupyter, R, LaTeX, Node.js.
 
+## Packages
+
+Packages are optional add-ons for specific kinds of work. Each one bundles everything a task needs — Python libraries plus a skill that teaches Claude how to use them — so a single install makes Claude genuinely good at something new. Packages are delivered online: when a new package (or an update to one you have) becomes available, Academic Studio offers it the next time you start the app, with no need to download a new version of Academic Studio itself.
+
+### Finance Data
+
+The Finance Data package lets you ask Claude for financial, market, and economic data in plain English — "get Apple's daily prices since 2015," "download the Fama-French factors," "pull CPI and unemployment from FRED" — and get a clean CSV file ready for analysis. It routes each request to the right free source:
+
+- Yahoo Finance and Stooq — stock, ETF, and index prices
+- SEC EDGAR — company fundamentals from 10-K/10-Q filings
+- FRED — macroeconomic and interest-rate series
+- Ken French Data Library — asset-pricing factor returns
+- FinnHub — company news and estimates
+- US Treasury — the daily yield curve
+
+Installing the package sets up the Python libraries these sources need and the skill that teaches Claude which source to use and how. A couple of sources (FRED, FinnHub) work best with free API keys — Claude will walk you through getting them the first time they're needed.
+
+### Installing packages
+
+There are two ways, both built in:
+
+- When you start the app, Academic Studio checks for packages you don't have yet and shows a notification — click Install and it's done.
+- Any time, open Help → Run Setup… and scroll to Additional packages. Missing packages are pre-checked; click "Install selected programs & packages".
+
+Packages that use Python (like Finance Data) need Python installed first — Run Setup handles that too. Installed skills live in your shared Claude configuration, so they also work from Claude Code CLI and the Code mode of Claude Desktop.
 
 ## Downloads {#downloads}
 
