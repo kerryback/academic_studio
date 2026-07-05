@@ -56,7 +56,10 @@ jobs:
 
   # ------------------------------------------------------------- Windows x64
   build-windows-x64:
-    runs-on: windows-latest
+    # Pin to windows-2022: windows-latest moved to windows-2025, where node-gyp's
+    # Visual Studio finder can't locate the C++ toolchain (build fails at native
+    # module rebuild). windows-2022 ships VS 2022 + "Desktop development with C++".
+    runs-on: windows-2022
     defaults:
       run: { shell: bash }
     steps:
