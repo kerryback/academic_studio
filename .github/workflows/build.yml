@@ -34,6 +34,11 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
           ( cd build-engine && git remote rename origin upstream )
+      # The bundled .vsix extensions are gitignored (regenerable); a fresh CI
+      # checkout has none, and the build only auto-fetches when the manifest is
+      # missing (it's committed). So fetch them explicitly.
+      - name: Fetch bundled extensions (Open VSX)
+        run: bash scripts/fetch-extensions.sh darwin-arm64
       - name: Build (unsigned .app + dmg)
         run: SKIP_ASSETS=no bash scripts/build-macos.sh
       # Ship the unsigned .app (not the dmg) so it can be signed + notarized on the
@@ -62,9 +67,9 @@ jobs:
         with: { node-version: '22.22.1' }
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: Install Inno Setup + 7-Zip + jq
+      - name: Install Inno Setup + 7-Zip + jq + unzip
         shell: pwsh
-        run: choco install innosetup 7zip jq -y --no-progress
+        run: choco install innosetup 7zip jq unzip -y --no-progress
       - name: Put Inno Setup + 7-Zip on PATH
         run: |
           echo "/c/Program Files (x86)/Inno Setup 6" >> "$GITHUB_PATH"
@@ -73,6 +78,8 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
           ( cd build-engine && git remote rename origin upstream )
+      - name: Fetch bundled extensions (Open VSX)
+        run: bash scripts/fetch-extensions.sh win32-x64
       - name: Build installer (x64, unsigned)
         run: SKIP_ASSETS=no bash scripts/build-windows-x64.sh
       - uses: actions/upload-artifact@v4
@@ -94,9 +101,9 @@ jobs:
         with: { node-version: '22.22.1' }
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: Install Inno Setup + 7-Zip + jq
+      - name: Install Inno Setup + 7-Zip + jq + unzip
         shell: pwsh
-        run: choco install innosetup 7zip jq -y --no-progress
+        run: choco install innosetup 7zip jq unzip -y --no-progress
       - name: Put Inno Setup + 7-Zip on PATH
         run: |
           echo "/c/Program Files (x86)/Inno Setup 6" >> "$GITHUB_PATH"
@@ -105,6 +112,8 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/VSCodium/vscodium.git build-engine
           ( cd build-engine && git remote rename origin upstream )
+      - name: Fetch bundled extensions (Open VSX)
+        run: bash scripts/fetch-extensions.sh win32-arm64
       - name: Build installer (arm64, unsigned)
         run: SKIP_ASSETS=no bash scripts/build-windows-arm64.sh
       - uses: actions/upload-artifact@v4
