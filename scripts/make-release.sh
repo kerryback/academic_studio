@@ -124,6 +124,18 @@ verify_signed() {   # 0 = verified, 1 = unsigned/invalid, 2 = cannot verify here
       command -v codesign >/dev/null 2>&1 || return 2
       codesign -v "$1" >/dev/null 2>&1 || return 1 ;;
     *.exe|*.msi)
+      # osslsigncode verifies Authenticode on any OS — prefer it when present.
+      if command -v osslsigncode >/dev/null 2>&1; then
+        osslsigncode verify -in "$1" >/dev/null 2>&1 || return 1
+        return 0
+      fi
+      # Trust a `signtool` on PATH only on Windows: macOS Homebrew's nss
+      # formula ships an unrelated Netscape `signtool` that would misreport
+      # every installer as unsigned.
+      case "$(uname -s)" in
+        MINGW*|MSYS*|CYGWIN*) ;;
+        *) return 2 ;;
+      esac
       local st
       st="$(command -v signtool 2>/dev/null || command -v signtool.exe 2>/dev/null || true)"
       [ -n "$st" ] || st="$(ls -d "/c/Program Files (x86)/Windows Kits/10/bin/"*/x64/signtool.exe 2>/dev/null | sort -V | tail -1)"
@@ -135,7 +147,9 @@ verify_signed() {   # 0 = verified, 1 = unsigned/invalid, 2 = cannot verify here
 if [ "${ALLOW_UNSIGNED:-0}" != "1" ]; then
   bad=(); unverifiable=()
   for f in "${files[@]}"; do
-    verify_signed "$f"; rc=$?
+    # `&& rc=0 || rc=$?` so a nonzero return reaches the checks below instead
+    # of tripping set -e.
+    verify_signed "$f" && rc=0 || rc=$?
     if [ "$rc" = "1" ]; then bad+=("$(basename "$f") (UNSIGNED or invalid signature)");
     elif [ "$rc" = "2" ]; then unverifiable+=("$(basename "$f") (cannot verify on this machine)"); fi
   done
