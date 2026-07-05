@@ -58,6 +58,7 @@
   "academicStudioMenuKeepOnly": {
     "MenubarHelpMenu": [
       "workbench.action.openWalkthrough",
+      "academicStudio.openTour",
       "academicStudio.openHelp",
       "academicStudio.openSetup",
       "academicStudio.checkForUpdates",
