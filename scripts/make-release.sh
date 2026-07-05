@@ -43,6 +43,21 @@ echo
 # CLI tarball the Windows packaging drops in assets/). nullglob (set above) drops
 # patterns that match nothing.
 files=("$ASSETS"/*.dmg "$ASSETS"/*.exe "$ASSETS"/*.zip "$ASSETS"/*.msi)
+
+# Drop stale-version installers: a previous version's file left in assets/ (e.g.
+# a prior .dmg on the Mac) would otherwise be uploaded into THIS release. Keep the
+# version-less aliases and anything tagged with the current version only.
+kept=()
+for f in "${files[@]}"; do
+  fver="$(basename "$f" | sed -nE 's/^Academic-Studio-([0-9]+(\.[0-9]+)*)-.*/\1/p')"
+  if [ -n "$fver" ] && [ "$fver" != "$ASVER" ]; then
+    echo "  skipping stale-version asset: $(basename "$f")"
+    continue
+  fi
+  kept+=("$f")
+done
+files=("${kept[@]}")
+
 [ "${#files[@]}" -gt 0 ] || { echo "ERROR: no installer files (.dmg/.exe/.zip/.msi) in $ASSETS. Build with SKIP_ASSETS=no first."; exit 1; }
 
 echo "Release $TAG on $REPO"
