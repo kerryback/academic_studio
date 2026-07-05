@@ -168,7 +168,8 @@ async function checkForUpdates(context) {
 
 	const current = currentVersion(context);
 	if (current && cmpVersions(latest, current) <= 0) {
-		vscode.window.showInformationMessage(`Academic Studio ${current} is the latest version.`);
+		vscode.window.showInformationMessage(
+			`You're up to date — you have Academic Studio ${current}, which is the latest version. Nothing to install.`);
 		return;
 	}
 
