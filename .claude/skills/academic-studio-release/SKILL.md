@@ -59,16 +59,52 @@ gh release create v<X.Y> --title "Academic Studio <X.Y>" \
 Skip this if you'd rather keep the previous version downloadable until the new
 one is ready. Either way, `make-release.sh` will upload into this same tag later.
 
+## Pre-flight checks (run before building)
+
+Help-menu allowlist: the Help menu is filtered by a keep-*only* allowlist
+(`academicStudioMenuKeepOnly.MenubarHelpMenu` in `overlay/product.overrides.json`,
+enforced by patch 20). Any item registered in the Help menu but missing from that
+list is silently dropped — this is how "Tour of Academic Studio" went missing.
+Before building, confirm every registered Help item is in the allowlist:
+
+```
+python3 - <<'PY'
+import json, re
+reg  = set(re.findall(r"id:\s*'(academicStudio\.\w+)'",
+                      open('overlay/patches/common/51-help-menu-readme.patch').read()))
+keep = set(json.load(open('overlay/product.overrides.json'))
+           ['academicStudioMenuKeepOnly']['MenubarHelpMenu'])
+missing = reg - keep
+print('registered:', sorted(reg))
+print('MISSING from allowlist:', sorted(missing) or 'none — OK')
+import sys; sys.exit(1 if missing else 0)
+PY
+```
+
+If it prints anything under MISSING, add those ids to the `MenubarHelpMenu` list
+and re-commit before building.
+
 ## Step 3 — build all three on GitHub (from anywhere)
 
 ```
 gh workflow run build.yml
-gh run watch                # or: gh run list --workflow build.yml
 ```
 
 This runs three jobs and uploads three artifacts (nothing is published):
 `macos-arm64-unsigned-app`, `windows-x64-unsigned`, `windows-arm64-unsigned`.
-Wait for the run to finish before downloading.
+
+Knowing when it finishes — pick one:
+- `gh run watch` — attach to the running build; it streams job status and returns
+  (with a terminal bell) when the run completes. Add `--exit-status` to fail the
+  shell if the run failed. This is the simplest "tell me when it's done."
+- `gh run list --workflow build.yml` — one-shot status (queued / in_progress /
+  completed) without blocking.
+- GitHub emails you on a failed run by default; to also be notified on success,
+  turn on GitHub → Settings → Notifications → Actions. The GitHub mobile app
+  pushes these too.
+
+A full run is typically ~15–30 min (the Windows jobs dominate). Wait for
+`completed`/success before downloading artifacts.
 
 ## Step 4 — macOS: sign, notarize, publish (this Mac)
 
