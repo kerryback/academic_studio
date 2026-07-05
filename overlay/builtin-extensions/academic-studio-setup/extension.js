@@ -183,6 +183,9 @@ const PROGRAMS = [
 		installMac: [
 			'python3 -m pip install yfinance pandas-datareader fredapi finnhub-python requests',
 		],
+		installWin: [
+			'python -m pip install yfinance pandas-datareader fredapi finnhub-python requests',
+		],
 	},
 ];
 
@@ -287,24 +290,33 @@ function firstLine(s) { return (s || '').split('\n')[0].trim(); }
 
 // ---- install flow ----------------------------------------------------------
 function buildInstallScript(orderedIds, resultsPath) {
+	const isWin = process.platform === 'win32';
+	// In the bash script, use forward slashes for the results path on Windows.
+	const safeResults = isWin ? resultsPath.replace(/\\/g, '/') : resultsPath;
 	const lines = [
 		'#!/bin/bash',
 		'set +e',
-		'export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"',
-		'R=' + shq(resultsPath),
-		': > "$R"',
-		'echo "Academic Studio — installing selected programs."',
-		'echo "You may be prompted for your Mac password (needed by system installers)."',
-		'echo',
-		'sudo -v',
-		'',
 	];
+	if (!isWin) {
+		lines.push('export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"');
+	}
+	lines.push('R=' + shq(safeResults));
+	lines.push(': > "$R"');
+	lines.push('echo "Academic Studio — installing selected programs."');
+	if (!isWin) {
+		lines.push('echo "You may be prompted for your Mac password (needed by system installers)."');
+		lines.push('echo');
+		lines.push('sudo -v');
+	}
+	lines.push('');
 	for (const id of orderedIds) {
 		const p = PROGRAMS.find(x => x.id === id);
 		if (!p) { continue; }
+		const cmds = isWin ? p.installWin : p.installMac;
+		if (!cmds || !cmds.length) { continue; }
 		lines.push('echo "=== Installing ' + p.label + ' ==="');
 		lines.push('( set -e');
-		for (const l of p.installMac) { lines.push('  ' + l); }
+		for (const l of cmds) { lines.push('  ' + l); }
 		lines.push(')');
 		lines.push('if [ $? -eq 0 ]; then echo "RESULT ' + id + ' ok" >> "$R"; else echo "RESULT ' + id + ' fail" >> "$R"; fi');
 		lines.push('echo');
@@ -355,7 +367,10 @@ async function runInstall(context, panel, selectedIds, detected) {
 
 	const term = vscode.window.createTerminal('Academic Studio — Install');
 	term.show(true);
-	term.sendText('bash ' + shq(scriptPath));
+	// On Windows the terminal is PowerShell; bash interprets backslash paths
+	// as escape sequences, so convert to forward slashes.
+	const safePath = process.platform === 'win32' ? scriptPath.replace(/\\/g, '/') : scriptPath;
+	term.sendText('bash ' + shq(safePath));
 
 	// Poll the results file until DONE (or timeout ~45 min for big downloads).
 	const deadline = Date.now() + 45 * 60 * 1000;
