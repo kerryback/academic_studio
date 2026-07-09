@@ -57,6 +57,13 @@ function activate(context) {
 			() => checkForUpdates(context))
 	);
 
+	// Help → Claude Permissions… lets the user pick how much Claude may do
+	// without asking (the Claude Code extension's permission modes).
+	context.subscriptions.push(
+		vscode.commands.registerCommand('academicStudio.claudePermissions',
+			() => pickClaudePermissions())
+	);
+
 	// File → New File entries for file types that don't add their own. Each opens
 	// a new untitled document in the right language (save it with the extension).
 	context.subscriptions.push(
@@ -125,6 +132,65 @@ function openClaudeOnStartup(context) {
 		};
 		tick();
 	}, MAX_WAIT);
+}
+
+// ---- Claude Permissions ------------------------------------------------------
+// The Claude Code extension exposes claudeCode.initialPermissionMode with these
+// four values (its full allowed set). "bypassPermissions" is additionally gated
+// behind claudeCode.allowDangerouslySkipPermissions, which we set/clear here so
+// the picked mode actually works.
+const CLAUDE_PERMISSION_MODES = [
+	{
+		mode: 'default', label: 'Ask before changes',
+		detail: 'Claude asks your permission before editing files or running commands.',
+	},
+	{
+		mode: 'acceptEdits', label: 'Allow file edits',
+		detail: 'Claude edits files without asking, but still asks before running commands.',
+	},
+	{
+		mode: 'plan', label: 'Plan first',
+		detail: 'Claude only reads and proposes a plan; nothing changes until you approve it.',
+	},
+	{
+		mode: 'bypassPermissions', label: 'Allow everything',
+		detail: 'Claude edits files and runs commands without ever asking. Use with care.',
+	},
+];
+
+async function pickClaudePermissions() {
+	const config = vscode.workspace.getConfiguration('claudeCode');
+	const current = config.get('initialPermissionMode') || 'default';
+	const pick = await vscode.window.showQuickPick(
+		CLAUDE_PERMISSION_MODES.map(m => ({
+			label: m.label,
+			description: m.mode === current ? 'current setting' : undefined,
+			detail: m.detail,
+			mode: m.mode,
+		})),
+		{
+			title: 'Claude Permissions',
+			placeHolder: 'How much can Claude do without asking you first?',
+		}
+	);
+	if (!pick || pick.mode === current) { return; }
+
+	if (pick.mode === 'bypassPermissions') {
+		const confirmed = await vscode.window.showWarningMessage(
+			'With "Allow everything", Claude will edit files and run commands without '
+			+ 'ever asking you. A mistaken command could delete or overwrite your work. '
+			+ 'Are you sure?',
+			{ modal: true }, 'Allow Everything');
+		if (confirmed !== 'Allow Everything') { return; }
+		await config.update('allowDangerouslySkipPermissions', true, vscode.ConfigurationTarget.Global);
+	} else {
+		// Close the dangerous gate again when moving off "Allow everything".
+		await config.update('allowDangerouslySkipPermissions', undefined, vscode.ConfigurationTarget.Global);
+	}
+	await config.update('initialPermissionMode', pick.mode, vscode.ConfigurationTarget.Global);
+	vscode.window.showInformationMessage(
+		`Claude permissions set to "${pick.label}". This applies to new Claude conversations; `
+		+ 'a conversation that is already open keeps its current setting.');
 }
 
 // ---- Check for Updates -----------------------------------------------------

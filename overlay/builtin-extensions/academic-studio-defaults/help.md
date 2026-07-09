@@ -32,6 +32,12 @@ the filename or the exact words. It searches the folder you have open, and it
 can look elsewhere on your computer when you ask. That is one of the real
 advantages of an assistant that works with your files, not just a chat window.
 
+By default Claude asks your permission before it edits a file or runs a
+command. You can change how much it may do without asking in Help →
+Claude Permissions… — from always asking, to auto-approving file edits, to
+plan-first (nothing changes until you approve the plan), to never asking.
+The choice takes effect for new Claude conversations.
+
 ### Office documents
 
 Claude can create and edit real Excel, Word, PowerPoint, and PDF files using the
