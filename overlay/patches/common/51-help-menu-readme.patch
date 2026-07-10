@@ -1,7 +1,7 @@
 diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/browser/actions/helpActions.ts
 --- a/src/vs/workbench/browser/actions/helpActions.ts
 +++ b/src/vs/workbench/browser/actions/helpActions.ts
-@@ -406,3 +406,57 @@
+@@ -406,3 +406,48 @@
  registerAction2(GetStartedWithAccessibilityFeatures);
 
  registerAction2(AskVSCodeCopilot);
@@ -31,15 +31,6 @@ diff --git a/src/vs/workbench/browser/actions/helpActions.ts b/src/vs/workbench/
 +	},
 +	group: '1_welcome',
 +	order: 3,
-+});
-+
-+MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {
-+	command: {
-+		id: 'academicStudio.claudePermissions',
-+		title: localize('academicStudioClaudePermissions', "Claude Permissions…"),
-+	},
-+	group: '2_claude',
-+	order: 1,
 +});
 +
 +MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {

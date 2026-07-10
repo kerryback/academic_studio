@@ -32,6 +32,36 @@
         "category": "Claude"
       },
       {
+        "command": "academicStudio.claudeInstalledSkills",
+        "title": "Installed Skills…",
+        "category": "Claude"
+      },
+      {
+        "command": "academicStudio.claudeNewSkill",
+        "title": "New Skill…",
+        "category": "Claude"
+      },
+      {
+        "command": "academicStudio.claudeGetSkills",
+        "title": "Get More Skills",
+        "category": "Claude"
+      },
+      {
+        "command": "academicStudio.claudeMemoryFiles",
+        "title": "Memory Files (CLAUDE.md)…",
+        "category": "Claude"
+      },
+      {
+        "command": "academicStudio.claudeMcpConnectors",
+        "title": "MCP Connectors…",
+        "category": "Claude"
+      },
+      {
+        "command": "academicStudio.claudePlugins",
+        "title": "Plugins",
+        "category": "Claude"
+      },
+      {
         "command": "academicStudio.about",
         "title": "About Academic Studio",
         "category": "Help"

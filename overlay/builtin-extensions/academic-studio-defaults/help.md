@@ -32,11 +32,16 @@ the filename or the exact words. It searches the folder you have open, and it
 can look elsewhere on your computer when you ask. That is one of the real
 advantages of an assistant that works with your files, not just a chat window.
 
-By default Claude asks your permission before it edits a file or runs a
-command. You can change how much it may do without asking in Help →
-Claude Permissions… — from always asking, to auto-approving file edits, to
-plan-first (nothing changes until you approve the plan), to never asking.
-The choice takes effect for new Claude conversations.
+The Claude menu in the menu bar collects everything about how Claude works
+for you. Permissions… controls how much Claude may do without asking — from
+always asking, to auto-approving file edits, to plan-first (nothing changes
+until you approve the plan), to never asking; the choice takes effect for new
+Claude conversations. Installed Skills… shows the step-by-step skills Claude
+knows (open one to read or edit it, or delete it with the trash icon), New
+Skill… creates one from a template, and Get More Skills opens Anthropic's
+public skills collection. Memory Files (CLAUDE.md)… creates or opens the
+instruction files Claude reads at the start of every conversation, and MCP
+Connectors… lists the extra tool connections Claude can use.
 
 ### Office documents
 

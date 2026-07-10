@@ -1,0 +1,54 @@
+--- a/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts
++++ b/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts
+@@ -87,3 +87,32 @@
+ 	when: IsMacNativeContext,
+ 	order: 9
+ });
++
++// Academic Studio: top-level Claude menu — surfaces Claude Code workflows
++// (conversations, permissions, skills, memory files, MCP connectors, plugins)
++// so they are discoverable for students. Command handlers live in the
++// academic-studio-defaults built-in extension (and the Claude Code extension
++// for the open/new-conversation items). The macOS native menubar only renders
++// explicitly listed menus, so a matching block is patched into
++// vs/platform/menubar/electron-main/menubar.ts.
++const AcademicStudioClaudeMenu = new MenuId('AcademicStudioClaudeMenu');
++
++MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
++	submenu: AcademicStudioClaudeMenu,
++	title: {
++		value: 'Claude',
++		original: 'Claude',
++		mnemonicTitle: localize({ key: 'mClaude', comment: ['&& denotes a mnemonic'] }, "&&Claude")
++	},
++	order: 7.5
++});
++
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'claude-vscode.newConversation', title: localize('asClaudeNewConversation', "New Conversation") }, group: '1_open', order: 1 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'claude-vscode.primaryEditor.open', title: localize('asClaudeOpen', "Open Claude") }, group: '1_open', order: 2 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudePermissions', title: localize('asClaudePermissions', "Permissions…") }, group: '2_permissions', order: 1 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeInstalledSkills', title: localize('asClaudeInstalledSkills', "Installed Skills…") }, group: '3_skills', order: 1 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeNewSkill', title: localize('asClaudeNewSkill', "New Skill…") }, group: '3_skills', order: 2 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeGetSkills', title: localize('asClaudeGetSkills', "Get More Skills") }, group: '3_skills', order: 3 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeMemoryFiles', title: localize('asClaudeMemoryFiles', "Memory Files (CLAUDE.md)…") }, group: '4_config', order: 1 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeMcpConnectors', title: localize('asClaudeMcpConnectors', "MCP Connectors…") }, group: '4_config', order: 2 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudePlugins', title: localize('asClaudePlugins', "Plugins") }, group: '4_config', order: 3 });
+--- a/src/vs/platform/menubar/electron-main/menubar.ts
++++ b/src/vs/platform/menubar/electron-main/menubar.ts
+@@ -351,6 +351,16 @@
+ 			const terminalMenuItem = new MenuItem({ label: this.mnemonicLabel(nls.localize({ key: 'mTerminal', comment: ['&& denotes a mnemonic'] }, "&&Terminal")), submenu: terminalMenu });
+ 			this.setMenuById(terminalMenu, 'Terminal');
+ 			menubar.append(terminalMenuItem);
++		}
++
++		// Academic Studio: Claude menu (items registered in
++		// menubar.contribution.ts; the native menubar only renders menus that
++		// are explicitly drawn here).
++		if (this.shouldDrawMenu('Claude')) {
++			const asClaudeMenu = new Menu();
++			const asClaudeMenuItem = new MenuItem({ label: this.mnemonicLabel(nls.localize({ key: 'mClaude', comment: ['&& denotes a mnemonic'] }, "&&Claude")), submenu: asClaudeMenu });
++			this.setMenuById(asClaudeMenu, 'Claude');
++			menubar.append(asClaudeMenuItem);
+ 		}
+ 
+ 		// Mac: Window
