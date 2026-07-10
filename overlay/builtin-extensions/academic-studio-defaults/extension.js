@@ -6,6 +6,7 @@
 //    isn't already there. VS Code restores the previous session's tabs, so
 //    opening unconditionally stacked a duplicate Claude tab on every restart.
 const vscode = require('vscode');
+const os = require('os');
 const path = require('path');
 const fs = require('fs');
 
