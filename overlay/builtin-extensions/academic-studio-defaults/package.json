@@ -27,6 +27,11 @@
         "category": "Help"
       },
       {
+        "command": "academicStudio.claudeNewChat",
+        "title": "New Chat",
+        "category": "Claude"
+      },
+      {
         "command": "academicStudio.claudePermissions",
         "title": "Permissions…",
         "category": "Claude"
@@ -58,7 +63,7 @@
       },
       {
         "command": "academicStudio.claudePlugins",
-        "title": "Plugins",
+        "title": "Plugins…",
         "category": "Claude"
       },
       {

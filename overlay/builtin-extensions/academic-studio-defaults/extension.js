@@ -62,6 +62,13 @@ function activate(context) {
 	// workflows — permissions, skills, memory files, MCP connectors, plugins —
 	// so students can see and manage them without knowing CLI conventions.
 	context.subscriptions.push(
+		// Wrapper so the menu item passes NO arguments: menu-invoked commands
+		// receive a {from:'menu'} arg, which the Claude extension's own
+		// commands choke on (e.replace is not a function).
+		vscode.commands.registerCommand('academicStudio.claudeNewChat', async () => {
+			try { await vscode.commands.executeCommand('claude-vscode.newConversation'); }
+			catch (e) { await vscode.commands.executeCommand('claude-vscode.primaryEditor.open'); }
+		}),
 		vscode.commands.registerCommand('academicStudio.claudePermissions',
 			() => pickClaudePermissions()),
 		vscode.commands.registerCommand('academicStudio.claudeInstalledSkills',
@@ -75,7 +82,7 @@ function activate(context) {
 		vscode.commands.registerCommand('academicStudio.claudeMcpConnectors',
 			() => pickMcpConnectors()),
 		vscode.commands.registerCommand('academicStudio.claudePlugins',
-			() => vscode.env.openExternal(vscode.Uri.parse('https://code.claude.com/docs/en/discover-plugins')))
+			() => pickPlugins())
 	);
 
 	// File → New File entries for file types that don't add their own. Each opens
@@ -184,7 +191,7 @@ async function pickClaudePermissions() {
 		})),
 		{
 			title: 'Claude Permissions',
-			placeHolder: 'How much can Claude do without asking you first?',
+			placeHolder: 'How much can Claude do without asking you first? Your choice takes effect when a new chat is opened.',
 		}
 	);
 	if (!pick || pick.mode === current) { return; }
@@ -208,20 +215,25 @@ async function pickClaudePermissions() {
 }
 
 // ---- Claude skills -----------------------------------------------------------
-// Skills are folders under ~/.claude/skills/, each with a SKILL.md whose
-// frontmatter carries a name and a description. Same location the setup
-// extension installs package skills into.
+// Skills are folders with a SKILL.md whose frontmatter carries a name and a
+// description. Global skills live in ~/.claude/skills/ (every project; same
+// location the setup extension installs package skills into); local skills
+// live in <workspace>/.claude/skills/ (this folder only).
 function claudeSkillsHome() { return path.join(os.homedir(), '.claude', 'skills'); }
 
-function listInstalledSkills() {
-	const dir = claudeSkillsHome();
+function claudeSkillsLocal() {
+	const ws = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0];
+	return ws ? path.join(ws.uri.fsPath, '.claude', 'skills') : null;
+}
+
+function listSkillsIn(dir) {
 	let names = [];
 	try {
 		names = fs.readdirSync(dir).filter(n => {
 			try { return fs.statSync(path.join(dir, n)).isDirectory() && fs.existsSync(path.join(dir, n, 'SKILL.md')); }
 			catch (e) { return false; }
 		});
-	} catch (e) { /* no skills dir yet */ }
+	} catch (e) { /* no skills dir */ }
 	return names.sort().map(name => {
 		let desc = '';
 		try {
@@ -234,8 +246,27 @@ function listInstalledSkills() {
 			detail: desc.length > 140 ? desc.slice(0, 140) + '…' : desc,
 			buttons: [{ iconPath: new vscode.ThemeIcon('trash'), tooltip: 'Delete this skill' }],
 			skillName: name,
+			skillRoot: dir,
 		};
 	});
+}
+
+function listInstalledSkills() {
+	const items = [];
+	const localDir = claudeSkillsLocal();
+	if (localDir) {
+		const local = listSkillsIn(localDir);
+		if (local.length) {
+			items.push({ label: 'Local — this folder only', kind: vscode.QuickPickItemKind.Separator });
+			items.push(...local);
+		}
+	}
+	const global = listSkillsIn(claudeSkillsHome());
+	if (global.length) {
+		items.push({ label: 'Global — every project', kind: vscode.QuickPickItemKind.Separator });
+		items.push(...global);
+	}
+	return items;
 }
 
 async function pickInstalledSkills() {
@@ -258,21 +289,21 @@ async function pickInstalledSkills() {
 	qp.items = items;
 	qp.onDidAccept(async () => {
 		const sel = qp.selectedItems[0];
-		if (!sel) { return; }
+		if (!sel || !sel.skillRoot) { return; }
 		qp.hide();
 		const doc = await vscode.workspace.openTextDocument(
-			path.join(claudeSkillsHome(), sel.skillName, 'SKILL.md'));
+			path.join(sel.skillRoot, sel.skillName, 'SKILL.md'));
 		await vscode.window.showTextDocument(doc);
 	});
 	qp.onDidTriggerItemButton(async (e) => {
 		const name = e.item.skillName;
+		const dir = e.item.skillRoot;
 		const ok = await vscode.window.showWarningMessage(
 			`Delete the skill "${name}"? Its whole folder is removed and Claude will no longer know it.`,
 			{ modal: true }, 'Delete Skill');
 		if (ok !== 'Delete Skill') { return; }
-		const dir = claudeSkillsHome();
 		const target = path.join(dir, name);
-		// Only ever delete a direct child of the skills folder.
+		// Only ever delete a direct child of a skills folder.
 		if (path.dirname(target) !== dir) { return; }
 		try { fs.rmSync(target, { recursive: true, force: true }); }
 		catch (err) {
@@ -288,6 +319,17 @@ async function pickInstalledSkills() {
 }
 
 async function createNewSkill() {
+	// Scope first: global (default) or local to the open folder.
+	let root = claudeSkillsHome();
+	const localDir = claudeSkillsLocal();
+	if (localDir) {
+		const scope = await vscode.window.showQuickPick([
+			{ label: 'Global', detail: 'Claude can use it in every project (~/.claude/skills).', root: claudeSkillsHome() },
+			{ label: 'Local', detail: 'Claude can use it only in this folder (.claude/skills).', root: localDir },
+		], { title: 'New Claude Skill', placeHolder: 'Where should this skill live?' });
+		if (!scope) { return; }
+		root = scope.root;
+	}
 	const name = await vscode.window.showInputBox({
 		title: 'New Claude Skill',
 		prompt: 'Name the new skill (lowercase letters, numbers, and hyphens)',
@@ -296,14 +338,14 @@ async function createNewSkill() {
 			if (!v || !/^[a-z0-9][a-z0-9-]*$/.test(v)) {
 				return 'Use lowercase letters, numbers, and hyphens.';
 			}
-			if (fs.existsSync(path.join(claudeSkillsHome(), v))) {
+			if (fs.existsSync(path.join(root, v))) {
 				return 'A skill with this name already exists.';
 			}
 			return null;
 		},
 	});
 	if (!name) { return; }
-	const dir = path.join(claudeSkillsHome(), name);
+	const dir = path.join(root, name);
 	fs.mkdirSync(dir, { recursive: true });
 	const skillFile = path.join(dir, 'SKILL.md');
 	fs.writeFileSync(skillFile, [
@@ -455,6 +497,26 @@ async function pickMcpConnectors() {
 		const doc = await vscode.workspace.openTextDocument(pick.file);
 		await vscode.window.showTextDocument(doc);
 	}
+}
+
+// ---- Claude plugins ------------------------------------------------------------
+async function pickPlugins() {
+	const pick = await vscode.window.showQuickPick([
+		{
+			label: 'Anthropic plugins directory',
+			detail: 'claude.com/plugins — browse official plugins',
+			url: 'https://claude.com/plugins',
+		},
+		{
+			label: 'Community plugins',
+			detail: 'github.com/anthropics/claude-plugins-community — plugins contributed by the community',
+			url: 'https://github.com/anthropics/claude-plugins-community',
+		},
+	], {
+		title: 'Claude Plugins',
+		placeHolder: 'Plugins bundle skills, connectors, and commands you can install into Claude',
+	});
+	if (pick) { vscode.env.openExternal(vscode.Uri.parse(pick.url)); }
 }
 
 // ---- Check for Updates -----------------------------------------------------

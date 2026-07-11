@@ -205,6 +205,11 @@ the moment the release exists. Then optionally clean up:
 gh release delete staging-v<X.Y> --repo kerryback/academic_studio --yes
 ```
 
+NEVER delete public `v<X.Y>` releases — only `staging-*` prereleases may be
+cleaned up. Deleting a release permanently destroys its assets AND its download
+counts (releases 0.1–0.3 were deleted once and ~80+ downloads of history were
+lost, unrecoverably). Old public releases cost nothing; leave them forever.
+
 ## Verify
 
 ```
