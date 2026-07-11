@@ -101,9 +101,10 @@ function activate(context) {
 	openClaudeOnStartup(context);
 }
 
-// True if a Claude Code tab is already open in the editor area (e.g. restored
-// from the previous session). The primary editor is a webview labelled
-// "Claude Code"; match on the tab label or webview viewType.
+// True if a Claude Code tab is recognizably open. Best-effort only: newer
+// Claude Code versions title the tab with the conversation name (not "Claude
+// Code"), so a restored Claude tab is NOT reliably detectable — which is why
+// startup auto-open must not depend on this returning true (see below).
 function claudeTabIsOpen() {
 	try {
 		for (const group of vscode.window.tabGroups.all) {
@@ -118,17 +119,34 @@ function claudeTabIsOpen() {
 	return false;
 }
 
+// True if the window restored any real editor tab (anything besides the
+// Welcome page). A restored session is left exactly as the user last had it —
+// including a Claude tab we may not be able to recognize by name.
+function restoredTabsExist() {
+	try {
+		for (const group of vscode.window.tabGroups.all) {
+			for (const tab of group.tabs) {
+				if (!/^(welcome|walkthrough)/i.test(tab.label || '')) { return true; }
+			}
+		}
+	} catch (e) { /* tabGroups API unavailable — treat as restored, do nothing */ return true; }
+	return false;
+}
+
 function openClaudeOnStartup(context) {
-	// Give session-restore a chance to reopen an existing Claude tab; only open
-	// our own if none shows up, so we never duplicate the restored one. A fixed
-	// short delay loses this race on slow machines / big sessions, so watch tab
-	// events and use a generous fallback deadline instead.
+	// Auto-open Claude only in a FRESH window (no restored editor tabs beyond
+	// the Welcome page). We used to open whenever no Claude tab was detected,
+	// but Claude Code now titles its tab with the conversation name, so a
+	// restored Claude tab looks like any other tab and the detection opened a
+	// duplicate on every restart. A restored session — with or without Claude —
+	// is the user's own state and is never touched; Claude is always one click
+	// away via Claude → New Chat.
 	if (claudeTabIsOpen()) { return; }
 	let settled = false;
 	let listener = null;
 	try {
 		listener = vscode.window.tabGroups.onDidChangeTabs(() => {
-			if (!settled && claudeTabIsOpen()) {
+			if (!settled && (claudeTabIsOpen() || restoredTabsExist())) {
 				settled = true;
 				if (listener) { listener.dispose(); }
 			}
@@ -140,12 +158,12 @@ function openClaudeOnStartup(context) {
 		if (settled) { return; }
 		settled = true;
 		if (listener) { listener.dispose(); }
-		if (claudeTabIsOpen()) { return; }
-		// Nothing restored a Claude tab — open one. Retry a few times in case the
+		if (claudeTabIsOpen() || restoredTabsExist()) { return; }
+		// Genuinely fresh window — open Claude. Retry a few times in case the
 		// Claude Code extension hasn't registered its command yet.
 		let tries = 0;
 		const tick = () => {
-			if (claudeTabIsOpen()) { return; }
+			if (claudeTabIsOpen() || restoredTabsExist()) { return; }
 			vscode.commands.executeCommand('claude-vscode.primaryEditor.open').then(
 				() => { /* opened */ },
 				() => { if (++tries < 6) { setTimeout(tick, 700); } }
