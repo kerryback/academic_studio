@@ -27,3 +27,9 @@ site/.quarto/
 # App Store Connect API keys (notarization secrets) — never commit
 AuthKey_*.p8
 *.p8
+
+# Personal outreach contact lists — do not publish
+email/
+
+# Playwright MCP output (screenshots, traces)
+.playwright-mcp/
