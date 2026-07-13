@@ -10,9 +10,9 @@ description: >-
   FRED", "grab Tesla's 10-K revenue", "I need the daily Treasury yield curve"),
   even when they don't name a source — and especially when the data is a step
   toward analysis they want done. Routes the request to the right free source
-  (Yahoo Finance, Stooq, SEC EDGAR, FRED, Ken French Data Library, FinnHub, US
-  Treasury), confirms the choice with the user, runs Python to fetch it, and
-  saves a CSV.
+  (Yahoo Finance, Stooq, SEC EDGAR, FRED, Ken French Data Library, FinnHub,
+  Financial Modeling Prep, US Treasury), confirms the choice with the user, runs
+  Python to fetch it, and saves a CSV.
 ---
 
 # Finance Data
@@ -90,16 +90,37 @@ you need when you get there — don't preload them all.
   profile, basic financials, news; what the free tier does and doesn't include.
 - `references/treasury.md` — US Treasury daily par yield curve, keyless CSV feed.
 
+## MCP connectors (FinnHub and Financial Modeling Prep)
+
+The Finance Data package also installs two MCP connectors whose tools may be
+available in the session: `finnhub` (real-time US quotes, company profile,
+earnings, news, analyst consensus) and `fmp` (Financial Modeling Prep — quotes,
+financial statements, analyst data, insider trades, economic series). Use them
+for quick lookups the user just wants to *know* — "what's Apple trading at?",
+"any news on Tesla today?" — where writing Python and saving a CSV would be
+overkill. For data the user wants saved, charted, or analyzed, prefer the
+Python recipes in this skill so the result lands in a DataFrame and a CSV.
+
+Both connectors read their API keys from the environment: `FINNHUB_API_KEY`
+(the same key as the Python FinnHub path) and `FMP_API_KEY`. If a connector's
+tools fail with an authentication error, walk the user through getting the key
+(see "API keys") and note that the app must be restarted after adding a key to
+the shell profile.
+
 ## API keys
 
-One source uses a free API key: FinnHub (FRED is keyless via
-`pandas-datareader` — never look for or prompt for a FRED key). When a request
-routes to FinnHub and the key isn't already set, walk the user through getting
-it rather than silently routing around it.
+Two sources use free API keys: FinnHub and Financial Modeling Prep (FRED is
+keyless via `pandas-datareader` — never look for or prompt for a FRED key).
+When a request routes to a keyed source and the key isn't already set, walk
+the user through getting it rather than silently routing around it.
 
 - FinnHub — register for a free key at https://finnhub.io/register and store it as
   `FINNHUB_API_KEY` (the recipe also accepts the common misspelling
   `FINHUB_API_KEY`).
+- Financial Modeling Prep — register for a free key at
+  https://site.financialmodelingprep.com/register and store it as
+  `FMP_API_KEY`. Used only by the `fmp` MCP connector; the free tier is
+  rate-limited (roughly 250 requests/day), so it suits lookups, not bulk pulls.
 
 How to prompt:
 

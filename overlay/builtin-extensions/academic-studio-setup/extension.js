@@ -74,6 +74,7 @@ function presetFor(audience) {
 //   installMac: array of bash lines run inside a `( set -e … )` subshell
 //   group: common -> everyone, faculty -> Faculty, optin -> off by default
 //   prereq: another program id that must be present-or-selected first
+//   required: when missing, its checkbox is forced on and locked in the panel
 const PROGRAMS = [
 	{
 		id: 'python', label: 'Python + scientific libraries + Office-related libraries', group: 'common',
@@ -90,7 +91,7 @@ const PROGRAMS = [
 		],
 	},
 	{
-		id: 'node', label: 'Node.js (used by Claude for Word & PowerPoint creation)', group: 'common',
+		id: 'node', label: 'Node.js (required — used by Claude for Word & PowerPoint creation and web browsing)', group: 'common', required: true,
 		detect: 'node --version',
 		manualUrl: 'https://nodejs.org/',
 		manualSteps: 'Download the macOS Installer (.pkg) from nodejs.org and run it.',
@@ -245,7 +246,8 @@ function httpGet(url, timeoutMs) {
 //   pip           pip package names to install (optional)
 //   pipImports    module names for the import detection check (optional)
 //   skill         { name, url, sha256 } Claude skill tarball (optional)
-//   mcp           { name, config } MCP server for ~/.claude.json (optional)
+//   mcp           MCP server(s) for ~/.claude.json: one { name, config }
+//                 or an array of them (optional)
 //   manualUrl / manualSteps   fallback instructions (optional)
 const RE_PKG_ID = /^[a-z0-9][a-z0-9-]*$/;
 const RE_PIP_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
@@ -276,10 +278,13 @@ function validPackage(p) {
 		if (typeof s.sha256 !== 'string' || !RE_SHA256.test(s.sha256)) { return false; }
 	}
 	if (p.mcp !== undefined) {
-		const m = p.mcp;
-		if (!m || typeof m !== 'object') { return false; }
-		if (typeof m.name !== 'string' || !RE_MCP_NAME.test(m.name)) { return false; }
-		if (!m.config || typeof m.config !== 'object') { return false; }
+		const list = Array.isArray(p.mcp) ? p.mcp : [p.mcp];
+		if (!list.length) { return false; }
+		for (const m of list) {
+			if (!m || typeof m !== 'object') { return false; }
+			if (typeof m.name !== 'string' || !RE_MCP_NAME.test(m.name)) { return false; }
+			if (!m.config || typeof m.config !== 'object') { return false; }
+		}
 	}
 	return true;
 }
@@ -378,16 +383,24 @@ async function installPackageSkill(pkg) {
 // Claude Code's user-scope MCP servers live in ~/.claude.json under mcpServers.
 function mcpConfigPath() { return path.join(os.homedir(), '.claude.json'); }
 
+// A package's mcp field is one { name, config } or an array of them.
+function mcpEntries(pkg) {
+	if (!pkg.mcp) { return []; }
+	return Array.isArray(pkg.mcp) ? pkg.mcp : [pkg.mcp];
+}
+
 function mcpInstalled(pkg) {
-	if (!pkg.mcp) { return true; }
+	const entries = mcpEntries(pkg);
+	if (!entries.length) { return true; }
 	try {
 		const cfg = JSON.parse(fs.readFileSync(mcpConfigPath(), 'utf8'));
-		return !!(cfg.mcpServers && cfg.mcpServers[pkg.mcp.name]);
+		return entries.every(m => !!(cfg.mcpServers && cfg.mcpServers[m.name]));
 	} catch (_) { return false; }
 }
 
 function installMcpServer(pkg) {
-	if (!pkg.mcp) { return { ok: true }; }
+	const entries = mcpEntries(pkg);
+	if (!entries.length) { return { ok: true }; }
 	try {
 		const file = mcpConfigPath();
 		let cfg = {};
@@ -396,12 +409,26 @@ function installMcpServer(pkg) {
 			fs.copyFileSync(file, file + '.academic-studio-backup');
 		}
 		if (!cfg.mcpServers || typeof cfg.mcpServers !== 'object') { cfg.mcpServers = {}; }
-		cfg.mcpServers[pkg.mcp.name] = pkg.mcp.config;
+		for (const m of entries) { cfg.mcpServers[m.name] = m.config; }
 		fs.writeFileSync(file, JSON.stringify(cfg, null, 2));
 		return { ok: true };
 	} catch (e) {
 		return { ok: false, error: 'could not update ~/.claude.json (' + (e && e.message ? e.message : e) + ')' };
 	}
+}
+
+// ---- Playwright MCP connector (startup, silent) -------------------------------
+// Everyone gets browser automation, same as the document skills. The server is
+// Microsoft's @playwright/mcp, launched on demand via npx, so there is nothing
+// to download here — just a config entry in ~/.claude.json. It drives the
+// user's installed Chrome; no bundled browsers are fetched.
+const PLAYWRIGHT_MCP = {
+	mcp: { name: 'playwright', config: { command: 'npx', args: ['@playwright/mcp@latest'] } }
+};
+
+function autoInstallPlaywrightMcp() {
+	if (mcpInstalled(PLAYWRIGHT_MCP)) { return; }
+	installMcpServer(PLAYWRIGHT_MCP);   // best effort; missing entry just re-tries next launch
 }
 
 // ---- Claude Code document skills (startup, silent) ---------------------------
@@ -789,6 +816,7 @@ function activate(context) {
 	const open = () => openSetupPanel(context);
 	context.subscriptions.push(vscode.commands.registerCommand('academicStudio.openSetup', open));
 	autoInstallClaudeSkills();
+	autoInstallPlaywrightMcp();
 	// Delay slightly so the notification lands after the workbench (and Claude)
 	// finish restoring.
 	setTimeout(() => { checkForNewPackages(context).catch(() => {}); }, 3000);
@@ -856,7 +884,7 @@ async function openSetupPanel(context) {
 function renderHtml(audience, enabledExt, packages, catalogLive) {
 	const data = JSON.stringify({
 		catalog: CATALOG.map(c => ({ id: c.id, label: c.label, group: c.group, excludes: c.excludes || '' })),
-		programs: PROGRAMS.map(p => ({ id: p.id, label: p.label, group: p.group, prereq: p.prereq || '' })),
+		programs: PROGRAMS.map(p => ({ id: p.id, label: p.label, group: p.group, prereq: p.prereq || '', required: !!p.required })),
 		packages: packages.map(p => ({ id: p.id, label: p.label, prereq: p.prereq || '' })),
 		audience, enabledExt,
 	}).replace(/</g, '\\u003c');   // keep </script> in labels from closing our tag
@@ -955,7 +983,14 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	function setExt(ids) { extBoxes.forEach(b => { b.checked = ids.indexOf(b.value) !== -1; }); }
 	function setProg(aud) {
 		const pre = progPreset(aud);
-		progBoxes.forEach(b => { const d = detected[b.value]; const missing = !(d && d.found); b.checked = pre.indexOf(b.value) !== -1 && missing; });
+		progBoxes.forEach(b => {
+			const d = detected[b.value]; const missing = !(d && d.found);
+			const req = DATA.programs.some(p => p.id === b.value && p.required);
+			// Required programs can't be opted out of while missing; once found
+			// they behave like any other item.
+			if (req && missing) { b.checked = true; b.disabled = true; }
+			else { b.disabled = false; b.checked = pre.indexOf(b.value) !== -1 && missing; }
+		});
 	}
 	// Default extension selection = recommended-for-audience PLUS anything already
 	// enabled (so Apply never disables what you have), with exclusions resolved in
