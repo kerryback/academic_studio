@@ -55,7 +55,11 @@ silently retrying forever.
 | Macroeconomic / financial time series (CPI, GDP, unemployment, rates, money supply, spreads) | FRED (`pandas-datareader`) | — | No |
 | Interest rates / the Treasury yield curve | US Treasury (daily par yields) | FRED (`DGS10`, `DGS2`, …) | No |
 | Asset-pricing factor returns & sorted portfolios (Fama-French, momentum, industry) | Ken French Data Library | — | No |
-| Real-time-ish quotes, company news, analyst recommendations, earnings | FinnHub | Yahoo Finance | FinnHub free key |
+| Real-time-ish quotes, company news, earnings surprises | FinnHub | Yahoo Finance | FinnHub free key |
+| Analyst price targets, forward estimates, upgrades/downgrades | Financial Modeling Prep | FinnHub (buy/hold/sell counts only) | FMP free key |
+| Today's market movers (gainers/losers/most active), sector performance | Financial Modeling Prep | — | FMP free key |
+| Upcoming economic & earnings calendars (release dates ahead) | Financial Modeling Prep | — | FMP free key |
+| Precomputed valuation metrics (TTM ratios, key metrics, historical market cap) | Financial Modeling Prep | compute from Yahoo data | FMP free key |
 | Crypto / FX | Yahoo Finance (`BTC-USD`, `EURUSD=X`) | Stooq, FRED (FX) | No |
 
 Notes on picking:
@@ -69,6 +73,11 @@ Notes on picking:
 - The Treasury yield curve is available both directly from Treasury and as
   individual constant-maturity series on FRED; use FRED when the user also wants
   other FRED series in the same pull.
+- Financial Modeling Prep is the only *official*, keyed API in the table, which
+  also makes it the fallback for quotes, profiles, and statements when Yahoo
+  breaks or rate-limits. But its free tier is ~250 requests/day — spend that
+  budget on the data only it has (analyst targets/estimates, movers, calendars,
+  TTM metrics), never on price history or anything a keyless source covers.
 
 ## Source reference files
 
@@ -88,24 +97,10 @@ you need when you get there — don't preload them all.
   filing lists, full-text search, the mandatory User-Agent header.
 - `references/finnhub.md` — FinnHub via the `finnhub-python` client: quotes,
   profile, basic financials, news; what the free tier does and doesn't include.
+- `references/fmp.md` — Financial Modeling Prep via `requests`: analyst
+  targets/estimates/grades, market movers, economic & earnings calendars, TTM
+  valuation metrics; free-tier limits and premium-endpoint fallbacks.
 - `references/treasury.md` — US Treasury daily par yield curve, keyless CSV feed.
-
-## MCP connectors (FinnHub and Financial Modeling Prep)
-
-The Finance Data package also installs two MCP connectors whose tools may be
-available in the session: `finnhub` (real-time US quotes, company profile,
-earnings, news, analyst consensus) and `fmp` (Financial Modeling Prep — quotes,
-financial statements, analyst data, insider trades, economic series). Use them
-for quick lookups the user just wants to *know* — "what's Apple trading at?",
-"any news on Tesla today?" — where writing Python and saving a CSV would be
-overkill. For data the user wants saved, charted, or analyzed, prefer the
-Python recipes in this skill so the result lands in a DataFrame and a CSV.
-
-Both connectors read their API keys from the environment: `FINNHUB_API_KEY`
-(the same key as the Python FinnHub path) and `FMP_API_KEY`. If a connector's
-tools fail with an authentication error, walk the user through getting the key
-(see "API keys") and note that the app must be restarted after adding a key to
-the shell profile.
 
 ## API keys
 
@@ -119,13 +114,13 @@ the user through getting it rather than silently routing around it.
   `FINHUB_API_KEY`).
 - Financial Modeling Prep — register for a free key at
   https://site.financialmodelingprep.com/register and store it as
-  `FMP_API_KEY`. Used only by the `fmp` MCP connector; the free tier is
-  rate-limited (roughly 250 requests/day), so it suits lookups, not bulk pulls.
+  `FMP_API_KEY`. The free tier is rate-limited (roughly 250 requests/day), so
+  it suits targeted pulls, not bulk downloads.
 
 How to prompt:
 
-1. Check `os.environ` first — the key may already be set (`FINNHUB_API_KEY` or
-   `FINHUB_API_KEY`).
+1. Check `os.environ` first — the key may already be set (`FINNHUB_API_KEY` /
+   `FINHUB_API_KEY`, or `FMP_API_KEY`).
 2. If it's missing, give the user the signup link above and ask them to paste the
    key back, or to set the environment variable themselves.
 3. Prefer an environment variable over hard-coding the key in a script, so it

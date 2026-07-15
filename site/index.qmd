@@ -53,14 +53,13 @@ The Finance Data package lets you ask Claude for financial, market, and economic
 - SEC EDGAR --- company fundamentals from 10-K/10-Q filings
 - FRED --- macroeconomic and interest-rate series
 - Ken French Data Library --- asset-pricing factor returns
-- FinnHub --- company news and estimates
+- FinnHub --- company news and earnings surprises
+- Financial Modeling Prep --- analyst price targets and estimates, market movers, economic and earnings calendars
 - US Treasury --- the daily yield curve
 
-The package also adds two live-data connectors --- FinnHub and Financial Modeling Prep --- that let Claude answer quick market questions directly ("what's Apple trading at?", "any news on Tesla today?", "what do analysts expect for NVIDIA earnings?") without writing code or saving files.
+Installing it is one click, and there are two ways: Academic Studio offers the package in a notification when you start the app without it, or you can open Help → Run Setup… any time and find it under Additional packages. The install sets up the Python libraries these sources need and the skill that teaches Claude which source to use and how. It needs Python, which Run Setup also installs. Two sources (FinnHub, Financial Modeling Prep) use free API keys --- Claude will walk you through getting them the first time they're needed.
 
-Installing it is one click, and there are two ways: Academic Studio offers the package in a notification when you start the app without it, or you can open Help → Run Setup… any time and find it under Additional packages. The install sets up the Python libraries these sources need, the skill that teaches Claude which source to use and how, and the two connectors. It needs Python, which Run Setup also installs. Two sources (FinnHub, Financial Modeling Prep) use free API keys --- Claude will walk you through getting them the first time they're needed.
-
-The installed skill and connectors live in your shared Claude configuration, so they also work from Claude Code CLI and the Code mode of Claude Desktop. Updates to the package are offered automatically on startup --- no need to download a new version of Academic Studio.
+The installed skill lives in your shared Claude configuration, so it also works from Claude Code CLI and the Code mode of Claude Desktop. Updates to the package are offered automatically on startup --- no need to download a new version of Academic Studio.
 
 ## Downloads {#downloads}
 

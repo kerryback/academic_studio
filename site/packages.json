@@ -5,8 +5,8 @@
     {
       "id": "finance-data",
       "label": "Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub, Financial Modeling Prep)",
-      "version": 3,
-      "minAppVersion": "0.6",
+      "version": 4,
+      "minAppVersion": "0.4",
       "prereq": "python",
       "pip": [
         "yfinance",
@@ -21,33 +21,11 @@
       ],
       "skill": {
         "name": "finance-data",
-        "url": "https://academic-studio.com/packages/finance-data-3.tar.gz",
-        "sha256": "fe04b788c810e9804e1fa6efb0f415fc28e5168c39aeef5a798f4314fe8b6b18"
+        "url": "https://academic-studio.com/packages/finance-data-4.tar.gz",
+        "sha256": "9888459c28481e6e224d17905660f7ffc8307840768fc149db6394d0ee821693"
       },
-      "mcp": [
-        {
-          "name": "finnhub",
-          "config": {
-            "command": "npx",
-            "args": [
-              "-y",
-              "@cyanheads/finnhub-mcp-server"
-            ]
-          }
-        },
-        {
-          "name": "fmp",
-          "config": {
-            "command": "npx",
-            "args": [
-              "-y",
-              "@houtini/fmp-mcp"
-            ]
-          }
-        }
-      ],
-      "manualUrl": "https://academic-studio.com/packages/finance-data-3.tar.gz",
-      "manualSteps": "Open a terminal and run: pip install yfinance pandas-datareader finnhub-python requests (if you see an 'externally-managed-environment' error, run PIP_BREAK_SYSTEM_PACKAGES=1 pip install … instead) — then download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/finance-data. For the FinnHub and Financial Modeling Prep connectors, run: claude mcp add -s user finnhub -- npx -y @cyanheads/finnhub-mcp-server and claude mcp add -s user fmp -- npx -y @houtini/fmp-mcp. The connectors read FINNHUB_API_KEY and FMP_API_KEY from your environment (free keys from finnhub.io and financialmodelingprep.com)."
+      "manualUrl": "https://academic-studio.com/packages/finance-data-4.tar.gz",
+      "manualSteps": "Open a terminal and run: pip install yfinance pandas-datareader finnhub-python requests (if you see an 'externally-managed-environment' error, run PIP_BREAK_SYSTEM_PACKAGES=1 pip install … instead) — then download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/finance-data. FinnHub and Financial Modeling Prep need free API keys, stored as FINNHUB_API_KEY and FMP_API_KEY in your environment (from finnhub.io and financialmodelingprep.com); Claude walks you through this on first use."
     }
   ]
 }
