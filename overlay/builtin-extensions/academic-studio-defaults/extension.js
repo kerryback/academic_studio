@@ -11,6 +11,8 @@ const path = require('path');
 const fs = require('fs');
 
 function activate(context) {
+	setupVoiceoverInApp(context);
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand('academicStudio.openHelp', async () => {
 			const uri = vscode.Uri.file(path.join(context.extensionPath, 'help.md'));
@@ -607,6 +609,41 @@ async function checkForUpdates(context) {
 		+ `download and install it.` + macHint,
 		'Open Downloads Page');
 	if (pick === 'Open Downloads Page') open(DOWNLOADS_PAGE);
+}
+
+// --- Voiceover: open the app inside Academic Studio -------------------------
+// The voiceover skill launches a local web app. Outside Studio its launcher opens
+// the system browser; inside Studio we open it in an in-editor Simple Browser tab
+// instead. Coordination is two small files under ~/.voiceover:
+//   inapp     capability marker we write on activation — the launcher only skips
+//             the external browser when this exists (so an un-updated launcher, or
+//             a Studio without this code, still works via the external browser).
+//   app-url   the launcher writes the app URL here each launch; we watch it and
+//             open that URL in Simple Browser.
+function setupVoiceoverInApp(context) {
+	const home = process.env.VOICEOVER_HOME || path.join(os.homedir(), '.voiceover');
+	const marker = path.join(home, 'inapp');
+	const urlFile = path.join(home, 'app-url');
+	try { fs.mkdirSync(home, { recursive: true }); } catch (e) { /* ignore */ }
+	try { fs.writeFileSync(marker, String(process.pid)); } catch (e) { /* ignore */ }
+	context.subscriptions.push({ dispose() { try { fs.unlinkSync(marker); } catch (e) { /* ignore */ } } });
+
+	let lastUrl = '';
+	let lastAt = 0;
+	const openFromFile = () => {
+		let url = '';
+		try { url = fs.readFileSync(urlFile, 'utf8').trim(); } catch (e) { return; }
+		if (!url) { return; }
+		const now = Date.now();
+		if (url === lastUrl && now - lastAt < 3000) { return; }  // de-dupe rapid writes
+		lastUrl = url; lastAt = now;
+		vscode.commands.executeCommand('simpleBrowser.show', url).then(undefined,
+			() => { vscode.env.openExternal(vscode.Uri.parse(url)); });
+	};
+	// The file lives outside the workspace, so poll it rather than use a workspace
+	// watcher. Only reacts to CHANGES, so a stale URL from a past session is ignored.
+	fs.watchFile(urlFile, { interval: 1000 }, () => openFromFile());
+	context.subscriptions.push({ dispose() { try { fs.unwatchFile(urlFile); } catch (e) { /* ignore */ } } });
 }
 
 function deactivate() {}
