@@ -33,3 +33,12 @@ email/
 
 # Playwright MCP output (screenshots, traces)
 .playwright-mcp/
+
+# voiceover package is generated from kerryback/skills (scripts/sync-from-marketplace.sh voiceover)
+/packages/voiceover/
+
+# finance-data package is generated from kerryback/skills (scripts/sync-from-marketplace.sh finance-data)
+/packages/finance-data/
+
+# slides package is generated from kerryback/skills (scripts/sync-from-marketplace.sh slides)
+/packages/slides/

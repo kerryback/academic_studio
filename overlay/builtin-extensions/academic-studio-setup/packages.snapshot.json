@@ -26,6 +26,34 @@
       },
       "manualUrl": "https://academic-studio.com/packages/finance-data-4.tar.gz",
       "manualSteps": "Open a terminal and run: pip install yfinance pandas-datareader finnhub-python requests (if you see an 'externally-managed-environment' error, run PIP_BREAK_SYSTEM_PACKAGES=1 pip install … instead) — then download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/finance-data. FinnHub and Financial Modeling Prep need free API keys, stored as FINNHUB_API_KEY and FMP_API_KEY in your environment (from finnhub.io and financialmodelingprep.com); Claude walks you through this on first use."
+    },
+    {
+      "id": "slides",
+      "label": "Slide Deck — build themed reveal.js/Quarto presentations, export to PDF/PPTX/PNG",
+      "version": 1,
+      "minAppVersion": "0.4",
+      "prereq": "quarto",
+      "skill": {
+        "name": "slides",
+        "url": "https://academic-studio.com/packages/slides-1.tar.gz",
+        "sha256": "8d547f75e6278ff9ed67e9b157f4d8b1d4c31c31508c592d59ad15bcd483db66"
+      },
+      "manualUrl": "https://academic-studio.com/packages/slides-1.tar.gz",
+      "manualSteps": "Download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/slides. Rendering needs Quarto; PDF/PPTX/PNG export needs Node.js and decktape — install both from Help → Run Setup… (Quarto is standard; decktape is the opt-in 'decktape' program)."
+    },
+    {
+      "id": "voiceover",
+      "label": "Voiceover Builder — narrate a PDF slide deck into an MP4 video + transcript (Claude Code writes the narration, ElevenLabs voices it)",
+      "version": 1,
+      "minAppVersion": "0.4",
+      "prereq": "quarto",
+      "skill": {
+        "name": "voiceover",
+        "url": "https://academic-studio.com/packages/voiceover-1.tar.gz",
+        "sha256": "92a473510fef0d64c86de44713ab7051da21b04fd6f10cc80c3396741c81dda6"
+      },
+      "manualUrl": "https://academic-studio.com/packages/voiceover-1.tar.gz",
+      "manualSteps": "Download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/voiceover. Rendering the deck needs Quarto and Python — install both from Help → Run Setup…. Set ELEVENLABS_API_KEY in your environment (a free key from elevenlabs.io) for the text-to-speech voice; Claude walks you through this on first use. No other key is needed — the narration is written by Claude Code. The first launch sets up a small local Python environment automatically."
     }
   ]
 }
