@@ -44,15 +44,15 @@
     {
       "id": "voiceover",
       "label": "Voiceover Builder — narrate a PDF slide deck into an MP4 video + transcript (Claude Code writes the narration, ElevenLabs voices it)",
-      "version": 1,
+      "version": 2,
       "minAppVersion": "0.4",
       "prereq": "quarto",
       "skill": {
         "name": "voiceover",
-        "url": "https://academic-studio.com/packages/voiceover-1.tar.gz",
-        "sha256": "92a473510fef0d64c86de44713ab7051da21b04fd6f10cc80c3396741c81dda6"
+        "url": "https://academic-studio.com/packages/voiceover-2.tar.gz",
+        "sha256": "c37dfd8d6d6728a08d995f0dd62701ba14d128a16bb764984a7e34d2ef815f9c"
       },
-      "manualUrl": "https://academic-studio.com/packages/voiceover-1.tar.gz",
+      "manualUrl": "https://academic-studio.com/packages/voiceover-2.tar.gz",
       "manualSteps": "Download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/voiceover. Rendering the deck needs Quarto and Python — install both from Help → Run Setup…. Set ELEVENLABS_API_KEY in your environment (a free key from elevenlabs.io) for the text-to-speech voice; Claude walks you through this on first use. No other key is needed — the narration is written by Claude Code. The first launch sets up a small local Python environment automatically."
     }
   ]
