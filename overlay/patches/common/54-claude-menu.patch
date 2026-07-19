@@ -1,6 +1,6 @@
 --- a/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts
 +++ b/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts
-@@ -87,3 +87,31 @@
+@@ -87,3 +87,32 @@
  	when: IsMacNativeContext,
  	order: 9
  });
@@ -25,6 +25,7 @@
 +});
 +
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeNewChat', title: localize('asClaudeNewChat', "New Chat") }, group: '1_open', order: 1 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeConversations', title: localize('asClaudeConversations', "Conversations…") }, group: '1_open', order: 2 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudePermissions', title: localize('asClaudePermissions', "Permissions…") }, group: '2_permissions', order: 1 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeInstalledSkills', title: localize('asClaudeInstalledSkills', "Installed Skills…") }, group: '3_skills', order: 1 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeNewSkill', title: localize('asClaudeNewSkill', "New Skill…") }, group: '3_skills', order: 2 });

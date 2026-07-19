@@ -32,6 +32,11 @@
         "category": "Claude"
       },
       {
+        "command": "academicStudio.claudeConversations",
+        "title": "Conversations…",
+        "category": "Claude"
+      },
+      {
         "command": "academicStudio.claudePermissions",
         "title": "Permissions…",
         "category": "Claude"

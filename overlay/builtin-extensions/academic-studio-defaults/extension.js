@@ -71,6 +71,8 @@ function activate(context) {
 			try { await vscode.commands.executeCommand('claude-vscode.newConversation'); }
 			catch (e) { await vscode.commands.executeCommand('claude-vscode.primaryEditor.open'); }
 		}),
+		vscode.commands.registerCommand('academicStudio.claudeConversations',
+			() => pickConversations()),
 		vscode.commands.registerCommand('academicStudio.claudePermissions',
 			() => pickClaudePermissions()),
 		vscode.commands.registerCommand('academicStudio.claudeInstalledSkills',
@@ -473,6 +475,110 @@ function ensureFile(file, template) {
 		fs.mkdirSync(path.dirname(file), { recursive: true });
 		fs.writeFileSync(file, template);
 	}
+}
+
+// ---- Claude conversations (resume a prior session) -----------------------------
+// Claude Code stores each conversation as
+// ~/.claude/projects/<encoded-cwd>/<sessionId>.jsonl — the folder name is the
+// workspace path with every non-alphanumeric character turned into '-'. We list
+// this project's conversations, show a quick pick, and resume the chosen one in a
+// terminal via the CLI the Claude Code extension bundles
+// (resources/native-binary/claude), so it works regardless of the user's PATH.
+function claudeProjectsDir(fsPath) {
+	return path.join(os.homedir(), '.claude', 'projects', fsPath.replace(/[^a-zA-Z0-9]/g, '-'));
+}
+
+// Read the first maxBytes of a file (conversations can be tens of MB; the cwd and
+// the opening user message are always near the top).
+function readPrefix(file, maxBytes) {
+	let fd;
+	try {
+		fd = fs.openSync(file, 'r');
+		const buf = Buffer.alloc(maxBytes);
+		const n = fs.readSync(fd, buf, 0, maxBytes, 0);
+		return buf.toString('utf8', 0, n);
+	} catch (e) { return ''; }
+	finally { if (fd !== undefined) { try { fs.closeSync(fd); } catch (_) {} } }
+}
+
+// Best-effort human title from a session file: the first genuine user message,
+// skipping slash-command / system-wrapper turns (which start with '<').
+function sessionTitle(file) {
+	const text = readPrefix(file, 65536);
+	for (const line of text.split('\n')) {
+		if (!line.trim()) continue;
+		let d; try { d = JSON.parse(line); } catch (e) { continue; }
+		if (d.type === 'user' && d.message) {
+			const c = d.message.content;
+			let t = typeof c === 'string' ? c
+				: Array.isArray(c) ? c.filter(p => p && p.type === 'text').map(p => p.text).join(' ') : '';
+			t = (t || '').replace(/\s+/g, ' ').trim();
+			if (t && t[0] !== '<') return t.length > 90 ? t.slice(0, 90) + '…' : t;
+		}
+	}
+	return '';
+}
+
+async function pickConversations() {
+	const ws = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0];
+	if (!ws) {
+		vscode.window.showInformationMessage('Open a project folder first — conversations are listed per project.');
+		return;
+	}
+	const dir = claudeProjectsDir(ws.uri.fsPath);
+	let files = [];
+	try {
+		files = fs.readdirSync(dir)
+			.filter(f => f.endsWith('.jsonl'))
+			.map(f => ({ id: f.slice(0, -6), file: path.join(dir, f) }));
+	} catch (e) { /* directory absent — no conversations yet */ }
+
+	if (!files.length) {
+		vscode.window.showInformationMessage('No previous Claude conversations for this project yet.');
+		return;
+	}
+
+	// Newest first, by last-modified time.
+	for (const f of files) { try { f.mtime = fs.statSync(f.file).mtimeMs; } catch (e) { f.mtime = 0; } }
+	files.sort((a, b) => b.mtime - a.mtime);
+
+	const fmt = (ms) => {
+		try { return new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+		catch (e) { return ''; }
+	};
+	const items = files.map(f => ({
+		label: sessionTitle(f.file) || '(untitled conversation)',
+		description: fmt(f.mtime),
+		sessionId: f.id,
+	}));
+
+	const pick = await vscode.window.showQuickPick(items, {
+		title: 'Claude Conversations — ' + ws.name,
+		placeHolder: 'Select a previous conversation to resume it in a new Claude session',
+	});
+	if (!pick) { return; }
+	resumeConversation(ws.uri.fsPath, pick.sessionId);
+}
+
+// Resume a session by launching the bundled Claude CLI with --resume in a terminal.
+// Using the terminal's own shellPath (no shell) sidesteps cross-platform quoting.
+function resumeConversation(cwd, sessionId) {
+	const ext = vscode.extensions.getExtension('anthropic.claude-code');
+	const binName = process.platform === 'win32' ? 'claude.exe' : 'claude';
+	let bin = '';
+	if (ext) {
+		const candidate = path.join(ext.extensionPath, 'resources', 'native-binary', binName);
+		if (fs.existsSync(candidate)) { bin = candidate; }
+	}
+	let term;
+	if (bin) {
+		term = vscode.window.createTerminal({ name: 'Claude — resume', cwd, shellPath: bin, shellArgs: ['--resume', sessionId] });
+	} else {
+		// Fall back to a shell terminal and rely on `claude` being on PATH.
+		term = vscode.window.createTerminal({ name: 'Claude — resume', cwd });
+		term.sendText('claude --resume ' + sessionId);
+	}
+	term.show();
 }
 
 // ---- Claude MCP connectors ----------------------------------------------------
