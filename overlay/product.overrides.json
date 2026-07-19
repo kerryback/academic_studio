@@ -83,6 +83,7 @@
   ],
   "academicStudioVersion": "0.6",
   "configurationDefaults": {
-    "workbench.colorTheme": "Visual Studio Light"
+    "workbench.colorTheme": "Visual Studio Light",
+    "update.titleBar": false
   }
 }
