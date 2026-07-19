@@ -885,7 +885,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	const data = JSON.stringify({
 		catalog: CATALOG.map(c => ({ id: c.id, label: c.label, group: c.group, excludes: c.excludes || '' })),
 		programs: PROGRAMS.map(p => ({ id: p.id, label: p.label, group: p.group, prereq: p.prereq || '', required: !!p.required })),
-		packages: packages.map(p => ({ id: p.id, label: p.label, prereq: p.prereq || '' })),
+		packages: packages.map(p => ({ id: p.id, label: p.label, prereq: p.prereq || '', infoUrl: safeHttpsUrl(p.infoUrl) || '' })),
 		audience, enabledExt,
 	}).replace(/</g, '\\u003c');   // keep </script> in labels from closing our tag
 
@@ -894,8 +894,12 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	).join('\n');
 	const rowFor = p =>
 		`<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span> <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
+	const pkgRowFor = p => {
+		const info = p.infoUrl ? ` <a class="info-link" href="${escHtml(p.infoUrl)}">Learn more</a>` : '';
+		return `<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span>${info} <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
+	};
 	const progRows = PROGRAMS.map(rowFor).join('\n');
-	const pkgRows = packages.length ? packages.map(rowFor).join('\n')
+	const pkgRows = packages.length ? packages.map(pkgRowFor).join('\n')
 		: `<p class="note">${catalogLive ? 'No packages are available yet.' : 'Could not reach the package catalog — check your connection and reopen Setup.'}</p>`;
 
 	return `<!DOCTYPE html>
@@ -911,6 +915,8 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	.row { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; }
 	.row code { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-left: auto; }
 	.row .status { margin-left: auto; font-style: normal; font-size: 0.85em; color: var(--vscode-descriptionForeground); }
+	.info-link { font-size: 0.85em; color: var(--vscode-textLink-foreground); text-decoration: none; margin-left: 6px; }
+	.info-link:hover { text-decoration: underline; }
 	.status.found { color: var(--vscode-testing-iconPassed, #3fb950); }
 	.status.missing { color: var(--vscode-descriptionForeground); }
 	button { font-family: inherit; font-size: 1em; padding: 7px 18px; border: none; border-radius: 4px;

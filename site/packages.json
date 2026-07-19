@@ -5,6 +5,7 @@
     {
       "id": "finance-data",
       "label": "Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub, Financial Modeling Prep)",
+      "infoUrl": "https://academic-studio.com/finance-data.html",
       "version": 4,
       "minAppVersion": "0.4",
       "prereq": "python",
@@ -30,6 +31,7 @@
     {
       "id": "slides",
       "label": "Slide Deck — build themed reveal.js/Quarto presentations, export to PDF/PPTX/PNG",
+      "infoUrl": "https://academic-studio.com/slides.html",
       "version": 1,
       "minAppVersion": "0.4",
       "prereq": "quarto",
@@ -44,6 +46,7 @@
     {
       "id": "voiceover",
       "label": "Voiceover Builder — narrate a PDF slide deck into an MP4 video + transcript (Claude Code writes the narration, ElevenLabs voices it)",
+      "infoUrl": "https://academic-studio.com/voiceovers.html",
       "version": 5,
       "minAppVersion": "0.4",
       "prereq": "quarto",
