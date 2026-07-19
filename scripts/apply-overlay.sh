@@ -78,5 +78,13 @@ if [ -f "$OVERLAY/icons/academic-studio.ico" ]; then
      "$ENGINE/src/stable/resources/win32/code.ico"
   echo "[overlay] applied Windows icon (win32/code.ico)"
 fi
+# The custom title bar (Windows/Linux) shows an SVG, not the .ico. Replace the
+# VSCodium "antler" with our AS logo so the top-left corner matches.
+if [ -f "$OVERLAY/icons/code-icon.svg" ]; then
+  mkdir -p "$ENGINE/src/stable/src/vs/workbench/browser/media"
+  cp "$OVERLAY/icons/code-icon.svg" \
+     "$ENGINE/src/stable/src/vs/workbench/browser/media/code-icon.svg"
+  echo "[overlay] applied title-bar SVG (code-icon.svg)"
+fi
 
 echo "[overlay] done."
