@@ -608,7 +608,7 @@ function buildInstallScriptBash(items, resultsPath) {
 		'echo "Academic Studio — installing selected programs and packages."',
 	];
 	if (items.some(i => i.kind === 'program')) {
-		lines.push('echo "You may be prompted for your Mac password (needed by system installers)."');
+		lines.push('echo "You may be prompted for your password (needed by system installers)."');
 		lines.push('echo');
 		lines.push('sudo -v');
 	}
@@ -930,7 +930,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	#report { margin-top: 14px; } #report .r { padding: 3px 0; } #report a { color: var(--vscode-textLink-foreground); }
 </style></head><body>
 	<h1>Welcome to Academic Studio</h1>
-	<div class="signin">If you are a first-time user and not already logged in to Anthropic, sign in now — type <code>/login</code> in the prompt window to initiate the sign-in process.</div>
+	<div class="signin">If you are not already logged in to Anthropic, sign in now — type <code>/login</code> in the prompt window to initiate the sign-in process.</div>
 	<div id="topbanner" class="banner" style="display:none"></div>
 
 	<fieldset>
@@ -952,7 +952,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 
 	<fieldset id="programs">
 		<legend>Supporting programs</legend>
-		<p class="note">Programs your computer needs for some features. Only missing ones are checked. Installing runs the official installer in a terminal — you may be asked for your Mac password.</p>
+		<p class="note">Programs your computer needs for some features. Only missing ones are checked. Installing runs the official installer in a terminal — you may be asked for your password.</p>
 		${progRows}
 	</fieldset>
 
