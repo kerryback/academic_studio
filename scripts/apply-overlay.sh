@@ -78,6 +78,11 @@ if [ -f "$OVERLAY/icons/academic-studio.ico" ]; then
      "$ENGINE/src/stable/resources/win32/code.ico"
   echo "[overlay] applied Windows icon (win32/code.ico)"
 fi
+# Inno Setup wizard images (the installer's sidebar and corner logo).
+if compgen -G "$OVERLAY/icons/inno/inno-*.bmp" > /dev/null; then
+  cp "$OVERLAY"/icons/inno/inno-*.bmp "$ENGINE/src/stable/resources/win32/"
+  echo "[overlay] applied Inno Setup wizard images"
+fi
 # The custom title bar (Windows/Linux) shows an SVG, not the .ico. Replace the
 # VSCodium "antler" with our AS logo so the top-left corner matches.
 if [ -f "$OVERLAY/icons/code-icon.svg" ]; then
