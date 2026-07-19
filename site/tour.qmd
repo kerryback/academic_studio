@@ -9,7 +9,7 @@ format:
     controls-tutorial: true
     hash: true
     transition: fade
-    center: false
+    center: true
     width: 1250
     height: 820
     margin: 0.06
@@ -24,60 +24,44 @@ format:
 
 ## A workspace with an assistant built in
 
-::: {.columns}
-::: {.column width="52%"}
 Academic Studio is a place to keep your project files and work on them with an AI assistant called Claude, side by side.
 
-- Your files are on the left
-- Claude is on the right
+- Your files are on the left, Claude is on the right
 - You can ask Claude to do the work, or do it yourself
+- Under the hood it is VS Code --- but set up to be simple, with Claude ready the moment it opens
 
-Under the hood it is VS Code, a professional tool used by millions of programmers --- but set up to be simple, with Claude ready the moment it opens.
-:::
-::: {.column width="48%"}
-![](tour-img/layout.png){.shot}
-:::
-:::
+![](tour-img/layout.png){.shot width="75%"}
 
-::: {.small style="color:#9a9da2; margin-top:0.5em;"}
+::: {.small style="color:#9a9da2;"}
 Move through this tour with the → arrow keys, or the arrows at the bottom-right.
 :::
 
-## The five areas of the screen {.smaller}
+## The five areas of the screen
 
-![](tour-img/layout-annotated.png){.shot width="82%"}
+![](tour-img/layout-annotated.png){.shot width="72%"}
 
-::: {.small}
-1. Activity Bar --- the icons on the far left switch what the side panel shows
+1. Activity Bar --- icons on the far left switch what the side panel shows
 2. Explorer --- the files in your project folder
-3. The main panel --- where your files open, and where Claude lives
-4. Ask Claude --- type your request in this box and press Enter
+3. Main panel --- where your files open and where Claude lives
+4. Ask Claude --- type your request here and press Enter
 5. Status Bar --- small readouts along the very bottom
-:::
 
-## The Activity Bar {.smaller}
+## The Activity Bar
 
 The narrow strip of icons on the far left. Each one opens a different panel.
 
-::: {.columns}
-::: {.column width="60%"}
 - <span class="ico">📄</span> Explorer --- your files
 - <span class="ico">🔍</span> Search --- find text across every file
 - <span class="ico">🧩</span> Extensions --- add-ons that give new abilities
 - <span class="ico">✳️</span> Claude Code --- the assistant
 - <span class="ico">⚙️</span> Settings (bottom) --- preferences and your account
-:::
-::: {.column width="40%"}
+
 Click an icon to show its panel; click it again to hide it and give yourself more room.
-:::
-:::
 
 # Working with your files {background-color="#7a1420"}
 
-## When you first open it {.smaller}
+## When you first open it
 
-::: {.columns}
-::: {.column width="46%"}
 The first time you open Academic Studio you see a Start page. From here you can:
 
 - Open Folder --- choose the project you want to work on
@@ -85,267 +69,167 @@ The first time you open Academic Studio you see a Start page. From here you can:
 - Help --- open the written guide
 
 Claude opens automatically alongside it.
-:::
-::: {.column width="54%"}
-![](tour-img/welcome.png){.shot}
-:::
-:::
 
-## Open a folder, and your files appear {.smaller}
+![](tour-img/welcome.png){.shot width="65%"}
 
-Everything in Academic Studio happens inside a project folder. Choose one with File → Open Folder, and its contents show up in the Explorer on the left.
+## Open a folder, and your files appear
 
-::: {.columns}
-::: {.column width="55%"}
+Everything in Academic Studio happens inside a project folder. Choose one with File → Open Folder, and its contents show up in the Explorer.
+
 - Click a file to open it in the editor
-- Your work saves automatically, about a second after you stop typing
-- Your Claude conversation stays with the project, so you can pick up where you left off
-:::
-::: {.column width="45%"}
-![](tour-img/explorer.png){.shot}
-:::
-:::
+- Your work saves automatically
+- Your Claude conversation stays with the project
 
-## Viewing spreadsheets, PDFs, and data {.smaller}
+![](tour-img/explorer.png){.shot width="50%"}
+
+## Viewing spreadsheets, PDFs, and data
 
 You do not need Excel or a PDF reader --- Academic Studio previews these files for you.
 
-::: {.columns}
-::: {.column width="33%"}
-![](tour-img/csv.png){.shotmini}
+![](tour-img/csv.png){.shot width="55%"}
 
-Spreadsheets and CSV data open as a clean table.
-:::
-::: {.column width="33%"}
-![](tour-img/pdf.png){.shotmini}
-
-PDFs open in a built-in reader.
-:::
-::: {.column width="33%"}
-![](tour-img/office-xlsx.png){.shotmini}
-
-Excel files show every sheet.
-:::
-:::
+Spreadsheets, CSV data, PDFs, and Excel files all open in built-in viewers.
 
 # Claude, your assistant {background-color="#7a1420"}
 
 ## Claude is ready the moment you open the app
 
-::: {.columns}
-::: {.column width="50%"}
-The panel on the right is Claude Code. Type what you want in plain English at the bottom and press Enter.
+The panel on the right is Claude Code. Type what you want in plain English and press Enter.
 
-The fastest way to work is usually to tell Claude what you want --- "summarize this data," "make a slide deck from these notes," "fix this error" --- and let it do the work in the folder you have open.
+The fastest way to work: tell Claude what you want --- "summarize this data," "make a slide deck from these notes," "fix this error" --- and let it do the work.
 
-A paid Anthropic account is required. The first time, type `/login` in the box to sign in.
-:::
-::: {.column width="50%"}
-![](tour-img/claude-panel.png){.shot}
-:::
-:::
+A paid Anthropic account is required. The first time, type `/login` to sign in.
 
-## Claude can read your files {.smaller}
+![](tour-img/claude-panel.png){.shot width="55%"}
 
-Because Claude works inside your folder, it can open and read your files to answer questions about them --- no copying and pasting.
+## Claude can read your files
 
-::: {.columns}
-::: {.column width="46%"}
-Here it was asked a question about a data file and a script. It read both and answered, citing what it found.
+Because Claude works inside your folder, it can open and read your files to answer questions --- no copying and pasting.
 
-It also works like a smart search over your own documents: ask "which file mentions the 2023 budget?" and it finds the right one even when you do not recall the name.
-:::
-::: {.column width="54%"}
-![](tour-img/claude-read.png){.shot}
-:::
-:::
+It also works like a smart search over your documents: ask "which file mentions the 2023 budget?" and it finds the right one.
 
-## Claude can write and edit files {.smaller}
+![](tour-img/claude-read.png){.shot width="65%"}
 
-::: {.columns}
-::: {.column width="54%"}
-![](tour-img/claude-write.png){.shot}
-:::
-::: {.column width="46%"}
+## Claude can write and edit files
+
 Ask Claude to create or change a file and it writes it for you, right there in your folder.
 
-By default it shows you what it plans to do and waits for your OK before changing anything --- so you are always in control. You can review the change, then accept it.
-:::
-:::
+By default it shows you what it plans to do and waits for your OK --- so you are always in control.
 
-# Getting around {background-color="#7a1420"}
-
-## Menus and toolbars {.smaller}
-
-::: {.columns}
-::: {.column width="54%"}
-![](tour-img/menu-file.png){.shot}
-:::
-::: {.column width="46%"}
-The menus (File, Edit, View, Terminal, Help, and so on) have been trimmed to the essentials, so there is less to wade through.
-
-Toolbars are the small rows of buttons at the top of the editor. When you open a file, buttons that make sense for it appear at the top-right --- a Run button for a Python file, a Preview button for a Quarto document.
-:::
-:::
-
-## Settings, if you ever need them {.smaller}
-
-::: {.columns}
-::: {.column width="46%"}
-Settings is where you can change how the editor behaves --- text size, word wrap, and the like. Most people rarely open it.
-
-When you do want it, the quickest way is the Command Palette: press <kbd>F1</kbd> to bring up a search box that can run any command in the app, then type "settings." Or simplest of all, ask Claude to change a setting for you.
-:::
-::: {.column width="54%"}
-![](tour-img/command-palette.png){.shot}
-:::
-:::
-
-## The Terminal {.smaller}
-
-::: {.columns}
-::: {.column width="46%"}
-A terminal is a place to type commands for your computer to run --- things like installing a program or checking a result.
-
-If you ever need to run a terminal command, open one with Terminal → New Terminal, then type the command and press Enter. Or, simplest of all, just ask Claude to run terminal commands for you --- it runs them and reads the results back.
-:::
-::: {.column width="54%"}
-![](tour-img/python-run.png){.shot}
-:::
-:::
+![](tour-img/claude-write.png){.shot width="65%"}
 
 # Documents and data {background-color="#7a1420"}
 
-## The Python libraries you get {.smaller}
+## The Python libraries you get
 
-Run Setup installs Python with the libraries most academic and professional work needs, so `import` just works --- nothing to configure:
+Run Setup installs Python with the libraries most academic and professional work needs:
 
-::: {.columns}
-::: {.column width="55%"}
 - pandas, NumPy --- data and tables
 - Matplotlib, seaborn, Plotly --- charts and figures
 - SciPy, SymPy --- scientific and symbolic math
 - scikit-learn --- machine learning
 - statsmodels --- statistics and regression
-- openpyxl, python-docx, python-pptx --- read and write Excel, Word, and PowerPoint files
-:::
-::: {.column width="45%"}
-![](tour-img/chart.png){.shot}
+- openpyxl, python-docx, python-pptx --- read and write Excel, Word, and PowerPoint
 
-::: {.small style="text-align:center; color:#9a9da2;"}
-This chart came from a few lines of Python reading a spreadsheet.
-:::
-:::
-:::
+You need not memorize these --- ask Claude to "analyze this spreadsheet" and it uses the right ones.
 
-You need not memorize these --- ask Claude to "analyze this spreadsheet" or "fit a regression," and it uses them for you.
+## Claude's installed skills
 
-## Claude's installed skills {.smaller}
+A skill is a ready-made ability Claude draws on by itself. Academic Studio bundles skills for producing real documents --- ask for "a budget spreadsheet" or "a ten-slide deck" and you get an actual file:
 
-A skill is a ready-made ability Claude draws on by itself. Academic Studio bundles skills for producing real, shareable documents --- ask for "a budget spreadsheet" or "a ten-slide deck" and you get an actual file:
-
-::: {.columns}
-::: {.column width="46%"}
 - Excel spreadsheets --- `.xlsx`
 - Word documents --- `.docx`
 - PowerPoint decks --- `.pptx`
 - PDF files --- create, fill, and combine
-- Skill-creator --- builds new skills, when you want to teach Claude a repeatable task
-:::
-::: {.column width="54%"}
-![](tour-img/office-xlsx.png){.shot}
-:::
-:::
+- Slide decks --- themed reveal.js presentations
+- Skill-creator --- builds new skills for repeatable tasks
 
-You never turn these on or call them by name --- when you ask for a spreadsheet or a deck, Claude picks the right skill on its own. Double-click the finished file in the Explorer to preview it, as shown here.
+You never turn these on or call them by name --- Claude picks the right skill on its own.
 
-## Getting financial and economic data {.smaller}
+## Skills, connectors, and plugins
 
-Ask for market or economic data in plain words, and Claude fetches it from free, authoritative sources and saves it as a spreadsheet --- ready to chart or analyze.
+Claude's abilities can be extended in three ways:
 
-::: {.columns}
-::: {.column width="50%"}
-Claude knows where to look:
+- **Skills** teach Claude how to do specific tasks (fetching data, building documents, following a workflow). They live in `~/.claude/skills/`.
+- **Connectors** (MCP servers) give Claude access to external tools --- databases, web services, APIs. They live in `~/.claude.json`.
+- **Plugins** bundle skills and connectors into one-click installs.
 
-- Stock, ETF, and index prices --- Yahoo Finance
-- Economic series: inflation, GDP, unemployment, interest rates --- FRED
-- The daily Treasury yield curve
-- Company financials and SEC filings --- EDGAR
-- Asset-pricing factors --- the Ken French library
-- Quotes and company news --- FinnHub
-:::
-::: {.column width="50%"}
-::: {style="border:1px solid #d8b3ba; border-radius:8px; padding:0.7em 1em; background:#faf3f4;"}
-::: {.small}
-You: *Get Tesla's yearly net income from its SEC filings.*
+Browse what is available:
 
-Claude: *I'll pull that from SEC EDGAR --- the official audited filings. Saved `data/tesla_net_income.csv` (17 years, 2009--2025).*
-:::
-:::
+- [Anthropic plugins directory](https://claude.com/plugins) --- official plugins from Anthropic
+- [Community plugins](https://github.com/anthropics/claude-plugins-community) --- contributed by the community
+- Help → Run Setup → Additional packages --- curated packages that install with one click
 
-::: {.small style="color:#9a9da2; margin-top:0.5em;"}
-It picks the source, confirms with you if there is a real choice, downloads the data, and hands you a `.csv`.
-:::
-:::
-:::
+The Claude menu in Academic Studio also lets you browse, create, and manage your installed skills, connectors, and memory files.
 
-This comes from the Finance Data additional package, which Run Setup installs for you --- checked by default, so for most people it is already there. It gives Claude both the know-how (which source, and how to fetch it) and the Python libraries the code needs.
+# Getting around {background-color="#7a1420"}
 
-You never name a source or write code --- say "get Apple's daily prices since 2015" and Claude does the rest (a couple of sources use a free key it helps you set up). If a request ever reports Finance Data is missing, install it from Help → Run Setup.
+## Menus and toolbars
+
+The menus (File, Edit, View, Terminal, Help, Claude) have been trimmed to the essentials.
+
+Toolbars are the small rows of buttons at the top of the editor. When you open a file, buttons that make sense for it appear --- a Run button for Python, a Preview button for Quarto.
+
+![](tour-img/menu-file.png){.shot width="55%"}
+
+## Settings, if you ever need them
+
+Settings is where you can change text size, word wrap, and the like. Most people rarely open it.
+
+The quickest way is the Command Palette: press <kbd>F1</kbd> to bring up a search box that can run any command, then type "settings."
+
+Or simplest of all, ask Claude to change a setting for you.
+
+![](tour-img/command-palette.png){.shot width="65%"}
+
+## The Terminal
+
+A terminal is a place to type commands for your computer to run --- installing a program or checking a result.
+
+Open one with Terminal → New Terminal, then type the command and press Enter. Or, simplest of all, just ask Claude to run commands for you.
+
+![](tour-img/python-run.png){.shot width="65%"}
 
 # Setup and help {background-color="#7a1420"}
 
-## Run Setup: pick your profile, install the tools {.smaller}
+## Run Setup: pick your profile, install the tools
 
-::: {.columns}
-::: {.column width="46%"}
 Open it from Help → Run Setup. One screen lets you:
 
 - Choose a profile (Students & Professionals, or Faculty) which turns on the right set of extensions
-- Install the supporting programs --- Python and its libraries, Node.js, Quarto --- with a single click
+- Install supporting programs --- Python, Node.js, Quarto --- with a single click
+- Install additional packages --- Finance Data, Slide Deck, Voiceover Builder
 
 You can reopen it any time to add tools or change extensions.
-:::
-::: {.column width="54%"}
-![](tour-img/setup.png){.shot}
-:::
-:::
 
-## Where to get help {.smaller}
+![](tour-img/setup.png){.shot width="55%"}
 
-::: {.columns}
-::: {.column width="54%"}
-![](tour-img/menu-help.png){.shot}
-:::
-::: {.column width="46%"}
+## Where to get help
+
 The Help menu has:
 
-- Academic Studio Help --- a written guide to everything here
-- Run Setup --- the setup screen from the last slide
+- Tour of Academic Studio --- this tour
+- Academic Studio Help --- a written guide
+- Run Setup --- the setup screen
 - Check for Updates --- downloads a newer version when one is out
 
-And of course, you can always just ask Claude how to do something. Tell Claude you are working in a version of VS Codium, and it will be better able to assist you.
-:::
-:::
+And of course, you can always just ask Claude.
 
-## You are ready {.smaller}
+![](tour-img/menu-help.png){.shot width="55%"}
 
-::: {.columns}
-::: {.column width="60%"}
+## You are ready
+
 A few things to remember:
 
 - Open a folder, and your files show on the left
 - Type what you want to Claude on the right --- it can read and write your files, run Python, and build documents
 - Run Setup (in the Help menu) installs anything that is missing
-- Academic Studio Help (in the Help menu) is a written guide to it all
+- The Claude menu helps you manage skills, connectors, and permissions
 
 When in doubt, ask Claude. Tell it what you want in plain words and let it do the work.
 
 Give Claude the link <https://academic-studio.com> to get advice about working in Academic Studio.
-:::
-::: {.column width="40%"}
-![](tour-img/icon.png){width="150"}
+
+![](tour-img/icon.png){width="120"}
 
 Welcome to Academic Studio.
-:::
-:::

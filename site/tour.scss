@@ -10,7 +10,7 @@ $selection-bg:   lighten($brand-accent, 35%);
 
 $presentation-heading-color:       $brand;
 $presentation-heading-font-weight: 600;
-$presentation-font-size-root:      30px;
+$presentation-font-size-root:      36px;
 
 $presentation-slide-text-align: left;
 
@@ -33,9 +33,10 @@ $presentation-slide-text-align: left;
   border: 1px solid #d5d8dd;
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.16);
-  max-height: 66vh;
-  width: 100%;
+  max-height: 50vh;
   object-fit: contain;
+  display: block;
+  margin: 0.4em auto;
 }
 
 .reveal img.shotmini {
@@ -73,3 +74,6 @@ $presentation-slide-text-align: left;
 // Tighten column figures so captions sit close.
 .reveal .columns { align-items: center; }
 .reveal .column p { margin: 0.35em 0; }
+
+// Slide content uses more vertical space with stacked layout.
+.reveal .slides section { line-height: 1.4; }
