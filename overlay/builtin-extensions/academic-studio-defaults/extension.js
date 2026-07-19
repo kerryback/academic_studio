@@ -481,9 +481,9 @@ function ensureFile(file, template) {
 // Claude Code stores each conversation as
 // ~/.claude/projects/<encoded-cwd>/<sessionId>.jsonl — the folder name is the
 // workspace path with every non-alphanumeric character turned into '-'. We list
-// this project's conversations, show a quick pick, and resume the chosen one in a
-// terminal via the CLI the Claude Code extension bundles
-// (resources/native-binary/claude), so it works regardless of the user's PATH.
+// this project's conversations, show a quick pick, and reopen the chosen one in
+// the Claude Code panel via claude-vscode.primaryEditor.open (see
+// resumeConversation) — the same in-session resume the /resume command does.
 function claudeProjectsDir(fsPath) {
 	return path.join(os.homedir(), '.claude', 'projects', fsPath.replace(/[^a-zA-Z0-9]/g, '-'));
 }
@@ -554,31 +554,23 @@ async function pickConversations() {
 
 	const pick = await vscode.window.showQuickPick(items, {
 		title: 'Claude Conversations — ' + ws.name,
-		placeHolder: 'Select a previous conversation to resume it in a new Claude session',
+		placeHolder: 'Select a previous conversation to reopen it in Claude',
 	});
 	if (!pick) { return; }
-	resumeConversation(ws.uri.fsPath, pick.sessionId);
+	resumeConversation(pick.sessionId);
 }
 
-// Resume a session by launching the bundled Claude CLI with --resume in a terminal.
-// Using the terminal's own shellPath (no shell) sidesteps cross-platform quoting.
-function resumeConversation(cwd, sessionId) {
-	const ext = vscode.extensions.getExtension('anthropic.claude-code');
-	const binName = process.platform === 'win32' ? 'claude.exe' : 'claude';
-	let bin = '';
-	if (ext) {
-		const candidate = path.join(ext.extensionPath, 'resources', 'native-binary', binName);
-		if (fs.existsSync(candidate)) { bin = candidate; }
+// Reopen the chosen conversation in the Claude Code panel — the same thing typing
+// /resume and picking it does. claude-vscode.primaryEditor.open takes a session id
+// as its first argument (this is exactly what the extension's own
+// vscode://anthropic.claude-code/open?session=… deep link calls) and resumes that
+// session in the editor area.
+async function resumeConversation(sessionId) {
+	try {
+		await vscode.commands.executeCommand('claude-vscode.primaryEditor.open', sessionId);
+	} catch (e) {
+		vscode.window.showErrorMessage('Could not reopen the conversation: ' + (e && e.message ? e.message : String(e)));
 	}
-	let term;
-	if (bin) {
-		term = vscode.window.createTerminal({ name: 'Claude — resume', cwd, shellPath: bin, shellArgs: ['--resume', sessionId] });
-	} else {
-		// Fall back to a shell terminal and rely on `claude` being on PATH.
-		term = vscode.window.createTerminal({ name: 'Claude — resume', cwd });
-		term.sendText('claude --resume ' + sessionId);
-	}
-	term.show();
 }
 
 // ---- Claude MCP connectors ----------------------------------------------------
