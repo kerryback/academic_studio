@@ -1,5 +1,5 @@
 ---
-title: "A Tour of Academic Studio"
+pagetitle: "A Tour of Academic Studio"
 format:
   revealjs:
     theme: [default, tour.scss]
@@ -16,52 +16,138 @@ format:
     navigation-mode: linear
     fig-align: center
     footer: "Academic Studio"
-    title-slide-attributes:
-      data-background-color: "#7a1420"
 ---
 
-# What Academic Studio is {background-color="#7a1420"}
+# What Academic Studio is {background-color="#0f172a"}
 
 ## A workspace with an assistant built in
 
-Academic Studio is a place to keep your project files and work on them with an AI assistant called Claude, side by side.
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
+Academic Studio is a place to work on your project files with Claude, side by side.
 
 - Your files are on the left, Claude is on the right
+- Open a file and it opens as a tab in the right pane
 - You can ask Claude to do the work, or do it yourself
 - Under the hood it is VS Code --- but set up to be simple, with Claude ready the moment it opens
+::::
 
-![](tour-img/layout.png){.shot width="75%"}
+:::: {.tour-right}
+![](tour-img/layout.png){.shot}
 
-::: {.small style="color:#9a9da2;"}
+::: {.small style="color:#9a9da2; text-align:center; margin-top:0.4em;"}
 Move through this tour with the → arrow keys, or the arrows at the bottom-right.
 :::
+::::
+
+:::::
+
+# Getting around {background-color="#0f172a"}
 
 ## The five areas of the screen
 
-![](tour-img/layout-annotated.png){.shot width="72%"}
+::::: {.tour-cols}
 
+:::: {.tour-left .card-light}
 1. Activity Bar --- icons on the far left switch what the side panel shows
 2. Explorer --- the files in your project folder
 3. Main panel --- where your files open and where Claude lives
 4. Ask Claude --- type your request here and press Enter
 5. Status Bar --- small readouts along the very bottom
+::::
+
+:::: {.tour-right}
+![](tour-img/layout-annotated.png){.shot}
+::::
+
+:::::
 
 ## The Activity Bar
 
+:::: {.card-light .tour-solo}
 The narrow strip of icons on the far left. Each one opens a different panel.
 
 - <span class="ico">📄</span> Explorer --- your files
 - <span class="ico">🔍</span> Search --- find text across every file
 - <span class="ico">🧩</span> Extensions --- add-ons that give new abilities
-- <span class="ico">✳️</span> Claude Code --- the assistant
+- <span class="ico" style="color:#d97757;">&#10035;&#65038;</span> Claude Code --- the assistant
 - <span class="ico">⚙️</span> Settings (bottom) --- preferences and your account
 
 Click an icon to show its panel; click it again to hide it and give yourself more room.
+::::
 
-# Working with your files {background-color="#7a1420"}
+## Menus and toolbars
+
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
+The menus (File, Edit, View, Terminal, Help, Claude) have been trimmed to the essentials.
+
+Toolbars are the small rows of buttons at the top of the editor. When you open a file, buttons that make sense for it appear --- a Run button for Python, a Preview button for Quarto.
+::::
+
+:::: {.tour-right}
+![](tour-img/menu-file.png){.shot}
+::::
+
+:::::
+
+## Arranging your editor
+
+:::: {.card-light .tour-solo}
+Files you open stack as tabs along the top of the editor --- and you can arrange them to suit your work:
+
+- Drag a tab left or right to reorder it
+- Drag a tab to the edge of the editor to see two files side by side; the Split Editor button in the top-right toolbar does the same
+- Drag a split tab back onto the others to merge them again
+
+Handy for keeping a data file and a script, or a document and its preview, in view at once.
+::::
+
+## Settings, if you ever need them
+
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
+Settings is where you can change text size, word wrap, and the like. Most people rarely open it.
+
+The quickest way is the Command Palette: press <kbd>F1</kbd> to bring up a search box that can run any command, then type "settings."
+::::
+
+:::: {.tour-right}
+![](tour-img/command-palette.png){.shot}
+::::
+
+:::: {.tour-bottom .card-dark}
+Or simplest of all, ask Claude to change a setting for you.
+::::
+
+:::::
+
+## The Terminal
+
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
+A terminal is a place to type commands for your computer to run --- installing a program or checking a result.
+
+Open one with Terminal → New Terminal, then type the command and press Enter. Or, simplest of all, just ask Claude to run commands for you.
+::::
+
+:::: {.tour-right}
+![](tour-img/python-run.png){.shot}
+::::
+
+:::::
+
+# Working with your files {background-color="#0f172a"}
 
 ## When you first open it
 
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
 The first time you open Academic Studio you see a Start page. From here you can:
 
 - Open Folder --- choose the project you want to work on
@@ -69,59 +155,51 @@ The first time you open Academic Studio you see a Start page. From here you can:
 - Help --- open the written guide
 
 Claude opens automatically alongside it.
+::::
 
-![](tour-img/welcome.png){.shot width="65%"}
+:::: {.tour-right}
+![](tour-img/welcome.png){.shot}
+::::
+
+:::::
 
 ## Open a folder, and your files appear
 
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
 Everything in Academic Studio happens inside a project folder. Choose one with File → Open Folder, and its contents show up in the Explorer.
 
 - Click a file to open it in the editor
 - Your work saves automatically
 - Your Claude conversation stays with the project
+::::
 
-![](tour-img/explorer.png){.shot width="50%"}
+:::: {.tour-right}
+![](tour-img/explorer.png){.shot}
+::::
+
+:::::
 
 ## Viewing spreadsheets, PDFs, and data
 
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
 You do not need Excel or a PDF reader --- Academic Studio previews these files for you.
 
-![](tour-img/csv.png){.shot width="55%"}
-
 Spreadsheets, CSV data, PDFs, and Excel files all open in built-in viewers.
+::::
 
-# Claude, your assistant {background-color="#7a1420"}
+:::: {.tour-right}
+![](tour-img/csv.png){.shot}
+::::
 
-## Claude is ready the moment you open the app
-
-The panel on the right is Claude Code. Type what you want in plain English and press Enter.
-
-The fastest way to work: tell Claude what you want --- "summarize this data," "make a slide deck from these notes," "fix this error" --- and let it do the work.
-
-A paid Anthropic account is required. The first time, type `/login` to sign in.
-
-![](tour-img/claude-panel.png){.shot width="55%"}
-
-## Claude can read your files
-
-Because Claude works inside your folder, it can open and read your files to answer questions --- no copying and pasting.
-
-It also works like a smart search over your documents: ask "which file mentions the 2023 budget?" and it finds the right one.
-
-![](tour-img/claude-read.png){.shot width="65%"}
-
-## Claude can write and edit files
-
-Ask Claude to create or change a file and it writes it for you, right there in your folder.
-
-By default it shows you what it plans to do and waits for your OK --- so you are always in control.
-
-![](tour-img/claude-write.png){.shot width="65%"}
-
-# Documents and data {background-color="#7a1420"}
+:::::
 
 ## The Python libraries you get
 
+:::: {.card-light .tour-solo}
 Run Setup installs Python with the libraries most academic and professional work needs:
 
 - pandas, NumPy --- data and tables
@@ -132,9 +210,77 @@ Run Setup installs Python with the libraries most academic and professional work
 - openpyxl, python-docx, python-pptx --- read and write Excel, Word, and PowerPoint
 
 You need not memorize these --- ask Claude to "analyze this spreadsheet" and it uses the right ones.
+::::
+
+# Claude, your assistant {background-color="#0f172a"}
+
+## Claude is ready the moment you open the app
+
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
+The panel on the right is Claude Code. Type what you want in plain English and press Enter.
+
+The fastest way to work: tell Claude what you want --- "summarize this data," "make a slide deck from these notes," "fix this error" --- and let it do the work.
+::::
+
+:::: {.tour-right}
+![](tour-img/claude-panel.png){.shot}
+::::
+
+:::: {.tour-bottom .card-dark}
+A paid Anthropic account is required. The first time, type <span class="accent">`/login`</span> to sign in.
+::::
+
+:::::
+
+## Claude can read your files
+
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
+Because Claude works inside your folder, it can open and read your files to answer questions --- no copying and pasting.
+
+It also works like a smart search over your documents: ask "which file mentions the 2023 budget?" and it finds the right one.
+::::
+
+:::: {.tour-right}
+![](tour-img/claude-read.png){.shot}
+::::
+
+:::::
+
+## Claude can write and edit files
+
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
+Ask Claude to create or change a file and it writes it for you, right there in your folder.
+
+By default it shows you what it plans to do and waits for your OK --- so you are always in control.
+::::
+
+:::: {.tour-right}
+![](tour-img/claude-write.png){.shot}
+::::
+
+:::::
+
+## Run more than one Claude at once
+
+:::: {.card-light .tour-solo}
+You are not limited to a single conversation. Open more Claude Code sessions when you want to work on different things at the same time --- one drafting a document while another analyzes data, say.
+
+- Each session keeps its own conversation and history
+- Switch between them like any other tab
+- They all work in the same project folder
+
+Start another with the new-session (+) button at the top of the Claude Code panel.
+::::
 
 ## Claude's installed skills
 
+:::: {.card-light .tour-solo}
 A skill is a ready-made ability Claude draws on by itself. Academic Studio bundles skills for producing real documents --- ask for "a budget spreadsheet" or "a ten-slide deck" and you get an actual file:
 
 - Excel spreadsheets --- `.xlsx`
@@ -145,9 +291,11 @@ A skill is a ready-made ability Claude draws on by itself. Academic Studio bundl
 - Skill-creator --- builds new skills for repeatable tasks
 
 You never turn these on or call them by name --- Claude picks the right skill on its own.
+::::
 
 ## Skills, connectors, and plugins
 
+:::: {.card-light .tour-solo}
 Claude's abilities can be extended in three ways:
 
 - **Skills** teach Claude how to do specific tasks (fetching data, building documents, following a workflow)
@@ -158,52 +306,47 @@ Browse and install:
 
 - [Anthropic plugins directory](https://claude.com/plugins) --- official plugins
 - [Community plugins](https://github.com/anthropics/claude-plugins-community) --- contributed by the community
-- Help → Run Setup → Additional packages --- curated packages, one click
+::::
 
-# Getting around {background-color="#7a1420"}
+## Academic Studio Packages
 
-## Menus and toolbars
+:::: {.card-light .tour-solo}
+Academic Studio curates a small set of plugins with simplified install procedures --- and some have features that work better here than on other Claude Code platforms.
 
-The menus (File, Edit, View, Terminal, Help, Claude) have been trimmed to the essentials.
+- Install them from Help → Run Setup → Additional packages, checked on and added with a single click
+- Run Setup handles the plugin, its skills, and any Python libraries the code needs, so everything just works
+- See <https://academic-studio.com> for a description of each package
+::::
 
-Toolbars are the small rows of buttons at the top of the editor. When you open a file, buttons that make sense for it appear --- a Run button for Python, a Preview button for Quarto.
-
-![](tour-img/menu-file.png){.shot width="55%"}
-
-## Settings, if you ever need them
-
-Settings is where you can change text size, word wrap, and the like. Most people rarely open it.
-
-The quickest way is the Command Palette: press <kbd>F1</kbd> to bring up a search box that can run any command, then type "settings."
-
-Or simplest of all, ask Claude to change a setting for you.
-
-![](tour-img/command-palette.png){.shot width="65%"}
-
-## The Terminal
-
-A terminal is a place to type commands for your computer to run --- installing a program or checking a result.
-
-Open one with Terminal → New Terminal, then type the command and press Enter. Or, simplest of all, just ask Claude to run commands for you.
-
-![](tour-img/python-run.png){.shot width="65%"}
-
-# Setup and help {background-color="#7a1420"}
+# Setup and help {background-color="#0f172a"}
 
 ## Run Setup: pick your profile, install the tools
 
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
 Open it from Help → Run Setup. One screen lets you:
 
 - Choose a profile (Students & Professionals, or Faculty) which turns on the right set of extensions
 - Install supporting programs --- Python, Node.js, Quarto --- with a single click
 - Install additional packages --- Finance Data, Slide Deck, Voiceover Builder
+::::
 
+:::: {.tour-right}
+![](tour-img/setup.png){.shot}
+::::
+
+:::: {.tour-bottom .card-dark}
 You can reopen it any time to add tools or change extensions.
+::::
 
-![](tour-img/setup.png){.shot width="55%"}
+:::::
 
 ## Where to get help
 
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
 The Help menu has:
 
 - Tour of Academic Studio --- this tour
@@ -212,22 +355,39 @@ The Help menu has:
 - Check for Updates --- downloads a newer version when one is out
 
 And of course, you can always just ask Claude.
+::::
 
-![](tour-img/menu-help.png){.shot width="55%"}
+:::: {.tour-right}
+![](tour-img/menu-help.png){.shot}
+::::
+
+:::::
 
 ## You are ready
 
+::::: {.tour-cols}
+
+:::: {.tour-left .card-light}
 A few things to remember:
 
 - Open a folder, and your files show on the left
 - Type what you want to Claude on the right --- it can read and write your files, run Python, and build documents
 - Run Setup (in the Help menu) installs anything that is missing
 - The Claude menu helps you manage skills, connectors, and permissions
+::::
 
-When in doubt, ask Claude. Tell it what you want in plain words and let it do the work.
-
-Give Claude the link <https://academic-studio.com> to get advice about working in Academic Studio.
-
-![](tour-img/icon.png){width="120"}
+:::: {.tour-right}
+![](tour-img/icon.png){width="130"}
 
 Welcome to Academic Studio.
+
+::: {.small}
+When in doubt, ask Claude --- tell it what you want in plain words.
+:::
+::::
+
+:::: {.tour-bottom .card-dark}
+For help anytime, point Claude to <https://academic-studio.com>.
+::::
+
+:::::

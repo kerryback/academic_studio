@@ -1,16 +1,21 @@
 /*-- scss:defaults --*/
 
-$brand:        #7a1420;   // deep icon red
-$brand-accent: #c0392b;   // brighter red used in charts
+// Palette (from the slides plugin: navy / blue / amber)
+$dark-navy:       #0f172a;
+$slate:           #334155;
+$bright-blue:     #3b82f6;
+$amber:           #f59e0b;
+$off-white:       #f8fafc;
+$light-blue-tint: #eff6ff;
 
-$body-bg:        #ffffff;
-$body-color:     #22252a;
-$link-color:     $brand-accent;
-$selection-bg:   lighten($brand-accent, 35%);
+$body-bg:        $off-white;
+$body-color:     $slate;
+$link-color:     tomato;
+$selection-bg:   lighten($bright-blue, 25%);
 
-$presentation-heading-color:       $brand;
-$presentation-heading-font-weight: 600;
-$presentation-font-size-root:      36px;
+$presentation-heading-color:       $dark-navy;
+$presentation-heading-font-weight: 800;
+$presentation-font-size-root:      34px;
 
 $presentation-slide-text-align: left;
 
@@ -24,21 +29,152 @@ $presentation-slide-text-align: left;
 
 .reveal .slides section { line-height: 1.35; }
 
-// Section-divider slides (dark background) get light text.
-.reveal section[data-background-color="#7a1420"] h1,
-.reveal section[data-background-color="#7a1420"] h2 { color: #ffffff; }
+// ── Content-slide titles: blue underline ──
+.reveal h2 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: $dark-navy;
+  border-bottom: 3px solid $bright-blue;
+  padding-bottom: 0.12em;
+  margin-top: 0;
+  margin-bottom: 0.4em;
+  display: inline-block;
+}
 
-// The big product screenshots: rounded corners, thin border, soft shadow.
+// ── Title slide (navy background, white title, blue subtitle) ──
+#title-slide,
+.reveal .title-slide {
+  text-align: left !important;
+
+  h1.title {
+    color: #ffffff !important;
+    font-size: 2.2em !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.03em;
+    border: none !important;
+    margin-bottom: 0.2em;
+  }
+
+  .subtitle {
+    color: $bright-blue !important;
+    font-size: 1.05em !important;
+    font-weight: 400;
+  }
+}
+
+// ── Section-divider slides (navy background) ──
+.reveal section[data-background-color="#0f172a"] {
+  text-align: center;
+}
+.reveal section[data-background-color="#0f172a"] h1,
+.reveal section[data-background-color="#0f172a"] h2 {
+  color: #ffffff;
+  border: none;
+  border-bottom: 4px solid $amber;
+  display: inline-block;
+  padding-bottom: 0.15em;
+}
+
+// ── Two-card layout: text card (left) + screenshot (right) + overflow card (bottom) ──
+.reveal .tour-cols {
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr;
+  column-gap: 1em;
+  row-gap: 0.5em;
+  align-items: center;
+  margin-top: 0.2em;
+}
+
+.reveal .tour-cols .tour-left  { grid-column: 1; grid-row: 1; align-self: stretch; }
+.reveal .tour-cols .tour-right { grid-column: 2; grid-row: 1; }
+.reveal .tour-cols .tour-bottom {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  max-height: 40%;            // stays under half the slide height
+  overflow: hidden;
+}
+
+// Right column: center its contents (screenshot, or an icon + caption).
+.reveal .tour-cols .tour-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.reveal .tour-cols .tour-right img {
+  max-width: 100%;
+  max-height: 42vh;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+// Screenshots scale to fill the row height and carry card chrome; plain
+// icons keep their own (smaller) width attribute.
+.reveal .tour-cols .tour-right img.shot,
 .reveal img.shot {
+  width: auto;
+  max-height: 54vh;
   border: 1px solid #d5d8dd;
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.16);
-  max-height: 50vh;
-  object-fit: contain;
-  display: block;
-  margin: 0.4em auto;
 }
 
+// ── Cards (from the slides plugin) ──
+.reveal .card-light {
+  background: $light-blue-tint;
+  color: $slate;
+  border-radius: 16px;
+  padding: 0.85em 1.15em;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+  font-size: 0.9em;
+
+  .card-title { color: $bright-blue; font-weight: 700; }
+  a { color: $bright-blue; }
+}
+
+.reveal .card-dark {
+  background: $dark-navy;
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 0.6em 1.15em;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.14);
+  font-size: 0.8em;
+
+  .card-title { color: $amber; font-weight: 700; }
+  .accent { color: $amber; font-weight: 700; }
+  code { color: #93c5fd; }
+  a { color: #93c5fd; }
+}
+
+// Pastel color-card variants (available for any slide)
+.reveal .card-blue   { background: #dbeafe; color: $slate; border-radius: 16px; padding: 0.85em 1.15em; box-shadow: 0 4px 14px rgba(0,0,0,0.10); .card-title { color: #2563eb; font-weight: 700; } }
+.reveal .card-amber  { background: #fef3c7; color: $slate; border-radius: 16px; padding: 0.85em 1.15em; box-shadow: 0 4px 14px rgba(0,0,0,0.10); .card-title { color: #d97706; font-weight: 700; } }
+.reveal .card-teal   { background: #ccfbf1; color: $slate; border-radius: 16px; padding: 0.85em 1.15em; box-shadow: 0 4px 14px rgba(0,0,0,0.10); .card-title { color: #0d9488; font-weight: 700; } }
+.reveal .card-purple { background: #e9d5ff; color: $slate; border-radius: 16px; padding: 0.85em 1.15em; box-shadow: 0 4px 14px rgba(0,0,0,0.10); .card-title { color: #7c3aed; font-weight: 700; } }
+.reveal .card-red    { background: #fee2e2; color: $slate; border-radius: 16px; padding: 0.85em 1.15em; box-shadow: 0 4px 14px rgba(0,0,0,0.10); .card-title { color: #dc2626; font-weight: 700; } }
+
+// Compact lists inside any card
+.reveal .card-light ul, .reveal .card-light ol,
+.reveal .card-dark ul,  .reveal .card-dark ol,
+.reveal .card-blue ul,  .reveal .card-amber ul,
+.reveal .card-teal ul,  .reveal .card-purple ul, .reveal .card-red ul {
+  margin: 0.2em 0 0.2em 0;
+  padding-left: 1.1em;
+}
+.reveal .card-light li, .reveal .card-dark li { margin: 0.25em 0; }
+.reveal .card-light p:first-child,
+.reveal .card-dark p:first-child { margin-top: 0; }
+.reveal .card-light p:last-child,
+.reveal .card-dark p:last-child { margin-bottom: 0; }
+
+// Solo card for text-only slides
+.reveal .tour-solo {
+  max-width: 88%;
+  margin: 0.3em auto;
+}
+
+// ── Misc ──
 .reveal img.shotmini {
   border: 1px solid #d5d8dd;
   border-radius: 8px;
@@ -50,7 +186,6 @@ $presentation-slide-text-align: left;
 
 .reveal .small, .reveal ol.small, .reveal .small li { font-size: 0.8em; }
 
-// Little inline pill for activity-bar icon names.
 .reveal .ico {
   display: inline-block;
   width: 1.5em; text-align: center;
@@ -67,13 +202,8 @@ $presentation-slide-text-align: left;
   color: #22252a;
 }
 
+.reveal code { color: $dark-navy; }
+.reveal a { color: tomato; }
+
 .reveal .slide-number { background: transparent; color: #b3b6bb; }
-
 .reveal .footer { color: #b3b6bb; font-size: 0.6em; }
-
-// Tighten column figures so captions sit close.
-.reveal .columns { align-items: center; }
-.reveal .column p { margin: 0.35em 0; }
-
-// Slide content uses more vertical space with stacked layout.
-.reveal .slides section { line-height: 1.4; }
