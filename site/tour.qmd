@@ -150,17 +150,15 @@ You never turn these on or call them by name --- Claude picks the right skill on
 
 Claude's abilities can be extended in three ways:
 
-- **Skills** teach Claude how to do specific tasks (fetching data, building documents, following a workflow). They live in `~/.claude/skills/`.
-- **Connectors** (MCP servers) give Claude access to external tools --- databases, web services, APIs. They live in `~/.claude.json`.
-- **Plugins** bundle skills and connectors into one-click installs.
+- **Skills** teach Claude how to do specific tasks (fetching data, building documents, following a workflow)
+- **Connectors** (MCP servers) give Claude access to external tools --- databases, web services, APIs
+- **Plugins** bundle skills and connectors into one-click installs
 
-Browse what is available:
+Browse and install:
 
-- [Anthropic plugins directory](https://claude.com/plugins) --- official plugins from Anthropic
+- [Anthropic plugins directory](https://claude.com/plugins) --- official plugins
 - [Community plugins](https://github.com/anthropics/claude-plugins-community) --- contributed by the community
-- Help → Run Setup → Additional packages --- curated packages that install with one click
-
-The Claude menu in Academic Studio also lets you browse, create, and manage your installed skills, connectors, and memory files.
+- Help → Run Setup → Additional packages --- curated packages, one click
 
 # Getting around {background-color="#7a1420"}
 
