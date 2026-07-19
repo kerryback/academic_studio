@@ -1,0 +1,15 @@
+## The Finance Data Package
+
+The Finance Data package lets you ask Claude for financial, market, and economic data in plain English --- "get Apple's daily prices since 2015," "download the Fama-French factors," "pull CPI and unemployment from FRED" --- and get a clean CSV file ready for analysis. It routes each request to the right free source:
+
+- Yahoo Finance and Stooq --- stock, ETF, and index prices
+- SEC EDGAR --- company fundamentals from 10-K/10-Q filings
+- FRED --- macroeconomic and interest-rate series
+- Ken French Data Library --- asset-pricing factor returns
+- FinnHub --- company news and earnings surprises
+- Financial Modeling Prep --- analyst price targets and estimates, market movers, economic and earnings calendars
+- US Treasury --- the daily yield curve
+
+Installing it is one click, and there are two ways: Academic Studio offers the package in a notification when you start the app without it, or you can open Help → Run Setup… any time and find it under Additional packages. The install sets up the Python libraries these sources need and the skill that teaches Claude which source to use and how. It needs Python, which Run Setup also installs. Two sources (FinnHub, Financial Modeling Prep) use free API keys --- Claude will walk you through getting them the first time they're needed.
+
+The installed skill lives in your shared Claude configuration, so it also works from Claude Code CLI and the Code mode of Claude Desktop. Updates to the package are offered automatically on startup --- no need to download a new version of Academic Studio.

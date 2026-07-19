@@ -1,0 +1,19 @@
+## Voiceovers
+
+The Voiceover plugin turns a PDF slide deck into a narrated MP4 video and a text transcript. Hand Claude a PDF of your slides and say "make a narrated video from this deck." Claude drafts the narration for each slide, a local app lets you review and edit the script, pick a voice, and generate the video. The finished `.mp4` and `.txt` land in your working directory, ready to post to your course site or share with students.
+
+Key features:
+
+- Claude writes the narration. It reads the slide content, understands the flow, and drafts a natural spoken script --- one segment per slide. You review and edit before generating.
+- Choose from a library of voices. The app uses ElevenLabs for high-quality, natural-sounding speech synthesis. An ElevenLabs API key is required (a free tier is available).
+- Saved by name. Each deck is saved so you can reopen it later to tweak the narration and regenerate without starting over.
+- Runs entirely locally. Inside Academic Studio, the app opens in an in-editor browser tab. In VS Code or Claude Code CLI, it opens a separate browser tab. Students receive only the finished video and transcript --- they run nothing.
+
+### Requirements
+
+- An [ElevenLabs](https://elevenlabs.io/) API key (free tier available; Claude will walk you through setup the first time).
+- Quarto (installed via Help → Run Setup… in Academic Studio).
+
+### Installation
+
+Ask Claude to install it: say "install the voiceover plugin." Claude will set up everything needed. The plugin works in Academic Studio, Claude Code CLI, and the Code mode of Claude Desktop.

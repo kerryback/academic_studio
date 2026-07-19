@@ -1,0 +1,19 @@
+## Slides
+
+The Slides plugin lets you ask Claude to build a polished slide deck from scratch or from your notes, paper, outline, or any other source material. Say "make me slides on portfolio theory" or "turn this outline into a presentation" and Claude produces a complete Quarto reveal.js deck --- HTML slides you present in a browser and optionally export to PDF, PowerPoint, or PNG images.
+
+Key features:
+
+- Professional design, no fiddling. A built-in theme handles the visual layout --- cards, callouts, section dividers, comparison tables, and diagram layouts --- so decks look designed, not defaulted. You describe structure in plain language; Claude handles the formatting.
+- Browser-first presentation. The output is a self-contained HTML file that opens in any browser. Navigate with arrow keys or swipe on a tablet. No special software needed to present.
+- Export to PDF, PowerPoint, or images. With decktape installed (available in Help → Run Setup…), Claude can export the deck to PDF, PowerPoint, or individual PNG slides for handouts or course materials.
+- Iterative editing. Ask Claude to revise individual slides, reorder sections, add speaker notes, or change the color scheme. The deck is a plain-text `.qmd` file, so you can also edit it directly.
+
+### Requirements
+
+- Quarto (installed via Help → Run Setup… in Academic Studio).
+- decktape (optional, for PDF/PowerPoint/PNG export; also available in Run Setup under Supporting programs).
+
+### Installation
+
+The Slides skill is pre-installed with Academic Studio. Just ask Claude to make slides and it will use the skill automatically. It also works from Claude Code CLI and the Code mode of Claude Desktop --- ask Claude to install it by saying "install the slides skill."

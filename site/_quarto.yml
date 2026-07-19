@@ -4,6 +4,9 @@ project:
   render:
     - index.qmd
     - tour.qmd
+    - voiceovers.qmd
+    - slides.qmd
+    - finance-data.qmd
   resources:
     - CNAME
     - .nojekyll
@@ -11,9 +14,19 @@ project:
     - packages/
 
 website:
-  title: "Academic Studio"
+  title: ""
   search: false
-  navbar: false
+  navbar:
+    search: false
+    title: Academic Studio
+    file: index.qmd
+    right:
+      - text: "Voiceovers"
+        file: voiceovers.qmd
+      - text: "Slides"
+        file: slides.qmd
+      - text: "Finance Data"
+        file: finance-data.qmd
 
 format:
   html:
