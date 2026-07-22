@@ -78,12 +78,16 @@
     "mechatroner.rainbow-csv",
     "ms-toolsai.jupyter",
     "streetsidesoftware.code-spell-checker",
-    "tomoki1207.pdf",
     "Anthropic.claude-code"
   ],
-  "academicStudioVersion": "1.0",
+  "academicStudioVersion": "1.1",
   "configurationDefaults": {
     "workbench.colorTheme": "Visual Studio Light",
-    "update.titleBar": false
+    "update.titleBar": false,
+    "workbench.editorAssociations": {
+      "*.pdf": "latex-workshop-pdf-hook"
+    },
+    "latex-workshop.view.pdf.viewer": "tab",
+    "latex-workshop.view.pdf.internal.port": 8090
   }
 }

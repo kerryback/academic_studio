@@ -11,8 +11,7 @@
     "detachhead.basedpyright",
     "mechatroner.rainbow-csv",
     "ms-toolsai.jupyter",
-    "streetsidesoftware.code-spell-checker",
-    "tomoki1207.pdf"
+    "streetsidesoftware.code-spell-checker"
   ],
   "platformSpecific": [
     "Anthropic.claude-code"

@@ -1,25 +1,24 @@
 // Academic Studio Setup — first-run audience picker, extension enablement,
 // installation of supporting programs (Python, Quarto, R, TinyTeX, decktape,
-// GitHub CLI), and catalog-driven "Additional packages".
+// GitHub CLI), and catalog-driven "Recommended Plugins".
 //
-// - Audience radio seeds an editable extension checklist; "Apply" enables the
-//   chosen extensions + disables the rest (academicStudio.setExtensionsEnablement,
-//   patch 52) and reloads.
+// - Audience radio seeds an editable extension checklist; "Apply" ENABLES the
+//   chosen extensions (academicStudio.setExtensionsEnablement, patch 52) and
+//   reloads. It never disables — already-enabled extensions are locked.
 // - "Supporting programs" lists external tools with detected status; "Install
-//   selected programs & packages" runs each tool's official installer in a
+//   selected programs & plugins" runs each tool's official installer in a
 //   visible terminal (continue-on-error) and reports what succeeded / failed
-//   with manual links.
-// - "Additional packages" come from an ONLINE CATALOG (packages.json on
+//   with manual links. Already-installed items are grayed out.
+// - "Recommended Plugins" come from an ONLINE CATALOG (plugins.json on
 //   academic-studio.com, with a bundled snapshot as offline fallback), so new
-//   packages ship without an app release. A package is declarative data —
-//   pip libraries, an optional Claude skill tarball (sha256-verified), an
-//   optional MCP server config — never remote shell commands. On startup the
-//   catalog is checked and new/updated packages are offered once.
+//   plugins ship without an app release. A plugin is declarative data — a git
+//   source (owner/repo[#tag][/subpath]) installed as a Claude skill via
+//   `npx skills add`, plus optional pip libraries — never remote shell commands.
+//   On startup the catalog is checked and new plugins are offered once.
 //
 // Re-openable any time via the "Academic Studio Setup…" command.
 const vscode = require('vscode');
 const cp = require('child_process');
-const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -30,16 +29,15 @@ const SELECTION_KEY = 'academicStudio.selection';
 // version bump makes a new key, so updated packages are offered again.
 const SEEN_PACKAGES_KEY = 'academicStudio.seenPackages';
 
-// Live package catalog. Served by GitHub Pages (site/packages.json in the repo);
+// Live "Recommended Plugins" catalog. Served by GitHub Pages (site/plugins.json);
 // NOT api.github.com, whose unauthenticated limit (60/hr/IP) breaks classrooms.
-const CATALOG_URL = 'https://academic-studio.com/packages.json';
-// A payload (skill tarball) may only come from hosts we publish to.
-const PAYLOAD_URL_ALLOW = [
-	'https://academic-studio.com/',
-	'https://www.academic-studio.com/',
-	'https://github.com/kerryback/',
-	'https://raw.githubusercontent.com/kerryback/',
-];
+// Deliberately a NEW url (not packages.json): older app versions keep reading
+// their old tarball-schema packages.json, while 1.1+ reads this npx/git schema.
+const CATALOG_URL = 'https://academic-studio.com/plugins.json';
+// Each plugin is a skill installed from a git source with the `skills` CLI via
+// npx (Node is a required program, so npx is always available). Pin the CLI for
+// reproducible classroom installs; bump deliberately.
+const SKILLS_CLI = 'skills@1.5.20';
 
 // ---- bundled extensions catalog (enable/disable) ---------------------------
 //   group: common -> everyone, faculty -> Faculty, student -> Students & Pros.
@@ -53,8 +51,7 @@ const CATALOG = [
 	{ id: 'ms-toolsai.jupyter', label: 'Jupyter', group: 'common' },
 	{ id: 'streetsidesoftware.code-spell-checker', label: 'Spell Checker', group: 'common' },
 	{ id: 'anthropic.claude-code', label: 'Claude Code', group: 'common' },
-	{ id: 'james-yu.latex-workshop', label: 'LaTeX Workshop (PDF via LaTeX)', group: 'faculty', excludes: 'tomoki1207.pdf' },
-	{ id: 'tomoki1207.pdf', label: 'PDF viewer', group: 'student', excludes: 'james-yu.latex-workshop' },
+	{ id: 'james-yu.latex-workshop', label: 'LaTeX Workshop (PDF viewer)', group: 'common' },
 	{ id: 'reditorsupport.r', label: 'R language support', group: 'faculty' },
 	{ id: 'reditorsupport.r-syntax', label: 'R syntax', group: 'faculty' },
 	{ id: 'jeanp413.open-remote-ssh', label: 'Open Remote - SSH', group: 'faculty' },
@@ -69,7 +66,7 @@ function presetFor(audience) {
 
 // ---- supporting programs catalog (detect + install) ------------------------
 // System programs stay baked in (they run official installers, often with
-// sudo). Only "Additional packages" come from the online catalog.
+// sudo). Only "Recommended Plugins" come from the online catalog.
 //   detect: shell command; exit 0 => present (stdout/stderr => version)
 //   installMac: array of bash lines run inside a `( set -e … )` subshell
 //   group: common -> everyone, faculty -> Faculty, optin -> off by default
@@ -236,27 +233,35 @@ function httpGet(url, timeoutMs) {
 		.finally(() => clearTimeout(t));
 }
 
-// ---- package catalog ---------------------------------------------------------
-// A package is DATA the app acts on — never remote shell. Schema per entry:
+// ---- plugin catalog ----------------------------------------------------------
+// A plugin is DATA the app acts on — never remote shell. It's a Claude skill
+// installed from a git source with the `skills` CLI (npx). Schema per entry:
 //   id            kebab-case identifier (required)
 //   label         display label (required)
-//   version       positive integer; bump to re-offer updates (required)
+//   author        who publishes it, shown as "by <author>" (required)
+//   name          the ~/.claude/skills/<name> folder it installs to (required)
+//   source        git spec for `skills add`: owner/repo[#tag-or-branch][/subpath]
+//                 (required; passed single-quoted to the shell, and pattern-checked)
+//   select        --skill <name> filter, for a multi-skill source repo (optional)
+//   version       positive integer; used by the startup "new plugins" offer (required)
 //   minAppVersion oldest app that understands the entry (optional)
-//   prereq        a PROGRAMS id that must be present/selected first (optional)
-//   pip           pip package names to install (optional)
+//   prereq        a PROGRAMS id that must be present/selected first (optional;
+//                 node is implicit — it's a required program, ordered before plugins)
+//   pip           extra pip package names to install alongside (optional)
 //   pipImports    module names for the import detection check (optional)
-//   skill         { name, url, sha256 } Claude skill tarball (optional)
-//   mcp           MCP server(s) for ~/.claude.json: one { name, config }
-//                 or an array of them (optional)
-//   manualUrl / manualSteps   fallback instructions (optional)
+//   infoUrl / manualUrl / manualSteps   fallback links/instructions (optional)
 const RE_PKG_ID = /^[a-z0-9][a-z0-9-]*$/;
 const RE_PIP_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const RE_PY_MODULE = /^[A-Za-z_][A-Za-z0-9_.]*$/;
-const RE_SHA256 = /^[0-9a-f]{64}$/;
-const RE_MCP_NAME = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
+const RE_SKILL_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+// owner/repo, optionally #ref (branch/tag) and/or /subpath. No shell metachars.
+const RE_SOURCE = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+(#[A-Za-z0-9._\/-]+)?(\/[A-Za-z0-9._-]+)*$/;
 
-function payloadUrlAllowed(u) {
-	return typeof u === 'string' && PAYLOAD_URL_ALLOW.some(p => u.startsWith(p));
+// The GitHub "owner/repo" a source points at (strips #ref and any subpath), for
+// the "source ↗" link. Returns '' if it doesn't look like owner/repo.
+function sourceRepo(source) {
+	const m = String(source || '').match(/^([A-Za-z0-9._-]+\/[A-Za-z0-9._-]+)/);
+	return m ? m[1] : '';
 }
 
 // Strict validation: a malformed or tampered catalog entry is dropped, never
@@ -266,26 +271,14 @@ function validPackage(p) {
 	if (!p || typeof p !== 'object') { return false; }
 	if (typeof p.id !== 'string' || !RE_PKG_ID.test(p.id)) { return false; }
 	if (typeof p.label !== 'string' || !p.label.trim()) { return false; }
+	if (typeof p.author !== 'string' || !p.author.trim()) { return false; }
+	if (typeof p.name !== 'string' || !RE_SKILL_NAME.test(p.name)) { return false; }
+	if (typeof p.source !== 'string' || !RE_SOURCE.test(p.source)) { return false; }
 	if (!Number.isInteger(p.version) || p.version < 1) { return false; }
+	if (p.select !== undefined && !(typeof p.select === 'string' && RE_SKILL_NAME.test(p.select))) { return false; }
 	if (p.prereq !== undefined && !PROGRAMS.some(x => x.id === p.prereq)) { return false; }
 	if (p.pip !== undefined && !(Array.isArray(p.pip) && p.pip.every(n => typeof n === 'string' && RE_PIP_NAME.test(n)))) { return false; }
 	if (p.pipImports !== undefined && !(Array.isArray(p.pipImports) && p.pipImports.every(n => typeof n === 'string' && RE_PY_MODULE.test(n)))) { return false; }
-	if (p.skill !== undefined) {
-		const s = p.skill;
-		if (!s || typeof s !== 'object') { return false; }
-		if (typeof s.name !== 'string' || !RE_PKG_ID.test(s.name)) { return false; }
-		if (!payloadUrlAllowed(s.url)) { return false; }
-		if (typeof s.sha256 !== 'string' || !RE_SHA256.test(s.sha256)) { return false; }
-	}
-	if (p.mcp !== undefined) {
-		const list = Array.isArray(p.mcp) ? p.mcp : [p.mcp];
-		if (!list.length) { return false; }
-		for (const m of list) {
-			if (!m || typeof m !== 'object') { return false; }
-			if (typeof m.name !== 'string' || !RE_MCP_NAME.test(m.name)) { return false; }
-			if (!m.config || typeof m.config !== 'object') { return false; }
-		}
-	}
 	return true;
 }
 
@@ -317,66 +310,24 @@ async function loadPackageCatalog(context) {
 	return { packages: [], live: false };
 }
 
-// ---- skill payloads ----------------------------------------------------------
+// ---- skills (installed via the `skills` CLI over npx) ------------------------
 function claudeSkillsDir() { return path.join(os.homedir(), '.claude', 'skills'); }
-const SKILL_MARKER = '.academic-studio-package.json';
 
-// The catalog version of an installed skill. A skill installed by an old app
-// build (no marker) reads as 0, so the first catalog version re-offers it —
-// which delivers the newest files, exactly what we want.
-function installedSkillVersion(skillName) {
-	const dir = path.join(claudeSkillsDir(), skillName);
-	try {
-		if (!fs.existsSync(path.join(dir, 'SKILL.md'))) { return -1; }   // not installed
-		const m = JSON.parse(fs.readFileSync(path.join(dir, SKILL_MARKER), 'utf8'));
-		return Number.isInteger(m.version) ? m.version : 0;
-	} catch (_) { return 0; }   // installed, version unknown (legacy)
+// True if the plugin's skill folder is present (~/.claude/skills/<name>/SKILL.md).
+function skillInstalled(pkg) {
+	try { return fs.existsSync(path.join(claudeSkillsDir(), pkg.name, 'SKILL.md')); }
+	catch (_) { return false; }
 }
 
-// Download → sha256-verify → untar → copy into ~/.claude/skills/<name>.
-// tar ships with macOS and with Windows 10 1803+ (bsdtar in System32).
-async function installPackageSkill(pkg) {
-	const skill = pkg.skill;
-	if (!skill) { return { ok: true }; }
-	let buf;
-	try {
-		const res = await httpGet(skill.url, 60000);
-		if (!res || !res.ok) { return { ok: false, error: 'download failed (' + (res ? res.status : 'no response') + ')' }; }
-		buf = Buffer.from(await res.arrayBuffer());
-	} catch (_) { return { ok: false, error: 'download failed (offline?)' }; }
-	const sha = crypto.createHash('sha256').update(buf).digest('hex');
-	if (sha !== skill.sha256) { return { ok: false, error: 'checksum mismatch — refusing to install' }; }
-
-	const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'as-skill-'));
-	try {
-		const tarball = path.join(tmp, 'skill.tar.gz');
-		fs.writeFileSync(tarball, buf);
-		const extractDir = path.join(tmp, 'x');
-		fs.mkdirSync(extractDir);
-		await new Promise((resolve, reject) => {
-			cp.execFile('tar', ['-xzf', tarball, '-C', extractDir], { timeout: 60000 },
-				(err) => err ? reject(err) : resolve());
-		});
-		// Accept both layouts: files at the archive root, or one top-level folder.
-		let src = extractDir;
-		if (!fs.existsSync(path.join(src, 'SKILL.md'))) {
-			const sub = fs.readdirSync(src).map(n => path.join(src, n))
-				.find(d => { try { return fs.existsSync(path.join(d, 'SKILL.md')); } catch (_) { return false; } });
-			if (!sub) { return { ok: false, error: 'archive has no SKILL.md' }; }
-			src = sub;
-		}
-		const to = path.join(claudeSkillsDir(), skill.name);
-		fs.mkdirSync(claudeSkillsDir(), { recursive: true });
-		fs.rmSync(to, { recursive: true, force: true });
-		fs.cpSync(src, to, { recursive: true });
-		fs.writeFileSync(path.join(to, SKILL_MARKER),
-			JSON.stringify({ id: pkg.id, version: pkg.version }, null, 2));
-		return { ok: true };
-	} catch (e) {
-		return { ok: false, error: 'could not unpack skill (' + (e && e.message ? e.message : e) + ')' };
-	} finally {
-		try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_) { /* best effort */ }
-	}
+// The `npx skills add` command that installs a plugin's skill from its git
+// source into ~/.claude/skills, for Claude Code, non-interactively. `-g`
+// installs to the user dir; `-a claude-code` targets only this agent; the CLI
+// auto-detects the agent and runs without prompts. Quoting is platform-specific
+// so the '#tag' in a source can't be a shell comment.
+function skillsAddCmd(pkg, isWin) {
+	const q = isWin ? psq : shq;
+	const sel = pkg.select ? (' --skill ' + q(pkg.select)) : '';
+	return 'npx --yes ' + SKILLS_CLI + ' add ' + q(pkg.source) + ' -g -a claude-code' + sel;
 }
 
 // ---- MCP connectors ----------------------------------------------------------
@@ -503,13 +454,12 @@ function pipImportsDetect(pkg) {
 }
 
 async function detectPackage(pkg) {
+	// Present = its skill folder exists, plus any declared pip libraries import.
+	if (!skillInstalled(pkg)) { return { found: false, version: '' }; }
 	let libsOk = true;
 	const cmd = pipImportsDetect(pkg);
 	if (cmd) { libsOk = (await shellExec(cmd)).ok; }
-	const skillOk = !pkg.skill || installedSkillVersion(pkg.skill.name) >= pkg.version;
-	const mcpOk = mcpInstalled(pkg);
-	const found = libsOk && skillOk && mcpOk;
-	return { found, version: found ? 'v' + pkg.version : '' };
+	return { found: libsOk, version: libsOk ? ('v' + pkg.version) : '' };
 }
 
 // Detect all programs and packages IN PARALLEL — serially this took up to
@@ -581,7 +531,8 @@ function planInstall(selectedIds, detected, packages) {
 function commandsFor(item) {
 	const isWin = process.platform === 'win32';
 	if (item.kind === 'package') {
-		const cmds = [];
+		// Install the skill from its git source via npx, then any extra pip libs.
+		const cmds = [skillsAddCmd(item, isWin)];
 		if (item.pip && item.pip.length) {
 			// PEP 668: Homebrew/Debian Pythons are "externally managed" and refuse
 			// system pip installs. The PIP_BREAK_SYSTEM_PACKAGES=1 env var lifts
@@ -591,7 +542,7 @@ function commandsFor(item) {
 				? "$env:PIP_BREAK_SYSTEM_PACKAGES = '1'; python -m pip install " + item.pip.join(' ')
 				: 'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install ' + item.pip.join(' '));
 		}
-		return cmds.length ? cmds : [];   // skill/mcp are handled in-process
+		return cmds;
 	}
 	const cmds = isWin ? item.installWin : item.installMac;
 	return (cmds && cmds.length) ? cmds : null;
@@ -676,15 +627,8 @@ async function runInstall(context, selectedIds, detected, packages, reporter) {
 			plan.skipped.push({ id, reason: 'no automatic installer for this platform — use the manual link' });
 			continue;
 		}
-		// Packages: skill download + MCP config happen in-process, before the
-		// terminal runs pip. A failure fails the whole package (atomic install).
-		if (item.kind === 'package') {
-			const s = await installPackageSkill(item);
-			if (!s.ok) { preFailed.push({ id, reason: s.error }); continue; }
-			const m = installMcpServer(item);
-			if (!m.ok) { preFailed.push({ id, reason: m.error }); continue; }
-			if (!cmds.length) { preFailed.push({ id, reason: null, forcedOk: true }); continue; }   // nothing to run in terminal
-		}
+		// Both programs and plugins run entirely in the terminal now (plugins via
+		// `npx skills add`), so nothing is installed in-process here.
 		runnable.push({ id, kind: item.kind, label: item.label, cmds });
 	}
 
@@ -772,10 +716,10 @@ async function checkForNewPackages(context) {
 
 	const names = fresh.map(shortName).join(', ');
 	const many = fresh.length > 1;
-	const isUpdate = fresh.some(p => p.skill && installedSkillVersion(p.skill.name) >= 0);
-	const verb = isUpdate ? 'updated' : 'new';
+	// Detection is folder-based, so a fresh entry is always one the user doesn't
+	// have yet (installed skills are `found` and never reach here).
 	const choice = await vscode.window.showInformationMessage(
-		`Academic Studio: ${many ? verb + ' packages are' : 'a ' + verb + ' package is'} available — ${names}.`,
+		`Academic Studio: ${many ? 'new plugins are' : 'a new plugin is'} available — ${names}.`,
 		'Install', 'View in Setup', 'Not now');
 
 	const markSeen = async () => {
@@ -861,21 +805,21 @@ async function openSetupPanel(context) {
 		}
 
 		if (msg.type === 'apply') {
+			// Run Setup only ENABLES extensions — it never disables. Checked boxes
+			// are the not-yet-enabled extensions the user opted into; already-enabled
+			// ones are locked (grayed) in the UI and never sent here.
 			const selectedIds = Array.isArray(msg.selected) ? msg.selected : [];
-			const allIds = CATALOG.map(c => c.id);
-			const toEnable = selectedIds;
-			const toDisable = allIds.filter(id => selectedIds.indexOf(id) === -1);
-			try {
-				if (toEnable.length) { await vscode.commands.executeCommand('academicStudio.setExtensionsEnablement', toEnable, true); }
-				if (toDisable.length) { await vscode.commands.executeCommand('academicStudio.setExtensionsEnablement', toDisable, false); }
-			} catch (err) {
-				vscode.window.showErrorMessage('Academic Studio setup could not change extensions: ' + (err && err.message ? err.message : String(err)));
-				return;
-			}
 			await context.globalState.update(SETUP_DONE_KEY, true);
 			await context.globalState.update(SELECTION_KEY, { audience: msg.audience, selected: selectedIds });
+			if (!selectedIds.length) { panel.dispose(); return; }   // nothing to enable
+			try {
+				await vscode.commands.executeCommand('academicStudio.setExtensionsEnablement', selectedIds, true);
+			} catch (err) {
+				vscode.window.showErrorMessage('Academic Studio setup could not enable extensions: ' + (err && err.message ? err.message : String(err)));
+				return;
+			}
 			panel.dispose();
-			// Enable/disable only takes effect after a reload — do it automatically.
+			// Enablement only takes effect after a reload — do it automatically.
 			await vscode.commands.executeCommand('workbench.action.reloadWindow');
 		}
 	}, undefined, context.subscriptions);
@@ -885,22 +829,29 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	const data = JSON.stringify({
 		catalog: CATALOG.map(c => ({ id: c.id, label: c.label, group: c.group, excludes: c.excludes || '' })),
 		programs: PROGRAMS.map(p => ({ id: p.id, label: p.label, group: p.group, prereq: p.prereq || '', required: !!p.required })),
-		packages: packages.map(p => ({ id: p.id, label: p.label, prereq: p.prereq || '', infoUrl: safeHttpsUrl(p.infoUrl) || '' })),
+		packages: packages.map(p => ({ id: p.id, label: p.label, author: p.author || '', prereq: p.prereq || '', infoUrl: safeHttpsUrl(p.infoUrl) || '' })),
 		audience, enabledExt,
 	}).replace(/</g, '\\u003c');   // keep </script> in labels from closing our tag
 
+	// One explanation, shown verbatim in both the Extensions and Supporting
+	// programs sections (kept identical by construction).
+	const SECTION_NOTE = "Items you already have are grayed out — Run Setup only adds what's missing and never disables or removes anything. Items recommended for your profile that you don't already have are checked by default; you can also check any others you'd like to add.";
+
 	const extRows = CATALOG.map(c =>
-		`<label class="row"><input type="checkbox" class="ext" value="${escHtml(c.id)}" data-excludes="${escHtml(c.excludes || '')}"> <span>${escHtml(c.label)}</span> <em class="status" data-for="${escHtml(c.id)}"></em></label>`
+		`<label class="row"><input type="checkbox" class="ext" value="${escHtml(c.id)}"> <span>${escHtml(c.label)}</span> <em class="status" data-for="${escHtml(c.id)}"></em></label>`
 	).join('\n');
 	const rowFor = p =>
 		`<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span> <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
 	const pkgRowFor = p => {
-		const info = p.infoUrl ? ` <a class="info-link" href="${escHtml(p.infoUrl)}">Learn more</a>` : '';
-		return `<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span>${info} <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
+		const by = p.author ? ` <em class="by">by ${escHtml(p.author)}</em>` : '';
+		const repo = sourceRepo(p.source);
+		const src = repo ? ` <a class="info-link" href="https://github.com/${escHtml(repo)}">${escHtml(repo)} ↗</a>`
+			: (p.infoUrl ? ` <a class="info-link" href="${escHtml(p.infoUrl)}">Learn more</a>` : '');
+		return `<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span>${by}${src} <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
 	};
 	const progRows = PROGRAMS.map(rowFor).join('\n');
 	const pkgRows = packages.length ? packages.map(pkgRowFor).join('\n')
-		: `<p class="note">${catalogLive ? 'No packages are available yet.' : 'Could not reach the package catalog — check your connection and reopen Setup.'}</p>`;
+		: `<p class="note">${catalogLive ? 'No plugins are available yet.' : 'Could not reach the plugin catalog — check your connection and reopen Setup.'}</p>`;
 
 	return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -917,6 +868,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	.row .status { margin-left: auto; font-style: normal; font-size: 0.85em; color: var(--vscode-descriptionForeground); }
 	.info-link { font-size: 0.85em; color: var(--vscode-textLink-foreground); text-decoration: none; margin-left: 6px; }
 	.info-link:hover { text-decoration: underline; }
+	.row .by { font-style: normal; font-size: 0.85em; color: var(--vscode-descriptionForeground); margin-left: 6px; }
 	.status.found { color: var(--vscode-testing-iconPassed, #3fb950); }
 	.status.missing { color: var(--vscode-descriptionForeground); }
 	button { font-family: inherit; font-size: 1em; padding: 7px 18px; border: none; border-radius: 4px;
@@ -940,7 +892,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	<div id="topbanner" class="banner" style="display:none"></div>
 
 	<fieldset>
-		<p class="sub">Pick the profile that fits you. It just sets sensible defaults — you can change any item below, and you can remove or add extensions later. Leave checked any extensions that you want enabled. Unchecking will cause currently enabled extensions to be disabled.</p>
+		<p class="sub">Pick the profile that fits you. It just sets sensible defaults — choosing one pre-checks the recommended items you don't already have. You can change any selection below.</p>
 		<div class="amlabel">I am…</div>
 		<div class="aud">
 			<label><input type="radio" name="aud" value="student"> Students &amp; Professionals</label>
@@ -950,25 +902,25 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 
 	<fieldset>
 		<legend>Extensions</legend>
+		<p class="note">${escHtml(SECTION_NOTE)}</p>
 		${extRows}
-		<p class="note">LaTeX Workshop and the PDF viewer can't both be active (they both handle PDFs) — choosing one clears the other.</p>
 		<button id="apply">Apply</button>
-		<span class="note">Applying reloads the window to enable/disable extensions.</span>
+		<span class="note">Applying enables the selected extensions and reloads the window.</span>
 	</fieldset>
 
 	<fieldset id="programs">
 		<legend>Supporting programs</legend>
-		<p class="note">Programs your computer needs for some features. Only missing ones are checked. Installing runs the official installer in a terminal — you may be asked for your password.</p>
+		<p class="note">${escHtml(SECTION_NOTE)}</p>
 		${progRows}
 	</fieldset>
 
 	<fieldset id="packages">
-		<legend>Additional packages</legend>
-		<p class="note">Optional add-ons for specific kinds of work, delivered from academic-studio.com — new ones appear here without updating the app. Checked ones install together with the programs above. Only missing ones are checked.</p>
+		<legend>Recommended Plugins</legend>
+		<p class="note">Curated Claude skills for specific kinds of work, each installed from its source repository. The list is maintained online, so new plugins appear here without updating the app. Items you already have are grayed out; the rest are checked by default and install together with the programs above.</p>
 		${pkgRows}
 	</fieldset>
 
-	<p><button id="install">Install selected programs &amp; packages</button></p>
+	<p><button id="install">Install selected programs &amp; plugins</button></p>
 	<div id="report"></div>
 
 <script>
@@ -986,44 +938,43 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 		return DATA.programs.filter(p => p.group === 'common' || (aud === 'faculty' && p.group === 'faculty')).map(p => p.id)
 			.concat(DATA.packages.map(p => p.id));
 	}
-	function setExt(ids) { extBoxes.forEach(b => { b.checked = ids.indexOf(b.value) !== -1; }); }
+	// Already-enabled extensions are "installed": grayed out and unchecked so
+	// they can't be toggled (Run Setup never disables). Everything else is
+	// checkable; ids are the ones checked by default.
+	function setExt(ids) {
+		extBoxes.forEach(b => {
+			if (DATA.enabledExt[b.value]) { b.checked = false; b.disabled = true; }
+			else { b.disabled = false; b.checked = ids.indexOf(b.value) !== -1; }
+		});
+	}
 	function setProg(aud) {
 		const pre = progPreset(aud);
 		progBoxes.forEach(b => {
 			const d = detected[b.value]; const missing = !(d && d.found);
 			const req = DATA.programs.some(p => p.id === b.value && p.required);
-			// Required programs can't be opted out of while missing; once found
-			// they behave like any other item.
-			if (req && missing) { b.checked = true; b.disabled = true; }
-			else { b.disabled = false; b.checked = pre.indexOf(b.value) !== -1 && missing; }
+			// Installed items are grayed out and unchecked — can't be selected
+			// (Run Setup never uninstalls). Required-but-missing items are locked
+			// on. Missing items are checkable, checked by default if in the profile.
+			if (!missing) { b.checked = false; b.disabled = true; }
+			else if (req) { b.checked = true; b.disabled = true; }
+			else { b.disabled = false; b.checked = pre.indexOf(b.value) !== -1; }
 		});
 	}
-	// Default extension selection = recommended-for-audience PLUS anything already
-	// enabled (so Apply never disables what you have), with exclusions resolved in
-	// favor of the recommended item.
+	// Default extension selection = recommended-for-audience extensions the user
+	// doesn't already have enabled (already-enabled ones are locked, not defaults).
 	function defaultExtSel(aud) {
-		const sel = new Set(extPreset(aud));
-		DATA.catalog.forEach(c => {
-			if (DATA.enabledExt[c.id] && !sel.has(c.id)) {
-				const conflict = (c.excludes && sel.has(c.excludes)) || DATA.catalog.some(o => o.excludes === c.id && sel.has(o.id));
-				if (!conflict) { sel.add(c.id); }
-			}
-		});
-		return Array.from(sel);
+		return extPreset(aud).filter(id => !DATA.enabledExt[id]);
 	}
 	function renderExtStatus() {
 		DATA.catalog.forEach(c => {
 			const el = document.querySelector('.status[data-for="' + c.id + '"]');
 			if (!el) { return; }
 			if (DATA.enabledExt[c.id]) { el.textContent = '✓ enabled'; el.className = 'status found'; }
-			else { el.textContent = 'disabled'; el.className = 'status missing'; }
+			else { el.textContent = 'not enabled'; el.className = 'status missing'; }
 		});
 	}
 
 	radios.forEach(r => r.addEventListener('change', () => { setExt(defaultExtSel(r.value)); setProg(r.value); updateBanner(); }));
-	extBoxes.forEach(b => b.addEventListener('change', () => {
-		if (b.checked && b.dataset.excludes) { const o = extBoxes.find(x => x.value === b.dataset.excludes); if (o) o.checked = false; }
-	}));
 
 	radios.forEach(r => { r.checked = r.value === DATA.audience; });
 	setExt(defaultExtSel(DATA.audience));
@@ -1043,7 +994,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 		const banner = document.getElementById('topbanner');
 		if (!Object.keys(detected).length) { banner.style.display = 'none'; return; }
 		const aud = (radios.find(r => r.checked) || {}).value || 'student';
-		// Banner is about supporting programs only; Additional packages have their
+		// Banner is about supporting programs only; Recommended Plugins have their
 		// own section and shouldn't be described as "programs" here.
 		const missing = DATA.programs
 			.filter(p => p.group === 'common' || (aud === 'faculty' && p.group === 'faculty'))
@@ -1068,7 +1019,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 		const m = e.data;
 		if (m.type === 'programStatus') { detected = m.detected || {}; renderStatus(); setProg((radios.find(r => r.checked) || {}).value || 'student'); updateBanner(); }
 		if (m.type === 'installReport') {
-			detected = m.detected || detected; renderStatus(); updateBanner();
+			detected = m.detected || detected; renderStatus(); setProg((radios.find(r => r.checked) || {}).value || 'student'); updateBanner();
 			const rep = document.getElementById('report');
 			rep.textContent = '';
 			const note = document.createElement('p');

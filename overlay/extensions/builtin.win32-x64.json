@@ -67,12 +67,6 @@
       "vsix": "as-extensions/streetsidesoftware.code-spell-checker.vsix"
     },
     {
-      "name": "tomoki1207.pdf",
-      "version": "1.2.2",
-      "sha256": "5697cd022caf93fa0fdb8c5b9c3624951394d8126ed09184ad4fdbcad62dadce",
-      "vsix": "as-extensions/tomoki1207.pdf.vsix"
-    },
-    {
       "name": "anthropic.claude-code",
       "version": "2.1.195",
       "sha256": "6bab4f47ed6a9bc450521696d796cda6813959651bf2d35dacdf437bded3d010",

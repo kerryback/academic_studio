@@ -33,10 +33,33 @@ Repo: `kerryback/academic_studio`. Version lives in
 `overlay/product.overrides.json` (`academicStudioVersion`); tags are
 `staging-v<version>` (prerelease) and `v<version>` (public).
 
-NOTE — packages don't need any of this: Claude skills / pip bundles / MCP
-connectors ship from the online catalog (`site/packages.json` +
-`scripts/make-package.sh` + git push). Only changes to the app itself need a
-release.
+## What's editable without a rebuild
+
+Most of Run Setup is baked into the app and needs a release to change: the page's
+code and layout, the Extensions list, the Supporting programs list, the section
+explanations, and the checkbox/gray-out/install logic all live in the built-in
+extension `overlay/builtin-extensions/academic-studio-setup/extension.js`, which
+is bundled at build time. Editing any of that reaches users only through a new
+build.
+
+The one part that is live-editable is the "Recommended Plugins" section. Its
+contents come from the online catalog `site/plugins.json` (served at
+`https://academic-studio.com/plugins.json`; GitHub Pages deploys `site/**` on
+push). Each entry is a Claude skill installed from a git source via
+`npx skills add` — add, remove, edit, or re-pin a plugin by editing that JSON and
+pushing, and every installed app picks it up on next launch. No rebuild needed.
+Keep the bundled offline fallback
+`overlay/builtin-extensions/academic-studio-setup/packages.snapshot.json` in sync
+so fresh installs list the same plugins offline.
+
+CAVEAT — the catalog is schema-bound to the app version. The shipped app only
+understands the fields its code knows (`id`, `label`, `author`, `name`, `source`,
+`select`, `version`, `prereq`, `pip`, `pipImports`, `infoUrl`). You can freely
+edit entries within that schema live; adding a NEW field the deployed code
+doesn't parse requires a new build. Also, the schema changed in 1.1 (npx/git
+source, not tarball+sha256), so 1.1+ reads `plugins.json` while older deployed
+apps keep reading the untouched `packages.json` — never repurpose `packages.json`
+for the new schema.
 
 ## Prerequisites
 
@@ -186,8 +209,9 @@ https://github.com/kerryback/academic_studio/releases/download/staging-v<X.Y>/Ac
 ```
 
 Install and check at least: app launches clean (no Gatekeeper/SmartScreen
-block), Run Setup opens and the "Additional packages" section loads from the
-live catalog, the startup new-package prompt behaves, and on Windows the
+block), Run Setup opens and the "Recommended Plugins" section loads from the
+live catalog (`plugins.json`), the startup new-plugin prompt behaves, a plugin
+installs via `npx skills add` into `~/.claude/skills/`, and on Windows the
 install button runs the PowerShell flow in a terminal.
 
 ## Step 6 — promote to public (once, from any machine)
