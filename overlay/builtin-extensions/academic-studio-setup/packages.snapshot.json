@@ -15,6 +15,16 @@
       "pipImports": ["yfinance", "pandas_datareader", "finnhub"]
     },
     {
+      "id": "litdb",
+      "label": "litdb — private, searchable library of your research papers: add PDFs and search their full text by keyword & meaning, find new work (OpenAlex/Semantic Scholar), track citations, export BibTeX; optional Zotero",
+      "author": "Kerry Back",
+      "name": "litdb",
+      "source": "kerryback/skills",
+      "select": "litdb",
+      "version": 1,
+      "prereq": "python"
+    },
+    {
       "id": "slides",
       "label": "Slide Deck — build themed reveal.js/Quarto presentations, export to PDF/PPTX/PNG",
       "author": "Kerry Back",
