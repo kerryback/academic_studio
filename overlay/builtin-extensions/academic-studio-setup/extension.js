@@ -324,10 +324,20 @@ function skillInstalled(pkg) {
 // installs to the user dir; `-a claude-code` targets only this agent; the CLI
 // auto-detects the agent and runs without prompts. Quoting is platform-specific
 // so the '#tag' in a source can't be a shell comment.
+//
+// On Windows we call `npx.cmd`, not bare `npx`. Inside a PowerShell host, a bare
+// `npx` resolves to the `npx.ps1` shim, whose execution is gated by the script
+// execution policy — so on a machine whose policy is Restricted (the Windows
+// default, and often GPO-enforced in school/lab environments, where even the
+// launcher's `-ExecutionPolicy Bypass` is overridden) it dies with "running
+// scripts is disabled on this system." The `.cmd` batch shim does the same job
+// and is never subject to execution policy, so it works everywhere. `python`
+// (pip step) is already a native .exe, so it needs no equivalent treatment.
 function skillsAddCmd(pkg, isWin) {
 	const q = isWin ? psq : shq;
+	const npx = isWin ? 'npx.cmd' : 'npx';
 	const sel = pkg.select ? (' --skill ' + q(pkg.select)) : '';
-	return 'npx --yes ' + SKILLS_CLI + ' add ' + q(pkg.source) + ' -g -a claude-code' + sel;
+	return npx + ' --yes ' + SKILLS_CLI + ' add ' + q(pkg.source) + ' -g -a claude-code' + sel;
 }
 
 // ---- MCP connectors ----------------------------------------------------------
