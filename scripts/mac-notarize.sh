@@ -3,8 +3,13 @@
 # Called by build-macos.sh after code-signing. Safe to run standalone too.
 #
 # Credentials — set ONE of:
+#   AS_NOTARY_KEY + AS_NOTARY_KEY_ID + AS_NOTARY_ISSUER
+#                       App Store Connect API key: path to the .p8, its Key ID,
+#                       and Issuer ID. Reads no keychain, so it works in detached
+#                       / non-interactive processes where keychain access is lost.
 #   AS_NOTARY_PROFILE   name of a notarytool keychain profile created with
-#                       `xcrun notarytool store-credentials` (recommended)
+#                       `xcrun notarytool store-credentials` (recommended for
+#                       interactive use)
 #   AS_APPLE_ID + AS_APPLE_TEAM_ID + AS_APPLE_PWD
 #                       Apple ID, Team ID, and an app-specific password
 #
@@ -16,7 +21,9 @@ TARGET="$1"
 [ -n "$TARGET" ] && [ -e "$TARGET" ] || { echo "[notarize] target not found: '$TARGET'"; exit 1; }
 
 auth=()
-if [ -n "${AS_NOTARY_PROFILE:-}" ]; then
+if [ -n "${AS_NOTARY_KEY:-}" ] && [ -n "${AS_NOTARY_KEY_ID:-}" ] && [ -n "${AS_NOTARY_ISSUER:-}" ]; then
+  auth=(--key "$AS_NOTARY_KEY" --key-id "$AS_NOTARY_KEY_ID" --issuer "$AS_NOTARY_ISSUER")
+elif [ -n "${AS_NOTARY_PROFILE:-}" ]; then
   auth=(--keychain-profile "$AS_NOTARY_PROFILE")
 elif [ -n "${AS_APPLE_ID:-}" ] && [ -n "${AS_APPLE_TEAM_ID:-}" ] && [ -n "${AS_APPLE_PWD:-}" ]; then
   auth=(--apple-id "$AS_APPLE_ID" --team-id "$AS_APPLE_TEAM_ID" --password "$AS_APPLE_PWD")

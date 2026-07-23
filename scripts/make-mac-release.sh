@@ -31,7 +31,12 @@ if ! security find-identity -v -p codesigning 2>/dev/null | grep -q "$AS_MAC_SIG
   echo "       Check: security find-identity -v -p codesigning" >&2
   exit 1
 fi
-if ! xcrun notarytool history --keychain-profile "$AS_NOTARY_PROFILE" >/dev/null 2>&1; then
+# A direct App Store Connect API key (AS_NOTARY_KEY + _KEY_ID + _ISSUER) needs no
+# keychain — it works in detached/non-interactive runs where keychain access is
+# lost — so skip the keychain pre-check when it's provided.
+if [ -n "${AS_NOTARY_KEY:-}" ] && [ -n "${AS_NOTARY_KEY_ID:-}" ] && [ -n "${AS_NOTARY_ISSUER:-}" ]; then
+  :
+elif ! xcrun notarytool history --keychain-profile "$AS_NOTARY_PROFILE" >/dev/null 2>&1; then
   echo "ERROR: notarytool profile '$AS_NOTARY_PROFILE' not found in the keychain." >&2
   echo "       Create it once with:" >&2
   echo "         xcrun notarytool store-credentials $AS_NOTARY_PROFILE \\" >&2
