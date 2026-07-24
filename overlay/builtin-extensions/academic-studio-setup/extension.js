@@ -321,9 +321,13 @@ function skillInstalled(pkg) {
 
 // The `npx skills add` command that installs a plugin's skill from its git
 // source into ~/.claude/skills, for Claude Code, non-interactively. `-g`
-// installs to the user dir; `-a claude-code` targets only this agent; the CLI
-// auto-detects the agent and runs without prompts. Quoting is platform-specific
-// so the '#tag' in a source can't be a shell comment.
+// installs to the user dir; `-a claude-code` targets only this agent; `-y`
+// skips the CLI's own confirmation prompts. That `-y` is essential: the
+// `--yes` right after `npx` belongs to npx (auto-install the CLI package), not
+// to the skills CLI, so without `-y` the CLI still prompts "install? (y/n)".
+// In our non-interactive install terminal that prompt reads EOF and re-prompts
+// forever — an infinite yes/no loop. Quoting is platform-specific so the '#tag'
+// in a source can't be a shell comment.
 //
 // On Windows we call `npx.cmd`, not bare `npx`. Inside a PowerShell host, a bare
 // `npx` resolves to the `npx.ps1` shim, whose execution is gated by the script
@@ -337,7 +341,7 @@ function skillsAddCmd(pkg, isWin) {
 	const q = isWin ? psq : shq;
 	const npx = isWin ? 'npx.cmd' : 'npx';
 	const sel = pkg.select ? (' --skill ' + q(pkg.select)) : '';
-	return npx + ' --yes ' + SKILLS_CLI + ' add ' + q(pkg.source) + ' -g -a claude-code' + sel;
+	return npx + ' --yes ' + SKILLS_CLI + ' add ' + q(pkg.source) + ' -g -y -a claude-code' + sel;
 }
 
 // ---- MCP connectors ----------------------------------------------------------
