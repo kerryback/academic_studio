@@ -403,8 +403,15 @@ function autoInstallPlaywrightMcp() {
 // ---- Claude Code document skills (startup, silent) ---------------------------
 // Installed into the shared ~/.claude/skills/ on first run. Cross-platform now:
 // plain HTTPS download + tar (present on macOS and Windows 10 1803+).
+//
+// Pinned to a specific anthropics/skills commit (not `main`) so every install —
+// September's and November's — gets byte-identical skills, the same reproducibility
+// the Recommended Plugins catalog gets from its #tag pins. anthropics/skills
+// publishes no tags/releases, so a commit SHA is the only anchor available. Bump
+// CLAUDE_SKILLS_REF deliberately to adopt newer upstream skills.
 const CLAUDE_SKILLS = ['xlsx', 'docx', 'pptx', 'pdf', 'skill-creator'];
-const CLAUDE_SKILLS_TARBALL = 'https://github.com/anthropics/skills/archive/refs/heads/main.tar.gz';
+const CLAUDE_SKILLS_REF = '1f630fdf9259cec4a14913127dfd7c3b69ef72eb';   // 2026-07-22
+const CLAUDE_SKILLS_TARBALL = 'https://github.com/anthropics/skills/archive/' + CLAUDE_SKILLS_REF + '.tar.gz';
 
 function allClaudeSkillsPresent() {
 	return CLAUDE_SKILLS.every(s => {
@@ -430,8 +437,12 @@ async function autoInstallClaudeSkills() {
 							(err) => err ? reject(err) : resolve());
 					});
 					fs.mkdirSync(claudeSkillsDir(), { recursive: true });
+					// GitHub names the archive's top dir after the ref: `skills-main`
+					// for a branch, `skills-<full-sha>` for a commit. Discover it rather
+					// than hardcode, so bumping CLAUDE_SKILLS_REF needs no code change.
+					const root = fs.readdirSync(tmp).find(n => n.indexOf('skills-') === 0) || ('skills-' + CLAUDE_SKILLS_REF);
 					for (const s of CLAUDE_SKILLS) {
-						const from = path.join(tmp, 'skills-main', 'skills', s);
+						const from = path.join(tmp, root, 'skills', s);
 						if (!fs.existsSync(path.join(from, 'SKILL.md'))) { continue; }
 						const to = path.join(claudeSkillsDir(), s);
 						fs.rmSync(to, { recursive: true, force: true });
