@@ -140,14 +140,14 @@ books.
 
 ### Slides and presentations
 
-Create a Quarto document with `format: revealjs` to make slides as HTML — Claude
-is good at these, and the plain text stays easy to edit afterward. To hand
-someone a PDF of the slides, use decktape, which converts the HTML slides to a
-PDF (ask Claude to run it). For PowerPoint, render the same Quarto file with
-`format: pptx`, or ask Claude to build a `.pptx` directly. Claude can create
-custom styling of slides using HTML and SCSS. Claude can also use Python and
-JavaScript to create PowerPoint decks, but Claude has more difficulty
-positioning elements correctly with that approach.
+Academic Studio ships with Anthropic's `pptx` skill, which directs Claude to
+create PowerPoint decks using JavaScript — ask for a deck and you get an actual
+`.pptx` file. It also provides one-click install (Help → Run Setup…) for Quarto,
+which Claude can use to create Reveal.js (HTML) slide decks — write a Quarto
+document with `format: revealjs`, and the plain text stays easy to edit
+afterward. And it provides one-click install for decktape, which Claude can use
+to convert a Reveal.js slide deck to PDF or PowerPoint. Claude can also style
+slides with custom HTML and SCSS.
 
 ### Git
 
