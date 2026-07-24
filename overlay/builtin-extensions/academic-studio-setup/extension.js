@@ -25,9 +25,6 @@ const path = require('path');
 
 const SETUP_DONE_KEY = 'academicStudio.setupCompleted';
 const SELECTION_KEY = 'academicStudio.selection';
-// Package offers the user has already seen (array of "id@version"). A catalog
-// version bump makes a new key, so updated packages are offered again.
-const SEEN_PACKAGES_KEY = 'academicStudio.seenPackages';
 
 // Live "Recommended Plugins" catalog. Served by GitHub Pages (site/plugins.json);
 // NOT api.github.com, whose unauthenticated limit (60/hr/IP) breaks classrooms.
@@ -223,9 +220,6 @@ function cmpVersions(a, b) {
 	return 0;
 }
 
-// Short display name for a program/package (the part before the em dash).
-function shortName(p) { return String(p.label || p.id).split('—')[0].trim(); }
-
 function httpGet(url, timeoutMs) {
 	const ctl = new AbortController();
 	const t = setTimeout(() => ctl.abort(), timeoutMs || 15000);
@@ -279,8 +273,18 @@ function validPackage(p) {
 	if (p.prereq !== undefined && !PROGRAMS.some(x => x.id === p.prereq)) { return false; }
 	if (p.pip !== undefined && !(Array.isArray(p.pip) && p.pip.every(n => typeof n === 'string' && RE_PIP_NAME.test(n)))) { return false; }
 	if (p.pipImports !== undefined && !(Array.isArray(p.pipImports) && p.pipImports.every(n => typeof n === 'string' && RE_PY_MODULE.test(n)))) { return false; }
+	// category groups the plugin in the UI ('general' shows inline on Run Setup;
+	// anything else is filed under the Teaching & Research panel). authorUrl is the
+	// "by <author> ↗" landing page for that author's group. Both optional.
+	if (p.category !== undefined && !(typeof p.category === 'string' && RE_PKG_ID.test(p.category))) { return false; }
+	if (p.authorUrl !== undefined && !(typeof p.authorUrl === 'string' && safeHttpsUrl(p.authorUrl))) { return false; }
 	return true;
 }
+
+// A plugin's category, defaulting to 'teaching-research' so a catalog entry that
+// predates the field still lands in the panel rather than the inline General list.
+const GENERAL = 'general';
+function pkgCategory(p) { return p.category === GENERAL ? GENERAL : 'teaching-research'; }
 
 function parseCatalog(raw, appVersion) {
 	let data;
@@ -707,65 +711,11 @@ function reportRows(results, skipped, packages) {
 	return rows;
 }
 
-// ---- startup: offer new/updated catalog packages -------------------------------
-// Every launch: fetch the catalog and offer anything the user hasn't seen and
-// doesn't have. "Seen" is per id@version, so bumping a package's version in the
-// catalog re-offers it (that's how skill fixes reach existing users). Explicit
-// buttons mark seen; dismissing with Esc re-offers next launch.
-async function checkForNewPackages(context) {
-	const { packages, live } = await loadPackageCatalog(context);
-	if (!live || !packages.length) { return; }   // offline — nothing useful to offer
-
-	const seen = new Set(context.globalState.get(SEEN_PACKAGES_KEY) || []);
-	const fresh = [];
-	for (const p of packages) {
-		const key = p.id + '@' + p.version;
-		if (seen.has(key)) { continue; }
-		const d = await detectPackage(p);
-		if (d.found) { seen.add(key); continue; }   // already have it — never offer
-		fresh.push(p);
-	}
-	await context.globalState.update(SEEN_PACKAGES_KEY, Array.from(seen));
-	if (!fresh.length) { return; }
-
-	const names = fresh.map(shortName).join(', ');
-	const many = fresh.length > 1;
-	// Detection is folder-based, so a fresh entry is always one the user doesn't
-	// have yet (installed skills are `found` and never reach here).
-	const choice = await vscode.window.showInformationMessage(
-		`Academic Studio: ${many ? 'new plugins are' : 'a new plugin is'} available — ${names}.`,
-		'Install', 'View in Setup', 'Not now');
-
-	const markSeen = async () => {
-		const s = new Set(context.globalState.get(SEEN_PACKAGES_KEY) || []);
-		fresh.forEach(p => s.add(p.id + '@' + p.version));
-		await context.globalState.update(SEEN_PACKAGES_KEY, Array.from(s));
-	};
-
-	if (choice === 'Install') {
-		await markSeen();
-		const detected = await detectAll(packages);
-		await runInstall(context, fresh.map(p => p.id), detected, packages, (rows) => {
-			const ok = rows.filter(r => r.status === 'ok').map(r => shortName(r));
-			const bad = rows.filter(r => r.status !== 'ok');
-			if (!bad.length) {
-				vscode.window.showInformationMessage('Academic Studio: installed ' + ok.join(', ') + '.');
-			} else {
-				const why = bad.map(r => shortName(r) + (r.reason ? ' (' + r.reason + ')' : '')).join(', ');
-				vscode.window.showWarningMessage(
-					'Academic Studio: some packages did not install — ' + why + '. Open Run Setup to retry.',
-					'Open Run Setup'
-				).then(c => { if (c === 'Open Run Setup') { openSetupPanel(context); } });
-			}
-		});
-	} else if (choice === 'View in Setup') {
-		await markSeen();
-		openSetupPanel(context);
-	} else if (choice === 'Not now') {
-		await markSeen();
-	}
-	// dismissed (Esc / timeout): not marked seen — offered again next launch
-}
+// Plugin discovery is entirely in-panel now (the General list on Run Setup plus
+// the Teaching & Research panel). There is deliberately no startup notification:
+// it only ever nagged about plugins the user didn't have, never pushed updates
+// (detection is folder-based), and made every new catalog entry — including other
+// authors' — interrupt every user at launch.
 
 // ---- panel -----------------------------------------------------------------
 let currentPanel = null;   // singleton: re-running the command reveals, never duplicates
@@ -775,9 +725,6 @@ function activate(context) {
 	context.subscriptions.push(vscode.commands.registerCommand('academicStudio.openSetup', open));
 	autoInstallClaudeSkills();
 	autoInstallPlaywrightMcp();
-	// Delay slightly so the notification lands after the workbench (and Claude)
-	// finish restoring.
-	setTimeout(() => { checkForNewPackages(context).catch(() => {}); }, 3000);
 }
 
 async function openSetupPanel(context) {
@@ -843,7 +790,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	const data = JSON.stringify({
 		catalog: CATALOG.map(c => ({ id: c.id, label: c.label, group: c.group, excludes: c.excludes || '' })),
 		programs: PROGRAMS.map(p => ({ id: p.id, label: p.label, group: p.group, prereq: p.prereq || '', required: !!p.required })),
-		packages: packages.map(p => ({ id: p.id, label: p.label, author: p.author || '', prereq: p.prereq || '', infoUrl: safeHttpsUrl(p.infoUrl) || '' })),
+		packages: packages.map(p => ({ id: p.id, label: p.label, author: p.author || '', prereq: p.prereq || '', infoUrl: safeHttpsUrl(p.infoUrl) || '', category: pkgCategory(p) })),
 		audience, enabledExt,
 	}).replace(/</g, '\\u003c');   // keep </script> in labels from closing our tag
 
@@ -856,16 +803,44 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	).join('\n');
 	const rowFor = p =>
 		`<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span> <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
-	const pkgRowFor = p => {
-		const by = p.author ? ` <em class="by">by ${escHtml(p.author)}</em>` : '';
+	// showBy=false in the Teaching & Research panel, where rows are already grouped
+	// under an author heading; true (default) keeps the inline "by <author>".
+	const pkgRowFor = (p, showBy) => {
+		const by = (showBy !== false && p.author) ? ` <em class="by">by ${escHtml(p.author)}</em>` : '';
 		const repo = sourceRepo(p.source);
 		const src = repo ? ` <a class="info-link" href="https://github.com/${escHtml(repo)}">${escHtml(repo)} ↗</a>`
 			: (p.infoUrl ? ` <a class="info-link" href="${escHtml(p.infoUrl)}">Learn more</a>` : '');
 		return `<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span>${by}${src} <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
 	};
 	const progRows = PROGRAMS.map(rowFor).join('\n');
-	const pkgRows = packages.length ? packages.map(pkgRowFor).join('\n')
-		: `<p class="note">${catalogLive ? 'No plugins are available yet.' : 'Could not reach the plugin catalog — check your connection and reopen Setup.'}</p>`;
+
+	// General plugins show inline on Run Setup; everything else moves to the
+	// Teaching & Research panel, grouped by author (Kerry Back first, then the
+	// rest in catalog order) with a link to each author's landing page.
+	const generalPkgs = packages.filter(p => pkgCategory(p) === GENERAL);
+	const trPkgs = packages.filter(p => pkgCategory(p) !== GENERAL);
+	const noCatalog = `<p class="note">${catalogLive ? 'No plugins are available yet.' : 'Could not reach the plugin catalog — check your connection and reopen Setup.'}</p>`;
+	const generalRows = generalPkgs.length ? generalPkgs.map(p => pkgRowFor(p, true)).join('\n')
+		: (packages.length ? '' : noCatalog);
+
+	const authorOrder = [];
+	const byAuthor = new Map();
+	for (const p of trPkgs) {
+		const a = p.author || 'Other';
+		if (!byAuthor.has(a)) { byAuthor.set(a, []); authorOrder.push(a); }
+		byAuthor.get(a).push(p);
+	}
+	authorOrder.sort((a, b) => (a === 'Kerry Back' ? -1 : b === 'Kerry Back' ? 1 : 0));
+	const trGroups = authorOrder.map(a => {
+		const items = byAuthor.get(a);
+		const url = safeHttpsUrl((items.find(p => p.authorUrl) || {}).authorUrl);
+		const link = url ? ` <a class="info-link" href="${escHtml(url)}">${escHtml(url.replace(/^https:\/\/(www\.)?/, ''))} ↗</a>` : '';
+		return `<div class="author-group"><div class="author-head">${escHtml(a)}${link}</div>${items.map(p => pkgRowFor(p, false)).join('\n')}</div>`;
+	}).join('\n');
+	const trPanel = trPkgs.length ? trGroups : noCatalog;
+	const trLink = trPkgs.length
+		? `<p><a href="#" id="openPlugins" class="panel-link">Teaching &amp; research plugins (${trPkgs.length}) →</a></p>`
+		: '';
 
 	return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -899,9 +874,19 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 		border: 1px solid var(--vscode-inputValidation-infoBorder, var(--vscode-focusBorder));
 		background: var(--vscode-inputValidation-infoBackground, transparent); }
 	.signin code { background: var(--vscode-textCodeBlock-background); padding: 1px 5px; border-radius: 3px; }
-	#report { margin-top: 14px; } #report .r { padding: 3px 0; } #report a { color: var(--vscode-textLink-foreground); }
+	#report, #report2 { margin-top: 14px; } #report .r, #report2 .r { padding: 3px 0; }
+	#report a, #report2 a { color: var(--vscode-textLink-foreground); }
+	.panel-link { color: var(--vscode-textLink-foreground); text-decoration: none; font-weight: 600; }
+	.panel-link:hover { text-decoration: underline; }
+	.author-group { margin: 4px 0 14px; }
+	.author-head { font-weight: 600; margin: 10px 0 2px; }
+	.author-head .info-link { font-weight: 400; }
+	.back-link { color: var(--vscode-textLink-foreground); text-decoration: none; display: inline-block; margin-bottom: 6px; }
+	.back-link:hover { text-decoration: underline; }
 </style></head><body>
 	<h1>Welcome to Academic Studio</h1>
+
+	<div id="mainView">
 	<div class="signin">If you are not already logged in to Anthropic, sign in now — type <code>/login</code> in the prompt window to initiate the sign-in process.</div>
 	<div id="topbanner" class="banner" style="display:none"></div>
 
@@ -929,13 +914,26 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	</fieldset>
 
 	<fieldset id="packages">
-		<legend>Recommended Plugins</legend>
-		<p class="note">Curated Claude skills for specific kinds of work, each installed from its source repository. The list is maintained online, so new plugins appear here without updating the app. Items you already have are grayed out; the rest are checked by default and install together with the programs above.</p>
-		${pkgRows}
+		<legend>Plugins</legend>
+		<p class="note">Optional Claude skills for specific kinds of work, each installed from its source repository and maintained online. Items you already have are grayed out; nothing here is checked by default — add what you want.</p>
+		${generalRows}
+		${trLink}
 	</fieldset>
 
 	<p><button id="install">Install selected programs &amp; plugins</button></p>
 	<div id="report"></div>
+	</div>
+
+	<div id="pluginsView" style="display:none">
+		<a href="#" id="backToSetup" class="back-link">← Back to setup</a>
+		<fieldset>
+			<legend>Teaching &amp; Research Plugins</legend>
+			<p class="note">Claude skills for teaching and research, grouped by author. Nothing is checked by default — pick what you want and install. Items you already have are grayed out.</p>
+			${trPanel}
+			<p><button id="installPlugins">Install selected plugins</button></p>
+			<div id="report2"></div>
+		</fieldset>
+	</div>
 
 <script>
 	const vscode = acquireVsCodeApi();
@@ -946,11 +944,11 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	let detected = {};
 
 	function extPreset(aud) { return DATA.catalog.filter(c => c.group === 'common' || c.group === aud).map(c => c.id); }
-	// Programs: common for everyone + faculty group for Faculty. Packages: on by
-	// default for every audience.
+	// Programs: common for everyone + faculty group for Faculty. Plugins are NOT
+	// part of any profile preset — they're opt-in, checked only when the user
+	// deliberately ticks them, so growing the catalog never grows the default install.
 	function progPreset(aud) {
-		return DATA.programs.filter(p => p.group === 'common' || (aud === 'faculty' && p.group === 'faculty')).map(p => p.id)
-			.concat(DATA.packages.map(p => p.id));
+		return DATA.programs.filter(p => p.group === 'common' || (aud === 'faculty' && p.group === 'faculty')).map(p => p.id);
 	}
 	// Already-enabled extensions are "installed": grayed out and unchecked so
 	// they can't be toggled (Run Setup never disables). Everything else is
@@ -1034,7 +1032,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 		if (m.type === 'programStatus') { detected = m.detected || {}; renderStatus(); setProg((radios.find(r => r.checked) || {}).value || 'student'); updateBanner(); }
 		if (m.type === 'installReport') {
 			detected = m.detected || detected; renderStatus(); setProg((radios.find(r => r.checked) || {}).value || 'student'); updateBanner();
-			const rep = document.getElementById('report');
+			const rep = activeReport;
 			rep.textContent = '';
 			const note = document.createElement('p');
 			note.className = 'note';
@@ -1062,19 +1060,50 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 		}
 	});
 
+	// Which report box the next installReport should land in — set on each click so
+	// the async result renders under the button the user actually pressed.
+	let activeReport = document.getElementById('report');
+
+	function startInstall(ids, reportEl) {
+		activeReport = reportEl;
+		reportEl.textContent = '';
+		const p = document.createElement('p');
+		p.className = 'note'; p.textContent = 'Starting install in the terminal…';
+		reportEl.appendChild(p);
+		vscode.postMessage({ type: 'installPrograms', ids: ids });
+	}
+	// Collect checked .prog boxes within a container (programs + inline General
+	// plugins from #mainView; Teaching & Research plugins from #pluginsView).
+	function checkedIn(sel) {
+		return Array.from(document.querySelectorAll(sel + ' input.prog')).filter(b => b.checked).map(b => b.value);
+	}
+
+	// Toggle between the main setup view and the Teaching & Research panel.
+	const mainView = document.getElementById('mainView');
+	const pluginsView = document.getElementById('pluginsView');
+	function showPlugins(on) {
+		mainView.style.display = on ? 'none' : '';
+		pluginsView.style.display = on ? '' : 'none';
+		window.scrollTo(0, 0);
+	}
+	const openLink = document.getElementById('openPlugins');
+	if (openLink) { openLink.addEventListener('click', e => { e.preventDefault(); showPlugins(true); }); }
+	const backLink = document.getElementById('backToSetup');
+	if (backLink) { backLink.addEventListener('click', e => { e.preventDefault(); showPlugins(false); }); }
+
 	document.getElementById('apply').addEventListener('click', () => {
 		const aud = (radios.find(r => r.checked) || {}).value || 'faculty';
 		vscode.postMessage({ type: 'apply', audience: aud, selected: extBoxes.filter(b => b.checked).map(b => b.value) });
 	});
 	document.getElementById('install').addEventListener('click', () => {
-		const ids = progBoxes.filter(b => b.checked).map(b => b.value);
-		const rep = document.getElementById('report');
-		rep.textContent = '';
-		const p = document.createElement('p');
-		p.className = 'note'; p.textContent = 'Starting install in the terminal…';
-		rep.appendChild(p);
-		vscode.postMessage({ type: 'installPrograms', ids: ids });
+		startInstall(checkedIn('#mainView'), document.getElementById('report'));
 	});
+	const installPlugins = document.getElementById('installPlugins');
+	if (installPlugins) {
+		installPlugins.addEventListener('click', () => {
+			startInstall(checkedIn('#pluginsView'), document.getElementById('report2'));
+		});
+	}
 </script>
 </body></html>`;
 }

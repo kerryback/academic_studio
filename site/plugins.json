@@ -11,8 +11,19 @@
       "select": "finance-data",
       "version": 1,
       "prereq": "python",
-      "pip": ["yfinance", "pandas-datareader", "finnhub-python", "requests"],
-      "pipImports": ["yfinance", "pandas_datareader", "finnhub"]
+      "pip": [
+        "yfinance",
+        "pandas-datareader",
+        "finnhub-python",
+        "requests"
+      ],
+      "pipImports": [
+        "yfinance",
+        "pandas_datareader",
+        "finnhub"
+      ],
+      "category": "general",
+      "authorUrl": "https://github.com/kerryback/skills"
     },
     {
       "id": "litdb",
@@ -22,7 +33,9 @@
       "source": "kerryback/skills",
       "select": "litdb",
       "version": 1,
-      "prereq": "python"
+      "prereq": "python",
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/kerryback/skills"
     },
     {
       "id": "slides",
@@ -31,7 +44,9 @@
       "name": "slides",
       "source": "kerryback/skills",
       "select": "slides",
-      "version": 1
+      "version": 1,
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/kerryback/skills"
     },
     {
       "id": "voiceover",
@@ -40,7 +55,9 @@
       "name": "voiceover",
       "source": "kerryback/skills",
       "select": "voiceover",
-      "version": 1
+      "version": 1,
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/kerryback/skills"
     },
     {
       "id": "econ-slides",
@@ -48,7 +65,9 @@
       "author": "Lu Han (OpenEconAI)",
       "name": "econ-slides",
       "source": "hanlulong/econ-slides-skill#v0.1.1",
-      "version": 1
+      "version": 1,
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/hanlulong"
     },
     {
       "id": "econ-write",
@@ -56,7 +75,9 @@
       "author": "Lu Han (OpenEconAI)",
       "name": "econ-write",
       "source": "hanlulong/econ-writing-skill#econ-write--v0.1.2",
-      "version": 1
+      "version": 1,
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/hanlulong"
     },
     {
       "id": "econ-review",
@@ -64,7 +85,9 @@
       "author": "Lu Han (OpenEconAI)",
       "name": "econ-review",
       "source": "hanlulong/econ-paper-review-skill#econ-review--v0.2.2",
-      "version": 1
+      "version": 1,
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/hanlulong"
     }
   ]
 }
