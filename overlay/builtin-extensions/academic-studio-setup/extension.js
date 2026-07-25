@@ -401,18 +401,17 @@ function installMcpServer(pkg) {
 }
 
 // ---- marketplace plugins ------------------------------------------------------
-// A full Claude Code plugin (skills + optional commands/agents/hooks) installs in
-// two steps, done in the right order — download THEN enable:
-//   1. Register the marketplace in ~/.claude/settings.json under
-//      extraKnownMarketplaces (an in-process JSON merge — there is no
-//      non-interactive `plugin marketplace add` CLI, so this must be a file write).
-//   2. Run `claude plugin install <plugin>@<marketplace> --scope user` in the
-//      terminal, which FETCHES the plugin into the local cache and flips
-//      enabledPlugins on. `claude` is Academic Studio's bundled native binary —
-//      not npx, not a .ps1 shim — so this avoids the execution-policy/EOF-prompt
-//      failures the `npx skills add` path hits.
-// We deliberately do NOT pre-write enabledPlugins: enabling a plugin whose files
-// aren't fetched yet is backwards. `claude plugin install` does both, in order.
+// A full Claude Code plugin (skills + optional commands/agents/hooks) installs via
+// the bundled native `claude` CLI — not npx, not a .ps1 shim — so it avoids the
+// execution-policy/EOF-prompt failures the `npx skills add` path hits. Three
+// commands, in order (all idempotent and non-interactive; verified on claude 2.1):
+//   1. marketplace add <repo>   — register the marketplace (no-op if already added)
+//   2. marketplace update <name> — REFRESH the local marketplace clone to current.
+//      Essential: without it, a machine whose cached marketplace predates a newly
+//      added plugin (e.g. coauthor) can't resolve it, and the install fails.
+//   3. install <plugin>@<name>  — fetch the plugin into the cache AND enable it.
+// Download-then-enable, in the right order — no pre-writing enabledPlugins for a
+// plugin whose files aren't fetched yet.
 function settingsJsonPath() { return path.join(os.homedir(), '.claude', 'settings.json'); }
 
 function isMarketplacePlugin(pkg) { return !!(pkg && pkg.marketplace && pkg.marketplaceRepo && pkg.plugin); }
@@ -426,29 +425,14 @@ function marketplacePluginInstalled(pkg) {
 	} catch (_) { return false; }
 }
 
-// Step 1: register the marketplace (so `claude plugin install <plugin>@<mkt>` can
-// resolve it). Merge, never clobber; back up first.
-function registerMarketplace(pkg) {
-	try {
-		fs.mkdirSync(path.join(os.homedir(), '.claude'), { recursive: true });
-		const file = settingsJsonPath();
-		let cfg = {};
-		if (fs.existsSync(file)) {
-			cfg = JSON.parse(fs.readFileSync(file, 'utf8'));   // parse failure -> catch: never clobber
-			fs.copyFileSync(file, file + '.academic-studio-backup');
-		}
-		if (!cfg.extraKnownMarketplaces || typeof cfg.extraKnownMarketplaces !== 'object') { cfg.extraKnownMarketplaces = {}; }
-		cfg.extraKnownMarketplaces[pkg.marketplace] = { source: { source: 'github', repo: pkg.marketplaceRepo } };
-		fs.writeFileSync(file, JSON.stringify(cfg, null, 2));
-		return { ok: true };
-	} catch (e) {
-		return { ok: false, error: 'could not register the marketplace in ~/.claude/settings.json (' + (e && e.message ? e.message : e) + ')' };
-	}
-}
-
-// Step 2 (terminal): fetch + enable the plugin. `claude` is the bundled native CLI.
-function claudePluginInstallCmd(pkg) {
-	return 'claude plugin install ' + pluginKey(pkg) + ' --scope user';
+// The register → refresh → install command sequence (marketplaceRepo and plugin
+// pass RE_OWNER_REPO / RE_SKILL_NAME validation, so no shell metachars to quote).
+function marketplacePluginCmds(pkg) {
+	return [
+		'claude plugin marketplace add ' + pkg.marketplaceRepo + ' --scope user',
+		'claude plugin marketplace update ' + pkg.marketplace,
+		'claude plugin install ' + pluginKey(pkg) + ' --scope user',
+	];
 }
 
 // ---- Playwright MCP connector (startup, silent) -------------------------------
@@ -657,7 +641,9 @@ function buildInstallScriptBash(items, resultsPath) {
 	const lines = [
 		'#!/bin/bash',
 		'set +e',
-		'export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"',
+		// ~/.local/bin is where the Claude Code installer puts `claude` (used by the
+		// marketplace-plugin install), and it isn't on a fresh non-login shell's PATH.
+		'export PATH="$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"',
 		'R=' + shq(resultsPath),
 		': > "$R"',
 		'echo "Academic Studio — installing selected programs and packages."',
@@ -684,6 +670,9 @@ function buildInstallScriptBash(items, resultsPath) {
 function buildInstallScriptPS(items, resultsPath) {
 	const lines = [
 		"$ErrorActionPreference = 'Continue'",
+		// Where the Claude Code installer puts claude.exe (marketplace-plugin install);
+		// not on a fresh shell's PATH.
+		"$env:PATH = \"$env:USERPROFILE\\.local\\bin;$env:PATH\"",
 		'$R = ' + psq(resultsPath),
 		'Set-Content -Path $R -Value $null',
 		"Write-Host 'Academic Studio - installing selected programs and packages.'",
@@ -722,18 +711,15 @@ async function runInstall(context, selectedIds, detected, packages, reporter) {
 	const items = allItems(packages);
 	const byId = new Map(items.map(i => [i.id, i]));
 	const isWin = process.platform === 'win32';
-	const preResults = [];   // {id, status, reason} resolved in-process (no terminal)
 	const runnable = [];     // {id, kind, label, cmds}
 
 	for (const id of plan.ordered) {
 		const item = byId.get(id);
-		// Marketplace plugin: register the marketplace in-process (a settings.json
-		// merge), then let the terminal run `claude plugin install` (fetch + enable)
-		// followed by any pip libs. Order matters — download before enable.
+		// Marketplace plugin: register + refresh the marketplace, then install
+		// (fetch + enable) via the `claude` CLI, then any pip libs — all in the
+		// terminal, in that order.
 		if (item.kind === 'package' && isMarketplacePlugin(item)) {
-			const r = registerMarketplace(item);
-			if (!r.ok) { preResults.push({ id, status: 'fail', reason: r.error }); continue; }
-			const cmds = [claudePluginInstallCmd(item)];
+			const cmds = marketplacePluginCmds(item);
 			const pip = pipInstallCmd(item, isWin);
 			if (pip) { cmds.push(pip); }
 			runnable.push({ id, kind: 'package', label: item.label, cmds });
@@ -748,9 +734,8 @@ async function runInstall(context, selectedIds, detected, packages, reporter) {
 	}
 
 	const finish = async (terminalResults, timedOut) => {
-		const results = terminalResults.concat(preResults);
 		const redetect = await detectAll(packages);
-		reporter(reportRows(results, plan.skipped, packages), redetect, timedOut);
+		reporter(reportRows(terminalResults, plan.skipped, packages), redetect, timedOut);
 	};
 
 	if (!runnable.length) { await finish([], false); return; }
