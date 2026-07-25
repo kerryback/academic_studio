@@ -30,7 +30,9 @@ st="$(command -v signtool 2>/dev/null || command -v signtool.exe 2>/dev/null || 
 
 ts="${AS_WIN_TIMESTAMP_URL:-http://timestamp.digicert.com}"
 if [ -n "${AS_WIN_CERT_FILE:-}" ]; then
-  cred=(/f "$AS_WIN_CERT_FILE"); [ -n "${AS_WIN_CERT_PASSWORD:-}" ] && cred+=(/p "$AS_WIN_CERT_PASSWORD")
+  # Convert the .pfx to a Windows path: MSYS_NO_PATHCONV (below) disables all path
+  # conversion, so a Unix path would reach signtool unmangled and fail.
+  cred=(/f "$(cygpath -w "$AS_WIN_CERT_FILE")"); [ -n "${AS_WIN_CERT_PASSWORD:-}" ] && cred+=(/p "$AS_WIN_CERT_PASSWORD")
 else
   cred=(/sha1 "$AS_WIN_CERT_SHA1")
 fi
@@ -41,11 +43,14 @@ files=("$ASSETS"/*Setup.exe "$ASSETS"/*.msi)
 
 for f in "${files[@]}"; do
   echo "[sign] $(basename "$f")"
-  # MSYS_NO_PATHCONV stops Git Bash from mangling signtool's /fd /tr /td flags into paths.
-  MSYS_NO_PATHCONV=1 "$st" sign /fd SHA256 /tr "$ts" /td SHA256 "${cred[@]}" "$f"
+  # MSYS_NO_PATHCONV stops Git Bash from mangling signtool's /fd /tr /td flags into
+  # paths — but it also disables conversion of the file path itself, so pass the
+  # installer as an explicit Windows path (a Unix /c/... path reads as an option).
+  fw="$(cygpath -w "$f")"
+  MSYS_NO_PATHCONV=1 "$st" sign /fd SHA256 /tr "$ts" /td SHA256 "${cred[@]}" "$fw"
   # A failed verify means the file would ship unsigned-in-effect — hard error,
   # since make-release.sh (and the release notes) assume these are signed.
-  MSYS_NO_PATHCONV=1 "$st" verify /pa "$f" || { echo "ERROR: signature verify failed for $(basename "$f")" >&2; exit 1; }
+  MSYS_NO_PATHCONV=1 "$st" verify /pa "$fw" || { echo "ERROR: signature verify failed for $(basename "$f")" >&2; exit 1; }
 done
 
 echo "[sign] done. Next: scripts/make-release.sh"
