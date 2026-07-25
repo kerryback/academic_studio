@@ -250,6 +250,8 @@ const RE_PY_MODULE = /^[A-Za-z_][A-Za-z0-9_.]*$/;
 const RE_SKILL_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 // owner/repo, optionally #ref (branch/tag) and/or /subpath. No shell metachars.
 const RE_SOURCE = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+(#[A-Za-z0-9._\/-]+)?(\/[A-Za-z0-9._-]+)*$/;
+// Strictly owner/repo (a marketplace's GitHub repo, no ref/subpath).
+const RE_OWNER_REPO = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
 
 // The GitHub "owner/repo" a source points at (strips #ref and any subpath), for
 // the "source ↗" link. Returns '' if it doesn't look like owner/repo.
@@ -267,9 +269,21 @@ function validPackage(p) {
 	if (typeof p.label !== 'string' || !p.label.trim()) { return false; }
 	if (typeof p.author !== 'string' || !p.author.trim()) { return false; }
 	if (typeof p.name !== 'string' || !RE_SKILL_NAME.test(p.name)) { return false; }
-	if (typeof p.source !== 'string' || !RE_SOURCE.test(p.source)) { return false; }
+	// An entry installs one of two ways, and must carry exactly one shape:
+	//   marketplace plugin — {marketplace, marketplaceRepo, plugin}: enabled by
+	//     merging ~/.claude/settings.json (extraKnownMarketplaces + enabledPlugins).
+	//   standalone skill    — {source[, select]}: installed via `npx skills add`.
+	const asPlugin = p.marketplace !== undefined || p.marketplaceRepo !== undefined || p.plugin !== undefined;
+	if (asPlugin) {
+		if (typeof p.marketplace !== 'string' || !RE_SKILL_NAME.test(p.marketplace)) { return false; }
+		if (typeof p.marketplaceRepo !== 'string' || !RE_OWNER_REPO.test(p.marketplaceRepo)) { return false; }
+		if (typeof p.plugin !== 'string' || !RE_SKILL_NAME.test(p.plugin)) { return false; }
+		if (p.source !== undefined || p.select !== undefined) { return false; }   // not both shapes
+	} else {
+		if (typeof p.source !== 'string' || !RE_SOURCE.test(p.source)) { return false; }
+		if (p.select !== undefined && !(typeof p.select === 'string' && RE_SKILL_NAME.test(p.select))) { return false; }
+	}
 	if (!Number.isInteger(p.version) || p.version < 1) { return false; }
-	if (p.select !== undefined && !(typeof p.select === 'string' && RE_SKILL_NAME.test(p.select))) { return false; }
 	if (p.prereq !== undefined && !PROGRAMS.some(x => x.id === p.prereq)) { return false; }
 	if (p.pip !== undefined && !(Array.isArray(p.pip) && p.pip.every(n => typeof n === 'string' && RE_PIP_NAME.test(n)))) { return false; }
 	if (p.pipImports !== undefined && !(Array.isArray(p.pipImports) && p.pipImports.every(n => typeof n === 'string' && RE_PY_MODULE.test(n)))) { return false; }
@@ -386,6 +400,47 @@ function installMcpServer(pkg) {
 	}
 }
 
+// ---- marketplace plugins (settings.json merge) --------------------------------
+// A full Claude Code plugin (skills + optional commands/agents/hooks) is enabled
+// by editing ~/.claude/settings.json, NOT by a CLI — there is no non-interactive
+// `plugin marketplace add`. We register the marketplace under
+// extraKnownMarketplaces and flip enabledPlugins["<plugin>@<marketplace>"] = true;
+// Claude Code loads it on its next start (a window reload). This is a pure JSON
+// merge — no terminal, no npx, no PowerShell — so it sidesteps the whole
+// execution-policy/EOF-prompt class of failures the `npx skills add` path hits.
+function settingsJsonPath() { return path.join(os.homedir(), '.claude', 'settings.json'); }
+
+function isMarketplacePlugin(pkg) { return !!(pkg && pkg.marketplace && pkg.marketplaceRepo && pkg.plugin); }
+function pluginKey(pkg) { return pkg.plugin + '@' + pkg.marketplace; }
+
+function marketplacePluginInstalled(pkg) {
+	try {
+		const cfg = JSON.parse(fs.readFileSync(settingsJsonPath(), 'utf8'));
+		return cfg.enabledPlugins && cfg.enabledPlugins[pluginKey(pkg)] === true;
+	} catch (_) { return false; }
+}
+
+function installMarketplacePlugin(pkg) {
+	try {
+		const dir = path.join(os.homedir(), '.claude');
+		fs.mkdirSync(dir, { recursive: true });
+		const file = settingsJsonPath();
+		let cfg = {};
+		if (fs.existsSync(file)) {
+			cfg = JSON.parse(fs.readFileSync(file, 'utf8'));   // parse failure -> catch: never clobber
+			fs.copyFileSync(file, file + '.academic-studio-backup');
+		}
+		if (!cfg.extraKnownMarketplaces || typeof cfg.extraKnownMarketplaces !== 'object') { cfg.extraKnownMarketplaces = {}; }
+		cfg.extraKnownMarketplaces[pkg.marketplace] = { source: { source: 'github', repo: pkg.marketplaceRepo } };
+		if (!cfg.enabledPlugins || typeof cfg.enabledPlugins !== 'object') { cfg.enabledPlugins = {}; }
+		cfg.enabledPlugins[pluginKey(pkg)] = true;
+		fs.writeFileSync(file, JSON.stringify(cfg, null, 2));
+		return { ok: true };
+	} catch (e) {
+		return { ok: false, error: 'could not update ~/.claude/settings.json (' + (e && e.message ? e.message : e) + ')' };
+	}
+}
+
 // ---- Playwright MCP connector (startup, silent) -------------------------------
 // Everyone gets browser automation, same as the document skills. The server is
 // Microsoft's @playwright/mcp, launched on demand via npx, so there is nothing
@@ -483,8 +538,11 @@ function pipImportsDetect(pkg) {
 }
 
 async function detectPackage(pkg) {
-	// Present = its skill folder exists, plus any declared pip libraries import.
-	if (!skillInstalled(pkg)) { return { found: false, version: '' }; }
+	// A marketplace plugin is "present" when enabledPlugins flags it in
+	// settings.json; a standalone skill when its skill folder exists. Either way,
+	// any declared pip libraries must also import.
+	const base = isMarketplacePlugin(pkg) ? marketplacePluginInstalled(pkg) : skillInstalled(pkg);
+	if (!base) { return { found: false, version: '' }; }
 	let libsOk = true;
 	const cmd = pipImportsDetect(pkg);
 	if (cmd) { libsOk = (await shellExec(cmd)).ok; }
@@ -555,22 +613,29 @@ function planInstall(selectedIds, detected, packages) {
 	return { ordered, skipped };
 }
 
+// The terminal command that installs a package's extra pip libraries, or null.
+// PEP 668: Homebrew/Debian Pythons are "externally managed" and refuse system pip
+// installs. The PIP_BREAK_SYSTEM_PACKAGES=1 env var lifts that on pip >= 23 and is
+// silently ignored by older pips — unlike the --break-system-packages flag, which
+// errors on pips that predate it.
+function pipInstallCmd(item, isWin) {
+	if (!item.pip || !item.pip.length) { return null; }
+	return isWin
+		? "$env:PIP_BREAK_SYSTEM_PACKAGES = '1'; python -m pip install " + item.pip.join(' ')
+		: 'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install ' + item.pip.join(' ');
+}
+
 // Terminal-run install commands for one item on this platform, or null if the
-// platform has no automatic installer (→ manual link).
+// platform has no automatic installer (→ manual link). Marketplace-plugin packages
+// are NOT handled here — their enable is an in-process settings.json merge done in
+// runInstall; only their pip step (if any) reaches the terminal.
 function commandsFor(item) {
 	const isWin = process.platform === 'win32';
 	if (item.kind === 'package') {
 		// Install the skill from its git source via npx, then any extra pip libs.
 		const cmds = [skillsAddCmd(item, isWin)];
-		if (item.pip && item.pip.length) {
-			// PEP 668: Homebrew/Debian Pythons are "externally managed" and refuse
-			// system pip installs. The PIP_BREAK_SYSTEM_PACKAGES=1 env var lifts
-			// that on pip >= 23 and is silently ignored by older pips — unlike the
-			// --break-system-packages flag, which errors on pips that predate it.
-			cmds.push(isWin
-				? "$env:PIP_BREAK_SYSTEM_PACKAGES = '1'; python -m pip install " + item.pip.join(' ')
-				: 'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install ' + item.pip.join(' '));
-		}
+		const pip = pipInstallCmd(item, isWin);
+		if (pip) { cmds.push(pip); }
 		return cmds;
 	}
 	const cmds = isWin ? item.installWin : item.installMac;
@@ -646,31 +711,39 @@ async function runInstall(context, selectedIds, detected, packages, reporter) {
 	const plan = planInstall(selectedIds, detected, packages);
 	const items = allItems(packages);
 	const byId = new Map(items.map(i => [i.id, i]));
-	const preFailed = [];   // {id, reason}
-	const runnable = [];    // {id, kind, label, cmds}
+	const isWin = process.platform === 'win32';
+	const preResults = [];   // {id, status, reason} resolved in-process (no terminal)
+	const runnable = [];     // {id, kind, label, cmds}
 
 	for (const id of plan.ordered) {
 		const item = byId.get(id);
+		// Marketplace plugin: enable it in-process (settings.json merge). If it also
+		// declares pip libs, those still need the terminal — but only after a
+		// successful enable, and the id's final status is the pip result.
+		if (item.kind === 'package' && isMarketplacePlugin(item)) {
+			const r = installMarketplacePlugin(item);
+			if (!r.ok) { preResults.push({ id, status: 'fail', reason: r.error }); continue; }
+			const pip = pipInstallCmd(item, isWin);
+			if (pip) { runnable.push({ id, kind: 'package', label: item.label, cmds: [pip] }); }
+			else { preResults.push({ id, status: 'ok' }); }
+			continue;
+		}
 		const cmds = commandsFor(item);
 		if (cmds === null) {
 			plan.skipped.push({ id, reason: 'no automatic installer for this platform — use the manual link' });
 			continue;
 		}
-		// Both programs and plugins run entirely in the terminal now (plugins via
-		// `npx skills add`), so nothing is installed in-process here.
 		runnable.push({ id, kind: item.kind, label: item.label, cmds });
 	}
 
 	const finish = async (terminalResults, timedOut) => {
-		const results = terminalResults
-			.concat(preFailed.map(f => ({ id: f.id, status: f.forcedOk ? 'ok' : 'fail', reason: f.reason })));
+		const results = terminalResults.concat(preResults);
 		const redetect = await detectAll(packages);
 		reporter(reportRows(results, plan.skipped, packages), redetect, timedOut);
 	};
 
 	if (!runnable.length) { await finish([], false); return; }
 
-	const isWin = process.platform === 'win32';
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'as-install-'));
 	const resultsPath = path.join(dir, 'results.txt');
 	const scriptPath = path.join(dir, isWin ? 'install.ps1' : 'install.sh');
@@ -818,7 +891,8 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	// under an author heading; true (default) keeps the inline "by <author>".
 	const pkgRowFor = (p, showBy) => {
 		const by = (showBy !== false && p.author) ? ` <em class="by">by ${escHtml(p.author)}</em>` : '';
-		const repo = sourceRepo(p.source);
+		// A skill links to its source repo; a marketplace plugin to its marketplace repo.
+		const repo = sourceRepo(p.source) || (p.marketplaceRepo || '');
 		const src = repo ? ` <a class="info-link" href="https://github.com/${escHtml(repo)}">${escHtml(repo)} ↗</a>`
 			: (p.infoUrl ? ` <a class="info-link" href="${escHtml(p.infoUrl)}">Learn more</a>` : '');
 		return `<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span>${by}${src} <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
@@ -1048,7 +1122,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 			const note = document.createElement('p');
 			note.className = 'note';
 			note.textContent = (m.timedOut ? 'Install timed out or the terminal was closed. Re-run if needed.' : 'Install finished.')
-				+ ' A new terminal/window may be needed before some tools are callable.';
+				+ ' Reload the window (or open a new terminal) so newly installed plugins and tools are picked up.';
 			rep.appendChild(note);
 			// Built with DOM APIs (never innerHTML): labels/reasons/urls come from
 			// the online catalog and must not be interpreted as markup.
