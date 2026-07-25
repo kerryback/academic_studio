@@ -400,19 +400,25 @@ function installMcpServer(pkg) {
 	}
 }
 
-// ---- marketplace plugins (settings.json merge) --------------------------------
-// A full Claude Code plugin (skills + optional commands/agents/hooks) is enabled
-// by editing ~/.claude/settings.json, NOT by a CLI — there is no non-interactive
-// `plugin marketplace add`. We register the marketplace under
-// extraKnownMarketplaces and flip enabledPlugins["<plugin>@<marketplace>"] = true;
-// Claude Code loads it on its next start (a window reload). This is a pure JSON
-// merge — no terminal, no npx, no PowerShell — so it sidesteps the whole
-// execution-policy/EOF-prompt class of failures the `npx skills add` path hits.
+// ---- marketplace plugins ------------------------------------------------------
+// A full Claude Code plugin (skills + optional commands/agents/hooks) installs in
+// two steps, done in the right order — download THEN enable:
+//   1. Register the marketplace in ~/.claude/settings.json under
+//      extraKnownMarketplaces (an in-process JSON merge — there is no
+//      non-interactive `plugin marketplace add` CLI, so this must be a file write).
+//   2. Run `claude plugin install <plugin>@<marketplace> --scope user` in the
+//      terminal, which FETCHES the plugin into the local cache and flips
+//      enabledPlugins on. `claude` is Academic Studio's bundled native binary —
+//      not npx, not a .ps1 shim — so this avoids the execution-policy/EOF-prompt
+//      failures the `npx skills add` path hits.
+// We deliberately do NOT pre-write enabledPlugins: enabling a plugin whose files
+// aren't fetched yet is backwards. `claude plugin install` does both, in order.
 function settingsJsonPath() { return path.join(os.homedir(), '.claude', 'settings.json'); }
 
 function isMarketplacePlugin(pkg) { return !!(pkg && pkg.marketplace && pkg.marketplaceRepo && pkg.plugin); }
 function pluginKey(pkg) { return pkg.plugin + '@' + pkg.marketplace; }
 
+// Installed = `claude plugin install` has flipped enabledPlugins on in settings.json.
 function marketplacePluginInstalled(pkg) {
 	try {
 		const cfg = JSON.parse(fs.readFileSync(settingsJsonPath(), 'utf8'));
@@ -420,10 +426,11 @@ function marketplacePluginInstalled(pkg) {
 	} catch (_) { return false; }
 }
 
-function installMarketplacePlugin(pkg) {
+// Step 1: register the marketplace (so `claude plugin install <plugin>@<mkt>` can
+// resolve it). Merge, never clobber; back up first.
+function registerMarketplace(pkg) {
 	try {
-		const dir = path.join(os.homedir(), '.claude');
-		fs.mkdirSync(dir, { recursive: true });
+		fs.mkdirSync(path.join(os.homedir(), '.claude'), { recursive: true });
 		const file = settingsJsonPath();
 		let cfg = {};
 		if (fs.existsSync(file)) {
@@ -432,13 +439,16 @@ function installMarketplacePlugin(pkg) {
 		}
 		if (!cfg.extraKnownMarketplaces || typeof cfg.extraKnownMarketplaces !== 'object') { cfg.extraKnownMarketplaces = {}; }
 		cfg.extraKnownMarketplaces[pkg.marketplace] = { source: { source: 'github', repo: pkg.marketplaceRepo } };
-		if (!cfg.enabledPlugins || typeof cfg.enabledPlugins !== 'object') { cfg.enabledPlugins = {}; }
-		cfg.enabledPlugins[pluginKey(pkg)] = true;
 		fs.writeFileSync(file, JSON.stringify(cfg, null, 2));
 		return { ok: true };
 	} catch (e) {
-		return { ok: false, error: 'could not update ~/.claude/settings.json (' + (e && e.message ? e.message : e) + ')' };
+		return { ok: false, error: 'could not register the marketplace in ~/.claude/settings.json (' + (e && e.message ? e.message : e) + ')' };
 	}
+}
+
+// Step 2 (terminal): fetch + enable the plugin. `claude` is the bundled native CLI.
+function claudePluginInstallCmd(pkg) {
+	return 'claude plugin install ' + pluginKey(pkg) + ' --scope user';
 }
 
 // ---- Playwright MCP connector (startup, silent) -------------------------------
@@ -717,15 +727,16 @@ async function runInstall(context, selectedIds, detected, packages, reporter) {
 
 	for (const id of plan.ordered) {
 		const item = byId.get(id);
-		// Marketplace plugin: enable it in-process (settings.json merge). If it also
-		// declares pip libs, those still need the terminal — but only after a
-		// successful enable, and the id's final status is the pip result.
+		// Marketplace plugin: register the marketplace in-process (a settings.json
+		// merge), then let the terminal run `claude plugin install` (fetch + enable)
+		// followed by any pip libs. Order matters — download before enable.
 		if (item.kind === 'package' && isMarketplacePlugin(item)) {
-			const r = installMarketplacePlugin(item);
+			const r = registerMarketplace(item);
 			if (!r.ok) { preResults.push({ id, status: 'fail', reason: r.error }); continue; }
+			const cmds = [claudePluginInstallCmd(item)];
 			const pip = pipInstallCmd(item, isWin);
-			if (pip) { runnable.push({ id, kind: 'package', label: item.label, cmds: [pip] }); }
-			else { preResults.push({ id, status: 'ok' }); }
+			if (pip) { cmds.push(pip); }
+			runnable.push({ id, kind: 'package', label: item.label, cmds });
 			continue;
 		}
 		const cmds = commandsFor(item);
