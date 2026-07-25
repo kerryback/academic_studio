@@ -292,6 +292,10 @@ function validPackage(p) {
 	// "by <author> ↗" landing page for that author's group. Both optional.
 	if (p.category !== undefined && !(typeof p.category === 'string' && RE_PKG_ID.test(p.category))) { return false; }
 	if (p.authorUrl !== undefined && !(typeof p.authorUrl === 'string' && safeHttpsUrl(p.authorUrl))) { return false; }
+	// latestVersion advertises the plugin's current release (a dotted version). When
+	// it's newer than the installed one, Run Setup shows "update available". Only
+	// meaningful for marketplace plugins (skills carry no installed-version record).
+	if (p.latestVersion !== undefined && !(typeof p.latestVersion === 'string' && /^\d[0-9.]*$/.test(p.latestVersion))) { return false; }
 	return true;
 }
 
@@ -425,13 +429,30 @@ function marketplacePluginInstalled(pkg) {
 	} catch (_) { return false; }
 }
 
-// The register → refresh → install command sequence (marketplaceRepo and plugin
-// pass RE_OWNER_REPO / RE_SKILL_NAME validation, so no shell metachars to quote).
-function marketplacePluginCmds(pkg) {
+// The installed version of a marketplace plugin, from Claude Code's own registry
+// (~/.claude/plugins/installed_plugins.json → plugins[key][].version), or '' if
+// unknown. Compared against the catalog's latestVersion to detect updates.
+function installedPluginVersion(pkg) {
+	try {
+		const reg = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude', 'plugins', 'installed_plugins.json'), 'utf8'));
+		const rec = reg.plugins && reg.plugins[pluginKey(pkg)];
+		const entry = Array.isArray(rec) ? rec[0] : rec;
+		return (entry && typeof entry.version === 'string') ? entry.version : '';
+	} catch (_) { return ''; }
+}
+
+// The register → refresh → install/update command sequence (marketplaceRepo and
+// plugin pass RE_OWNER_REPO / RE_SKILL_NAME validation, so no shell metachars to
+// quote). When the plugin is already installed and only needs a version bump,
+// `claude plugin update` replaces `install`.
+function marketplacePluginCmds(pkg, isUpdate) {
+	const last = isUpdate
+		? 'claude plugin update ' + pluginKey(pkg) + ' --scope user'
+		: 'claude plugin install ' + pluginKey(pkg) + ' --scope user';
 	return [
 		'claude plugin marketplace add ' + pkg.marketplaceRepo + ' --scope user',
 		'claude plugin marketplace update ' + pkg.marketplace,
-		'claude plugin install ' + pluginKey(pkg) + ' --scope user',
+		last,
 	];
 }
 
@@ -535,12 +556,22 @@ async function detectPackage(pkg) {
 	// A marketplace plugin is "present" when enabledPlugins flags it in
 	// settings.json; a standalone skill when its skill folder exists. Either way,
 	// any declared pip libraries must also import.
-	const base = isMarketplacePlugin(pkg) ? marketplacePluginInstalled(pkg) : skillInstalled(pkg);
+	const isPlugin = isMarketplacePlugin(pkg);
+	const base = isPlugin ? marketplacePluginInstalled(pkg) : skillInstalled(pkg);
 	if (!base) { return { found: false, version: '' }; }
 	let libsOk = true;
 	const cmd = pipImportsDetect(pkg);
 	if (cmd) { libsOk = (await shellExec(cmd)).ok; }
-	return { found: libsOk, version: libsOk ? ('v' + pkg.version) : '' };
+	if (!libsOk) { return { found: false, version: '' }; }
+	// Installed and libs OK. For a marketplace plugin that advertises a newer
+	// latestVersion than what's installed, flag an update (found stays true, but
+	// the UI offers it as checkable and installs via `claude plugin update`).
+	const inst = isPlugin ? installedPluginVersion(pkg) : '';
+	let update = null;
+	if (isPlugin && pkg.latestVersion && inst && cmpVersions(pkg.latestVersion, inst) > 0) {
+		update = { from: inst, to: pkg.latestVersion };
+	}
+	return { found: true, version: 'v' + (inst || pkg.version), update };
 }
 
 // Detect all programs and packages IN PARALLEL — serially this took up to
@@ -715,11 +746,12 @@ async function runInstall(context, selectedIds, detected, packages, reporter) {
 
 	for (const id of plan.ordered) {
 		const item = byId.get(id);
-		// Marketplace plugin: register + refresh the marketplace, then install
-		// (fetch + enable) via the `claude` CLI, then any pip libs — all in the
-		// terminal, in that order.
+		// Marketplace plugin: register + refresh the marketplace, then install (or
+		// update, if it's already present and only a version bump is needed) via the
+		// `claude` CLI, then any pip libs — all in the terminal, in that order.
 		if (item.kind === 'package' && isMarketplacePlugin(item)) {
-			const cmds = marketplacePluginCmds(item);
+			const isUpdate = !!(detected[id] && detected[id].update);
+			const cmds = marketplacePluginCmds(item, isUpdate);
 			const pip = pipInstallCmd(item, isWin);
 			if (pip) { cmds.push(pip); }
 			runnable.push({ id, kind: 'package', label: item.label, cmds });
@@ -941,6 +973,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	.row .by { font-style: normal; font-size: 0.85em; color: var(--vscode-descriptionForeground); margin-left: 6px; }
 	.status.found { color: var(--vscode-testing-iconPassed, #3fb950); }
 	.status.missing { color: var(--vscode-descriptionForeground); }
+	.status.update { color: var(--vscode-list-warningForeground, #cca700); }
 	button { font-family: inherit; font-size: 1em; padding: 7px 18px; border: none; border-radius: 4px;
 		color: var(--vscode-button-foreground); background: var(--vscode-button-background); cursor: pointer; margin-right: 10px; }
 	button:hover { background: var(--vscode-button-hoverBackground); }
@@ -1043,11 +1076,14 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	function setProg(aud) {
 		const pre = progPreset(aud);
 		progBoxes.forEach(b => {
-			const d = detected[b.value]; const missing = !(d && d.found);
+			const d = detected[b.value];
+			// "Needs action" = not installed, OR installed with an update available.
+			// Both are checkable; a plain up-to-date install is grayed out.
+			const missing = !(d && d.found) || !!(d && d.update);
 			const req = DATA.programs.some(p => p.id === b.value && p.required);
-			// Installed items are grayed out and unchecked — can't be selected
+			// Up-to-date items are grayed out and unchecked — can't be selected
 			// (Run Setup never uninstalls). Required-but-missing items are locked
-			// on. Missing items are checkable, checked by default if in the profile.
+			// on. Everything else is checkable, checked by default if in the profile.
 			if (!missing) { b.checked = false; b.disabled = true; }
 			else if (req) { b.checked = true; b.disabled = true; }
 			else { b.disabled = false; b.checked = pre.indexOf(b.value) !== -1; }
@@ -1078,7 +1114,8 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 			const el = document.querySelector('.status[data-for="' + p.id + '"]');
 			const d = detected[p.id];
 			if (!el) return;
-			if (d && d.found) { el.textContent = '✓ ' + (d.version || 'found'); el.className = 'status found'; }
+			if (d && d.found && d.update) { el.textContent = '↑ update available (' + d.update.from + ' → ' + d.update.to + ')'; el.className = 'status update'; }
+			else if (d && d.found) { el.textContent = '✓ ' + (d.version || 'found'); el.className = 'status found'; }
 			else { el.textContent = 'not found'; el.className = 'status missing'; }
 		});
 	}

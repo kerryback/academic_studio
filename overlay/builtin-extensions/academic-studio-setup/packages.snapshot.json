@@ -24,7 +24,8 @@
         "finnhub"
       ],
       "category": "general",
-      "authorUrl": "https://github.com/kerryback/skills"
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "1.0.0"
     },
     {
       "id": "litdb",
@@ -37,7 +38,8 @@
       "version": 1,
       "prereq": "python",
       "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills"
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "0.2.0"
     },
     {
       "id": "slides",
@@ -49,7 +51,8 @@
       "plugin": "slides",
       "version": 1,
       "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills"
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "1.0.0"
     },
     {
       "id": "voiceover",
@@ -61,19 +64,8 @@
       "plugin": "voiceover",
       "version": 1,
       "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills"
-    },
-    {
-      "id": "critique",
-      "label": "Critique — reviewer agents that critique Claude's work and apply revisions (heavyweight)",
-      "author": "Kerry Back",
-      "name": "critique",
-      "marketplace": "kerryback-skills",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "critique",
-      "version": 1,
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills"
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "1.2.3"
     },
     {
       "id": "coauthor",
@@ -86,7 +78,8 @@
       "version": 1,
       "prereq": "python",
       "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills"
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "0.1.0"
     },
     {
       "id": "econ-slides",
