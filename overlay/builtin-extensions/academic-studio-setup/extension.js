@@ -529,7 +529,7 @@ async function autoInstallClaudeSkills() {
 }
 
 // ---- detection ---------------------------------------------------------------
-function shellExec(command) {
+function shellExec(command, timeoutMs) {
 	// On macOS, run through a login shell so the user's full PATH (Homebrew,
 	// /usr/local, pyenv, etc.) is visible — GUI apps otherwise get a minimal PATH.
 	// On Windows, use cmd.exe /c which inherits the system PATH.
@@ -537,7 +537,7 @@ function shellExec(command) {
 	const shell = isWin ? process.env.COMSPEC || 'cmd.exe' : (process.env.SHELL || '/bin/zsh');
 	const args = isWin ? ['/c', command] : ['-lc', command];
 	return new Promise((resolve) => {
-		cp.execFile(shell, args, { timeout: 8000 }, (err, stdout, stderr) => {
+		cp.execFile(shell, args, { timeout: timeoutMs || 8000 }, (err, stdout, stderr) => {
 			const out = ((stdout || '') + (stderr || '')).trim();
 			resolve({ ok: !err, out });
 		});
@@ -561,7 +561,12 @@ async function detectPackage(pkg) {
 	if (!base) { return { found: false, version: '' }; }
 	let libsOk = true;
 	const cmd = pipImportsDetect(pkg);
-	if (cmd) { libsOk = (await shellExec(cmd)).ok; }
+	// A heavy import (yfinance pulls in pandas/numpy/requests/lxml…) plus cmd.exe +
+	// interpreter startup runs ~4 s alone, and detectAll fires every check at once,
+	// so under that contention it measured ~6–8 s — right at the default 8 s cap.
+	// A too-tight timeout here reads back as libsOk=false → the plugin shows "not
+	// found" even though it's installed. Give the import check a generous 45 s.
+	if (cmd) { libsOk = (await shellExec(cmd, 45000)).ok; }
 	if (!libsOk) { return { found: false, version: '' }; }
 	// Installed and libs OK. For a marketplace plugin that advertises a newer
 	// latestVersion than what's installed, flag an update (found stays true, but
