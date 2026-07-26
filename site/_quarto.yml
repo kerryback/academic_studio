@@ -10,6 +10,7 @@ project:
   resources:
     - CNAME
     - .nojekyll
+    - plugins.json
     - packages.json
     - packages/
 
