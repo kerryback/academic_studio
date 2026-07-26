@@ -1,62 +1,12 @@
 {
-  "_comment": "Academic Studio package catalog. Served at https://academic-studio.com/packages.json; the app fetches it on startup and in Run Setup, so publishing a package = edit this file + run scripts/make-package.sh + push (GitHub Pages deploys site/**). Entries are declarative data (pip names, sha256-pinned skill tarball, MCP config) — the app never executes shell text from this file. After editing a skill's files under packages/<id>/, bump its version here and re-run scripts/make-package.sh <id>.",
-  "catalogVersion": 1,
+  "_comment": "RETIREMENT NOTICE for the pre-1.1 (old-schema) plugin catalog. Academic Studio 1.1+ reads plugins.json instead; only v1.0-and-earlier apps still fetch THIS file. Rather than serve them stale/buggy plugin tarballs, this returns a single entry whose label tells them to update to 1.1. v1.0 surfaces it two ways: as a row in Run Setup's plugin list (with the 'Learn more' link from infoUrl), and — because v1.0 still runs the startup 'new plugin available' notification — as a launch-time popup. No skill/pip, so installing it is a harmless no-op. Do not add real plugins here; the plugin catalog is plugins.json.",
+  "catalogVersion": 2,
   "packages": [
     {
-      "id": "finance-data",
-      "label": "Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub, Financial Modeling Prep)",
-      "infoUrl": "https://academic-studio.com/finance-data.html",
-      "version": 4,
-      "minAppVersion": "0.4",
-      "prereq": "python",
-      "pip": [
-        "yfinance",
-        "pandas-datareader",
-        "finnhub-python",
-        "requests"
-      ],
-      "pipImports": [
-        "yfinance",
-        "pandas_datareader",
-        "finnhub"
-      ],
-      "skill": {
-        "name": "finance-data",
-        "url": "https://academic-studio.com/packages/finance-data-4.tar.gz",
-        "sha256": "9888459c28481e6e224d17905660f7ffc8307840768fc149db6394d0ee821693"
-      },
-      "manualUrl": "https://academic-studio.com/packages/finance-data-4.tar.gz",
-      "manualSteps": "Open a terminal and run: pip install yfinance pandas-datareader finnhub-python requests (if you see an 'externally-managed-environment' error, run PIP_BREAK_SYSTEM_PACKAGES=1 pip install … instead) — then download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/finance-data. FinnHub and Financial Modeling Prep need free API keys, stored as FINNHUB_API_KEY and FMP_API_KEY in your environment (from finnhub.io and financialmodelingprep.com); Claude walks you through this on first use."
-    },
-    {
-      "id": "slides",
-      "label": "Slide Deck — build themed reveal.js/Quarto presentations, export to PDF/PPTX/PNG",
-      "infoUrl": "https://academic-studio.com/slides.html",
-      "version": 1,
-      "minAppVersion": "0.4",
-      "prereq": "quarto",
-      "skill": {
-        "name": "slides",
-        "url": "https://academic-studio.com/packages/slides-1.tar.gz",
-        "sha256": "8d547f75e6278ff9ed67e9b157f4d8b1d4c31c31508c592d59ad15bcd483db66"
-      },
-      "manualUrl": "https://academic-studio.com/packages/slides-1.tar.gz",
-      "manualSteps": "Download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/slides. Rendering needs Quarto; PDF/PPTX/PNG export needs Node.js and decktape — install both from Help → Run Setup… (Quarto is standard; decktape is the opt-in 'decktape' program)."
-    },
-    {
-      "id": "voiceover",
-      "label": "Voiceover Builder — narrate a PDF slide deck into an MP4 video + transcript (Claude Code writes the narration, ElevenLabs voices it)",
-      "infoUrl": "https://academic-studio.com/voiceovers.html",
-      "version": 5,
-      "minAppVersion": "0.4",
-      "prereq": "quarto",
-      "skill": {
-        "name": "voiceover",
-        "url": "https://academic-studio.com/packages/voiceover-5.tar.gz",
-        "sha256": "53d747a41c3b17c33284457f8e1b2fdc0a7f2ddcf73b50fea2133407e902f315"
-      },
-      "manualUrl": "https://academic-studio.com/packages/voiceover-5.tar.gz",
-      "manualSteps": "Download the skill archive from academic-studio.com/packages and unpack it into ~/.claude/skills/voiceover. Rendering the deck needs Quarto and Python — install both from Help → Run Setup…. Set ELEVENLABS_API_KEY in your environment (a free key from elevenlabs.io) for the text-to-speech voice; Claude walks you through this on first use. No other key is needed — the narration is written by Claude Code. The first launch sets up a small local Python environment automatically."
+      "id": "update-to-1-1",
+      "label": "Update to Academic Studio 1.1 — plugins have moved to a new system and this list is retired. Click 'Learn more' to download 1.1, then reinstall your plugins from Run Setup.",
+      "infoUrl": "https://academic-studio.com/#downloads",
+      "version": 1
     }
   ]
 }

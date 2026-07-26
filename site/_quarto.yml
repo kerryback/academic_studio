@@ -12,7 +12,6 @@ project:
     - .nojekyll
     - plugins.json
     - packages.json
-    - packages/
 
 website:
   title: ""

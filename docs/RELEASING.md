@@ -67,10 +67,13 @@ Signing entirely in CI would need repo secrets and a CI-friendly certificate
 (Apple notarization, Azure Trusted Signing, or SignPath). Certum's token/cloud
 signing isn't CI-friendly, so the Windows signing pass stays manual.
 
-Note: packages (Claude skills, Python library bundles, MCP connectors) do NOT
-require an app release at all — they ship from the online catalog. See
-`scripts/make-package.sh`: edit `packages/<id>/`, bump the version in
-`site/packages.json`, run the script, push.
+Note: plugins do NOT require an app release — they ship from the online catalog
+`site/plugins.json` (served live via GitHub Pages; it must stay listed under
+`resources:` in `site/_quarto.yml` or it won't deploy). Add or edit an entry and
+push; installed 1.1+ apps pick it up on next Run Setup, and full marketplace
+plugins are fetched by the app via `claude plugin install`. (The old pre-1.1
+tarball catalog `site/packages.json` is retired — it now serves v1.0 apps only an
+"update to 1.1" notice.)
 
 The manual, per-machine full-build steps below remain valid as a fallback.
 
