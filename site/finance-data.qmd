@@ -10,6 +10,6 @@ The Finance Data package lets you ask Claude for financial, market, and economic
 - Financial Modeling Prep --- analyst price targets and estimates, market movers, economic and earnings calendars
 - US Treasury --- the daily yield curve
 
-Installing it is one click, and there are two ways: Academic Studio offers the package in a notification when you start the app without it, or you can open Help → Run Setup… any time and find it under Additional packages. The install sets up the Python libraries these sources need and the skill that teaches Claude which source to use and how. It needs Python, which Run Setup also installs. Two sources (FinnHub, Financial Modeling Prep) use free API keys --- Claude will walk you through getting them the first time they're needed.
+Installing it is one click: open Help → Run Setup… and check Finance Data under Plugins. The install sets up the Python libraries these sources need and the skill that teaches Claude which source to use and how. It needs Python, which Run Setup installs for you first. Two sources (FinnHub, Financial Modeling Prep) use free API keys --- Claude will walk you through getting them the first time they're needed.
 
-The installed skill lives in your shared Claude configuration, so it also works from Claude Code CLI and the Code mode of Claude Desktop. Updates to the package are offered automatically on startup --- no need to download a new version of Academic Studio.
+Run Setup is also where updates appear --- it flags a new version of the package when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed skill lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.
