@@ -31,19 +31,6 @@
       "latestVersion": "0.4.1"
     },
     {
-      "id": "slides",
-      "label": "Slide Deck — build themed reveal.js/Quarto presentations, export to PDF/PPTX/PNG",
-      "author": "Kerry Back",
-      "name": "slides",
-      "marketplace": "kerryback-skills",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "slides",
-      "version": 1,
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.0.0"
-    },
-    {
       "id": "voiceover",
       "label": "Voiceover Builder — narrate a PDF slide deck into an MP4 video + transcript (Claude writes the narration, ElevenLabs voices it)",
       "author": "Kerry Back",
