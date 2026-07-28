@@ -5,6 +5,8 @@ project:
     - index.qmd
     - tour.qmd
     - voiceovers.qmd
+    - litdb.qmd
+    - coauthor.qmd
     - finance-data.qmd
   resources:
     - CNAME
@@ -22,6 +24,10 @@ website:
     right:
       - text: "Voiceovers"
         file: voiceovers.qmd
+      - text: "litdb"
+        file: litdb.qmd
+      - text: "coauthor"
+        file: coauthor.qmd
       - text: "Finance Data"
         file: finance-data.qmd
 

@@ -1,0 +1,28 @@
+## litdb
+
+litdb is a private library for your research papers and your research notes. It reads your PDFs in full and indexes them so you can search by wording or by meaning; it captures notes tagged and linked to the papers they came from; it finds and imports new work from the scholarly literature; it tracks citations; and it writes your bibliography. Ask Claude "what do I have on momentum crashes" and it searches your own library before it searches anywhere else. Everything lives in one file on your machine.
+
+Key features:
+
+- Add papers from wherever they are. Point Claude at a folder of PDFs, a Zotero library, or a single DOI. litdb reads each PDF's full text, looks up its title, authors, venue, year, and DOI from OpenAlex, and indexes the whole thing. A watched inbox folder ingests new PDFs on its own.
+- Notes are first-class. Capture a thought in chat or through a browser form, tagged by kind (idea, summary, critique, question, todo, quote) and anchored to a paper --- optionally to a page or a verbatim quote. Notes are searchable alongside the papers and surface first when you ask what you have on a topic.
+- Search by wording and by meaning. Keyword and semantic search run together and the results are merged, so a search for "crowded trades" finds the paper that says "capacity constraints." Results name the paper and the page the passage came from. Scope a search to a project, a range of years, or your reading queue.
+- Find work you don't have yet. litdb searches OpenAlex and Semantic Scholar, marks what you already own, and imports the rest into the database --- searchable and citable at once. When a free full-text copy exists, Claude locates and downloads it.
+- Follow the citation trail. A paper's references and the works that cite it, the papers your library leans on most, and the important works you cite but don't own.
+- Write your bibliography. A `.bib` file for the whole library or any subset, using each paper's stored citation key.
+- Stays private. Everything is one SQLite file on your machine. Nothing is sent out unless you ask for an outside lookup, and notes you mark confidential are always indexed locally.
+
+### Zotero, or not
+
+litdb works either way, and you choose once during setup. By default litdb owns your references and never touches Zotero; if you adopt Zotero later, one step migrates the whole library across. Or you can make Zotero authoritative, in which case litdb imports from it --- reusing your Better BibTeX citation keys --- keeps current as you save papers there, and pushes anything you add through litdb back into Zotero.
+
+### Requirements
+
+- Python (installed via Help → Run Setup… in Academic Studio).
+- Nothing else is required. For search by meaning, Claude will offer to set up a small free tool that runs locally and walk you through it; skip it and search still works by wording, add it later and litdb reindexes itself.
+
+### Installation
+
+Open Help → Run Setup…, follow the "Teaching & research plugins" link, and check litdb. One click installs it, and Python is on the same screen under Supporting programs. The first time you use it, Claude asks a couple of questions and builds the rest for you. litdb keeps its data in one place, independent of any project or folder, so there is nothing else to configure.
+
+Run Setup is also where updates appear --- it flags a new version of the plugin when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed plugin lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.

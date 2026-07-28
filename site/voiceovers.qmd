@@ -16,4 +16,6 @@ Key features:
 
 ### Installation
 
-Ask Claude to install it: say "install the voiceover plugin." Claude will set up everything needed. The plugin works in Academic Studio, Claude Code CLI, and the Code mode of Claude Desktop.
+Open Help → Run Setup…, follow the "Teaching & research plugins" link, and check Voiceover Builder. One click installs it. Quarto is on the same setup screen under Supporting programs, if you don't already have it.
+
+Run Setup is also where updates appear --- it flags a new version of the plugin when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed plugin lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.
