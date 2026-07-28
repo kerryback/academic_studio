@@ -329,7 +329,7 @@ Open it from Help → Run Setup. One screen lets you:
 
 - Choose a profile (Students & Professionals, or Faculty) which turns on the right set of extensions
 - Install supporting programs --- Python, Node.js, Quarto --- with a single click
-- Install additional packages --- Finance Data, Slide Deck, Voiceover Builder
+- Install additional packages --- Finance Data, Voiceover Builder, litdb
 ::::
 
 :::: {.tour-right}
