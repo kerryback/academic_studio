@@ -25,3 +25,12 @@ Key features:
 Open Help → Run Setup…, follow the "Teaching & research plugins" link, and check Participation. One click installs it, and Python is on the same screen under Supporting programs. The first time you use it, Claude asks where you keep your class folders and what your roster files look like, then remembers both.
 
 Run Setup is also where updates appear --- it flags a new version of the plugin when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed plugin lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.
+
+Academic Studio is not required. The plugin is published in the [kerryback/skills](https://github.com/kerryback/skills) marketplace, so you can install it into Claude Code directly:
+
+```
+/plugin marketplace add kerryback/skills
+/plugin install participation@kerryback-skills
+```
+
+Adding the marketplace is a one-time step --- every other plugin on this site installs from it the same way. The same two commands work from a terminal without an interactive session, as `claude plugin marketplace add kerryback/skills` and `claude plugin install participation@kerryback-skills`.

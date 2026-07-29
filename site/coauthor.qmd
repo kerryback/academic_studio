@@ -31,3 +31,12 @@ Open Help → Run Setup…, follow the "Teaching & research plugins" link, and c
 Then, in the directory where you want to work: initialize Coauthor there, pick your debate roster in the browser, describe the angle you want to pursue, and run a round. Claude walks you through each step.
 
 Run Setup is also where updates appear --- it flags a new version of the plugin when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed plugin lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.
+
+Academic Studio is not required. The plugin is published in the [kerryback/skills](https://github.com/kerryback/skills) marketplace, so you can install it into Claude Code directly:
+
+```
+/plugin marketplace add kerryback/skills
+/plugin install coauthor@kerryback-skills
+```
+
+Adding the marketplace is a one-time step --- every other plugin on this site installs from it the same way. The same two commands work from a terminal without an interactive session, as `claude plugin marketplace add kerryback/skills` and `claude plugin install coauthor@kerryback-skills`.
