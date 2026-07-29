@@ -45,7 +45,7 @@
     },
     {
       "id": "participation",
-      "label": "Participation — score class participation from a photo roster: reads the Esther Course Roster PDF in your class folder, then tap 1-3 for amount & quality against each student's photo; saves to participation.csv",
+      "label": "Participation — record class participation: a 1-3 score for amount and quality against each student, saved to participation.csv in the class folder. Needs only a list of names; photos optional",
       "author": "Kerry Back",
       "name": "participation",
       "marketplace": "kerryback-skills",
@@ -55,7 +55,7 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.0.0"
+      "latestVersion": "1.1.0"
     },
     {
       "id": "coauthor",
