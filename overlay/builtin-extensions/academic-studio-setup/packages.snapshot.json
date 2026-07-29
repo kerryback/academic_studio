@@ -44,6 +44,20 @@
       "latestVersion": "1.2.3"
     },
     {
+      "id": "participation",
+      "label": "Participation — score class participation from a photo roster: reads the Esther Course Roster PDF in your class folder, then tap 1-3 for amount & quality against each student's photo; saves to participation.csv",
+      "author": "Kerry Back",
+      "name": "participation",
+      "marketplace": "kerryback-skills",
+      "marketplaceRepo": "kerryback/skills",
+      "plugin": "participation",
+      "version": 1,
+      "prereq": "python",
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "1.0.0"
+    },
+    {
       "id": "coauthor",
       "label": "Coauthor — multi-agent system for empirical research papers (debate panel + verification over litdb + empirics)",
       "author": "Kerry Back",
