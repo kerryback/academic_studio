@@ -4,16 +4,8 @@ pagetitle: "Participation"
 
 ## Participation
 
-The Participation plugin records class participation. Ask Claude to open it and you get your class as a grid: a score of 1 to 3 for how much each student spoke, another for quality, and a note if you want one. Saving writes a row per student to `participation.csv` in that class's folder.
+The Participation plugin records class participation.  It runs as an app in a browser window.  Claude manages the setup and launches the app when requested.  Otherwise, it does not use AI.  The app provides a simple way to set up a class, upload names (and photos if available), and then record participation quantity and quality scores from 0 to 3 for each student for each class session, with optional notes.  All data stays on your hard drive.  Claude never reads participation scores.  
 
-All it needs is a list of names. Photos are optional --- where you have them students appear as faces, and where you don't, as initials.
-
-Key features:
-
-- Set up from what you already have. Claude reads your class list --- a spreadsheet, a CSV, a text file, a list you paste into chat --- and builds the roster from it. If you also have a photo roster or a folder of headshots, it uses those for the pictures. Nothing has to be converted into a particular format first.
-- A row per student per class meeting. Anyone left unscored is recorded as a 0, so a saved class is complete rather than a set of blanks to interpret later. Re-saving a date replaces that class's rows, so correcting a score is the same operation as entering it.
-- Your records stay in your folder. `participation.csv` sits in the class folder with the rest of the course material, in a format Excel opens directly. For term totals or a gradebook column, ask Claude --- it reads the file and does the arithmetic.
-- Runs locally. Inside Academic Studio the app opens in an in-editor tab; elsewhere, a browser tab. No account, no upload, and no model calls from the app itself, so student names and photos stay on your machine.
 
 ### Requirements
 
