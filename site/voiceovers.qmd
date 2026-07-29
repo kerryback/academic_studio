@@ -1,3 +1,7 @@
+---
+pagetitle: "Voiceovers"
+---
+
 ## Voiceovers
 
 The Voiceover plugin turns a PDF slide deck into a narrated MP4 video and a text transcript. Hand Claude a PDF of your slides and say "make a narrated video from this deck." Claude drafts the narration for each slide, a local app lets you review and edit the script, pick a voice, and generate the video. The finished `.mp4` and `.txt` land in your working directory, ready to post to your course site or share with students.

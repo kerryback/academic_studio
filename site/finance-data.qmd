@@ -1,3 +1,7 @@
+---
+pagetitle: "Finance Data"
+---
+
 ## The Finance Data Package
 
 The Finance Data package lets you ask Claude for financial, market, and economic data in plain English --- "get Apple's daily prices since 2015," "download the Fama-French factors," "pull CPI and unemployment from FRED" --- and get a clean CSV file ready for analysis. It routes each request to the right free source:

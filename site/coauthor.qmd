@@ -1,29 +1,33 @@
-## coauthor
+---
+pagetitle: "Coauthor"
+---
 
-coauthor is a coordinated multi-agent system for developing an empirical research paper. You talk to Claude Code, which acts as the coordinator; behind it sits a panel of other models that argue about your idea, a fact-checker that searches your own literature library, and two independent coders that run the empirics. You stay editor-in-chief --- every round ends at a gate where you decide what happens next.
+## Coauthor
 
-The point is structured disagreement. A single model asked to critique its own proposal tends to agree with itself. coauthor puts the proposing and the attacking in different models from different families, so the criticism is real, and then insists that disputes be settled with evidence rather than argument.
+Coauthor is a coordinated multi-agent system for developing an empirical research paper. You talk to Claude Code, which acts as the coordinator; behind it sits a panel of other models that argue about your idea, a fact-checker that searches your own literature library, and two independent coders that run the empirics. You stay editor-in-chief --- every round ends at a gate where you decide what happens next.
+
+The point is structured disagreement. A single model asked to critique its own proposal tends to agree with itself. Coauthor puts the proposing and the attacking in different models from different families, so the criticism is real, and then insists that disputes be settled with evidence rather than argument.
 
 Key features:
 
 - A debate with actual opposition. A Proposer generates and advances ideas; one or more Adversaries attack them, ranked by severity, and must name the evidence that would resolve each objection. You pick the lineup from the live OpenRouter catalog, and the adversaries run concurrently.
-- Fact-checking against your own library first. A Verifier settles factual claims about the literature by searching your litdb library before any outside source, and imports new papers as the project's questions evolve --- so the library grows as the work does.
+- Fact-checking against your own library first. A Verifier settles factual claims about the literature by searching your LitDB library before any outside source, and imports new papers as the project's questions evolve --- so the library grows as the work does.
 - Empirics run twice, independently. When a round turns on a number, the method is frozen into a written spec. An Analyst builds the sample and estimates it; a Replicator implements the same spec from scratch in its own code and hunts the standard biases. The two numbers should converge, and it means something when they don't.
 - You hold the gate. Each round ends with a decision that is yours. You can also grant blanket approval for a set number of unattended rounds when you want it to run ahead.
 - Memory that survives a fresh session. The thesis, open questions, settled facts, and killed ideas are kept in a durable record, alongside curated working state for each agent, so subagents resume without losing the thread.
-- Self-contained. coauthor is active in a directory when you initialize it there. It creates no repository, runs no `git`, and writes nothing outside its own folder and a workspace for the analyst's code, data, and results.
+- Self-contained. Coauthor is active in a directory when you initialize it there. It creates no repository, runs no `git`, and writes nothing outside its own folder and a workspace for the analyst's code, data, and results.
 
 ### Requirements
 
-- litdb, which is required rather than optional. Checking claims against your own corpus before any external source is a core principle, and it is half of every round. Install litdb first.
+- LitDB, which is required rather than optional. Checking claims against your own corpus before any external source is a core principle, and it is half of every round. Install LitDB first.
 - Two API keys: an Anthropic key for the coordinator and the Claude subagents, and an [OpenRouter](https://openrouter.ai/) key for the debate voices. Set an OpenRouter data policy that excludes training and logging.
 - Python (installed via Help → Run Setup… in Academic Studio).
 - For empirical rounds only: a WRDS account and the Open Source Asset Pricing signals. Rounds that only debate and verify need neither.
 
 ### Installation
 
-Open Help → Run Setup…, follow the "Teaching & research plugins" link, and check coauthor. Install litdb from the same screen if you don't have it yet, along with Python under Supporting programs.
+Open Help → Run Setup…, follow the "Teaching & research plugins" link, and check Coauthor. Install LitDB from the same screen if you don't have it yet, along with Python under Supporting programs.
 
-Then, in the directory where you want to work: initialize coauthor there, pick your debate roster in the browser, describe the angle you want to pursue, and run a round. Claude walks you through each step.
+Then, in the directory where you want to work: initialize Coauthor there, pick your debate roster in the browser, describe the angle you want to pursue, and run a round. Claude walks you through each step.
 
 Run Setup is also where updates appear --- it flags a new version of the plugin when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed plugin lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.

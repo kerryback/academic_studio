@@ -1,0 +1,27 @@
+---
+pagetitle: "Participation"
+---
+
+## Participation
+
+The Participation plugin lets you grade class participation while you can still put names to what was said. Keep each class in its own folder with the photo roster you printed from Esther, and Claude reads every student's name and headshot out of it. Say "open the participation app" and you get your class as a grid of faces: tap 1--3 for how much each student spoke and how good it was, add a note where you want one, and click Save. A row per student lands in `participation.csv` in that class's folder, alongside the rest of your course material.
+
+Key features:
+
+- Your roster, read from your folder. Claude finds the Course Roster PDF in the class folder and pulls out every name and headshot --- nothing to upload, nothing to drag. What it found is shown for review: names are editable, wrong entries removable, photos swappable, and anyone who enrolled late can be added by hand.
+- Scoring built for right after class. Two quick scores per student --- amount and quality, 1 to 3 --- plus an optional note. The date defaults to today and can be changed to write up a class you missed. Reopen a class and the scores you saved come back, so correcting one is as easy as entering it.
+- A complete grid, not a scattering of blanks. Every student gets a row for every class meeting, with 0 for anyone you left unscored. Saving a date replaces that class's rows rather than duplicating them, so re-saving corrects the record. Totalling the term is then plain arithmetic --- ask Claude and it reads the file and does it.
+- Your records stay yours. `participation.csv` is written to the class folder, in a format Excel opens directly. The plugin keeps only its own working copy of the roster and photos, separately, so nothing it does disturbs your course files.
+- Nothing is lost by accident. Closing the tab, following a link, or changing the date with scores unsaved prompts you first.
+- Runs entirely locally. Inside Academic Studio the app opens in an in-editor browser tab; in VS Code or Claude Code CLI it opens a browser tab. No account, no upload, and no model calls --- student photos and names never leave your machine.
+
+### Requirements
+
+- A photo roster for the class: the Course Roster report printed from Esther, saved in the class's folder. Other roster formats can be used, but Claude will tell you plainly when one isn't supported rather than importing it badly.
+- Python (installed via Help → Run Setup… in Academic Studio).
+
+### Installation
+
+Open Help → Run Setup…, follow the "Teaching & research plugins" link, and check Participation. One click installs it, and Python is on the same screen under Supporting programs. The first time you use it, Claude asks where you keep your class folders and what your roster files look like, then remembers both.
+
+Run Setup is also where updates appear --- it flags a new version of the plugin when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed plugin lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.

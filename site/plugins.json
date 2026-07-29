@@ -18,7 +18,7 @@
     },
     {
       "id": "litdb",
-      "label": "litdb — private, searchable library of research papers and your notes: add PDFs and search their full text by keyword & meaning, find new work (OpenAlex/Semantic Scholar), track citations, export BibTeX; optional Zotero",
+      "label": "LitDB — private, searchable library of research papers and your notes: add PDFs and search their full text by keyword & meaning, find new work (OpenAlex/Semantic Scholar), track citations, export BibTeX; optional Zotero",
       "author": "Kerry Back",
       "name": "litdb",
       "marketplace": "kerryback-skills",
@@ -59,7 +59,7 @@
     },
     {
       "id": "coauthor",
-      "label": "Coauthor — multi-agent system for empirical research papers (debate panel + verification over litdb + empirics)",
+      "label": "Coauthor — multi-agent system for empirical research papers (debate panel + verification over LitDB + empirics)",
       "author": "Kerry Back",
       "name": "coauthor",
       "marketplace": "kerryback-skills",
