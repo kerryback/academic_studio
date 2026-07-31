@@ -1,0 +1,40 @@
+---
+pagetitle: "WRDS"
+---
+
+## WRDS
+
+The WRDS plugin teaches Claude how to build empirical asset-pricing samples from CRSP and Compustat, and from the Open Source Asset Pricing signals of Chen and Zimmermann. Ask for a momentum sort or a book-to-market panel and you get a standalone, re-runnable Python script that pulls from WRDS directly --- no SAS step, no notebook to adapt, and no data shipped with the plugin.
+
+What it mostly does is keep Claude from writing a plausible query that is quietly wrong. The pitfalls it covers are the ones that survive a code review because the result looks fine: a join that deletes delisting months, a market cap that counts one share class of a dual-class firm, a book-to-market built from a December that hasn't happened yet.
+
+Key features:
+
+- Building blocks rather than a black box. A library of numbered sections --- connection, CRSP monthly, market cap, Compustat with book equity, the CRSP-Compustat link, accounting merges, firm age --- that Claude copies into your project's own script. Every query has been run against live WRDS. Your build script stands on its own years later, without the plugin on the path.
+- The contested choices go to you. Three reference implementations --- Ken French, the WRDS script most published replications ran, and Open Source Asset Pricing --- disagree on preferred-stock valuation, the shareholders'-equity cascade, whether negative book equity is dropped, how accounting data is aligned to months, and whether the reporting lag is four months or six. Where they are not unanimous, Claude asks instead of picking silently, and the answer is stamped on the result and belongs in your data appendix.
+- What each choice costs, measured. The preferred-stock ordering changes book equity on 6.4% of firm-years; dropping non-positive book equity removes 11.4%; alignment moves the median book-to-market of the whole cross-section about 14%. You are choosing with the magnitudes in front of you.
+- Bugs it refuses to write. Screening on columns joined from `stksecurityinfohist` keeps 222 of 2,004 delistings for 2000--2001, against 1,815 reading CRSP v2's own inline columns --- survivorship bias with a known sign and no error message. Market cap not aggregated across share classes values Berkshire at $303bn instead of $745bn. Accounting merges that drop unmatched months turn "no gvkey" into an unwritten screen.
+- CRSP v2 throughout. Returns there are already delisting-adjusted, which removes the missing-`dlret` imputation that older code resolved three different ways, with results that moved accordingly.
+- Twelve WRDS reference scripts. Fama-French factors on both CRSP vintages, the CRSP-IBES link, PEAD, DGTW benchmarks, momentum, size portfolios, S&P 500 constituents, an event study, and three 13F scripts --- mostly by Qingyi (Freda) Song Drechsler, Research Director at WRDS. They ship with an index of what each builds and a list of their known defects, so Claude reads them critically.
+- The data layer under Coauthor. Coauthor is deliberately domain-agnostic; its Analyst and Replicator get their WRDS knowledge from here. Installing both is what makes an empirical round work.
+
+### Requirements
+
+- A WRDS account through your institution, with `~/.pgpass` set up. Claude resolves your username at run time from `$WRDS_USER`, `~/.wrds`, or the `~/.pgpass` line itself, so an unattended build doesn't stop to prompt.
+- Python (installed via Help → Run Setup… in Academic Studio). The `wrds` package pins an old pandas in its metadata; Claude installs it in a way that leaves your current pandas alone.
+- Nothing extra for Open Source Asset Pricing --- that data is public and downloaded on demand.
+
+### Installation
+
+Open Help → Run Setup…, follow the "Teaching & research plugins" link, and check WRDS, along with Python under Supporting programs.
+
+Run Setup is also where updates appear --- it flags a new version of the plugin when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed plugin lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.
+
+Academic Studio is not required. The plugin is published in the [kerryback/skills](https://github.com/kerryback/skills) marketplace, so you can install it into Claude Code directly:
+
+```
+/plugin marketplace add kerryback/skills
+/plugin install wrds@kerryback-skills
+```
+
+Adding the marketplace is a one-time step --- every other plugin on this site installs from it the same way. The same two commands work from a terminal without an interactive session, as `claude plugin marketplace add kerryback/skills` and `claude plugin install wrds@kerryback-skills`.

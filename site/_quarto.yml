@@ -9,6 +9,7 @@ project:
     - litdb.qmd
     - coauthor.qmd
     - finance-data.qmd
+    - wrds.qmd
   resources:
     - CNAME
     - .nojekyll
@@ -33,6 +34,8 @@ website:
         file: coauthor.qmd
       - text: "Finance Data"
         file: finance-data.qmd
+      - text: "WRDS"
+        file: wrds.qmd
 
 format:
   html:

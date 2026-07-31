@@ -58,6 +58,20 @@
       "latestVersion": "1.2.0"
     },
     {
+      "id": "wrds",
+      "label": "WRDS — build empirical asset-pricing samples from CRSP/Compustat and Open Source Asset Pricing: vetted, re-runnable Python building blocks, with the contested construction choices put to you rather than picked silently",
+      "author": "Kerry Back",
+      "name": "wrds",
+      "marketplace": "kerryback-skills",
+      "marketplaceRepo": "kerryback/skills",
+      "plugin": "wrds",
+      "version": 1,
+      "prereq": "python",
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "0.3.0"
+    },
+    {
       "id": "coauthor",
       "label": "Coauthor — multi-agent system for empirical research papers (debate panel + verification over LitDB + empirics)",
       "author": "Kerry Back",
