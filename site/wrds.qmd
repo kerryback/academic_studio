@@ -4,7 +4,7 @@ pagetitle: "WRDS"
 
 ## WRDS
 
-Claude can already query WRDS without this plugin --- your institution's subscription and the `wrds` Python package are the whole of the access. What the plugin supplies is knowing which query to write: the CRSP v2, Compustat, and IBES conventions, vetted code for the constructions that go into an asset-pricing sample, and the Open Source Asset Pricing signals of Chen and Zimmermann. Ask for a momentum sort or a book-to-market panel and you get a standalone, re-runnable Python script --- no SAS step, no notebook to adapt, and no data shipped with the plugin.
+The WRDS plugin contains connection code, Python building blocks for the standard CRSP and Compustat constructions, twelve WRDS research scripts, and the competing Ken French, Drechsler, and Open Source Asset Pricing conventions written out and compared. It is for pulling and constructing CRSP, Compustat, and IBES data. The access itself is your institution's WRDS subscription and the `wrds` Python package, and Claude can query WRDS without the plugin; what the plugin adds is which query to write. Ask for a momentum sort or a book-to-market panel and you get a standalone, re-runnable Python script --- no SAS step, no notebook to adapt, and no data shipped with the plugin.
 
 Mostly it keeps Claude from writing a plausible query that is quietly wrong. The pitfalls it covers are the ones that survive a code review because the result looks fine: a join that deletes delisting months, a market cap that counts one share class of a dual-class firm, a book-to-market built from a December that hasn't happened yet.
 

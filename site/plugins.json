@@ -59,7 +59,7 @@
     },
     {
       "id": "wrds",
-      "label": "WRDS — the domain knowledge for CRSP/Compustat/IBES pulls, not the access: vetted query code run against live WRDS, guards for the construction errors that pass review silently (deleted delisting months, dual-class market cap, look-ahead), and the contested book-equity and alignment choices put to you",
+      "label": "WRDS — connection code, query building blocks, twelve WRDS (Drechsler) reference scripts, and the competing Ken French / Drechsler / OpenAP conventions written out and compared, for pulling and constructing CRSP, Compustat, and IBES data",
       "author": "Kerry Back",
       "name": "wrds",
       "marketplace": "kerryback-skills",
