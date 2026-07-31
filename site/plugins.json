@@ -59,7 +59,7 @@
     },
     {
       "id": "wrds",
-      "label": "WRDS — build empirical asset-pricing samples from CRSP/Compustat and Open Source Asset Pricing: vetted, re-runnable Python building blocks, with the contested construction choices put to you rather than picked silently",
+      "label": "WRDS — the domain knowledge for CRSP/Compustat/IBES pulls, not the access: vetted query code run against live WRDS, guards for the construction errors that pass review silently (deleted delisting months, dual-class market cap, look-ahead), and the contested book-equity and alignment choices put to you",
       "author": "Kerry Back",
       "name": "wrds",
       "marketplace": "kerryback-skills",

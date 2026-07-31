@@ -4,9 +4,9 @@ pagetitle: "WRDS"
 
 ## WRDS
 
-The WRDS plugin teaches Claude how to build empirical asset-pricing samples from CRSP and Compustat, and from the Open Source Asset Pricing signals of Chen and Zimmermann. Ask for a momentum sort or a book-to-market panel and you get a standalone, re-runnable Python script that pulls from WRDS directly --- no SAS step, no notebook to adapt, and no data shipped with the plugin.
+Claude can already query WRDS without this plugin --- your institution's subscription and the `wrds` Python package are the whole of the access. What the plugin supplies is knowing which query to write: the CRSP v2, Compustat, and IBES conventions, vetted code for the constructions that go into an asset-pricing sample, and the Open Source Asset Pricing signals of Chen and Zimmermann. Ask for a momentum sort or a book-to-market panel and you get a standalone, re-runnable Python script --- no SAS step, no notebook to adapt, and no data shipped with the plugin.
 
-What it mostly does is keep Claude from writing a plausible query that is quietly wrong. The pitfalls it covers are the ones that survive a code review because the result looks fine: a join that deletes delisting months, a market cap that counts one share class of a dual-class firm, a book-to-market built from a December that hasn't happened yet.
+Mostly it keeps Claude from writing a plausible query that is quietly wrong. The pitfalls it covers are the ones that survive a code review because the result looks fine: a join that deletes delisting months, a market cap that counts one share class of a dual-class firm, a book-to-market built from a December that hasn't happened yet.
 
 Key features:
 
@@ -15,7 +15,7 @@ Key features:
 - What each choice costs, measured. The preferred-stock ordering changes book equity on 6.4% of firm-years; dropping non-positive book equity removes 11.4%; alignment moves the median book-to-market of the whole cross-section about 14%. You are choosing with the magnitudes in front of you.
 - Bugs it refuses to write. Screening on columns joined from `stksecurityinfohist` keeps 222 of 2,004 delistings for 2000--2001, against 1,815 reading CRSP v2's own inline columns --- survivorship bias with a known sign and no error message. Market cap not aggregated across share classes values Berkshire at $303bn instead of $745bn. Accounting merges that drop unmatched months turn "no gvkey" into an unwritten screen.
 - CRSP v2 throughout. Returns there are already delisting-adjusted, which removes the missing-`dlret` imputation that older code resolved three different ways, with results that moved accordingly.
-- Twelve WRDS reference scripts. Fama-French factors on both CRSP vintages, the CRSP-IBES link, PEAD, DGTW benchmarks, momentum, size portfolios, S&P 500 constituents, an event study, and three 13F scripts --- mostly by Qingyi (Freda) Song Drechsler, Research Director at WRDS. They ship with an index of what each builds and a list of their known defects, so Claude reads them critically.
+- Twelve WRDS reference scripts, for the tables the building blocks don't reach. Fama-French factors on both CRSP vintages, the CRSP-IBES link --- the ICLINK score methodology rather than a lookup table, and where any IBES work starts --- earnings surprise and announcement windows, DGTW benchmarks, momentum, size portfolios, S&P 500 constituents, an event study, and three 13F scripts, mostly by Qingyi (Freda) Song Drechsler, Research Director at WRDS. They ship with an index of what each builds and a list of their known defects, so Claude reads them critically.
 - The data layer under Coauthor. Coauthor is deliberately domain-agnostic; its Analyst and Replicator get their WRDS knowledge from here. Installing both is what makes an empirical round work.
 
 ### Requirements
