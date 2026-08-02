@@ -1,10 +1,10 @@
 {
-  "_comment": "Academic Studio 'Recommended Plugins' catalog (offline snapshot). Live version served at https://academic-studio.com/plugins.json; the app fetches it on startup and in Run Setup, so curating plugins = edit site/plugins.json + push (GitHub Pages deploys site/**). Each entry is declarative data — a git source installed as a Claude skill via `npx skills add`, plus optional pip libs — the app never executes shell text from this file. Keep this snapshot in sync with site/plugins.json.",
+  "_comment": "Academic Studio 'Recommended Plugins' catalog (offline snapshot). Live version served at https://academic-studio.com/plugins.json; the app fetches it on startup and in Run Setup, so curating plugins = edit site/plugins.json + push (GitHub Pages deploys site/**). Each entry is declarative data \u2014 a git source installed as a Claude skill via `npx skills add`, plus optional pip libs \u2014 the app never executes shell text from this file. Keep this snapshot in sync with site/plugins.json.",
   "catalogVersion": 2,
   "packages": [
     {
       "id": "smithers",
-      "label": "Smithers — your email and calendar desk: inbox split into what needs a reply, a 7-day calendar, tasks, and a Compose tab; Claude Code writes your morning briefing, drafts replies you review and send, and proposes calendar changes you confirm",
+      "label": "Smithers \u2014 your email and calendar desk: inbox split into what needs a reply, a 7-day calendar, tasks, and a Compose tab; Claude Code writes your morning briefing, drafts replies you review and send, and proposes calendar changes you confirm",
       "author": "Kerry Back",
       "name": "smithers",
       "marketplace": "kerryback-skills",
@@ -17,8 +17,35 @@
       "latestVersion": "1.0.0"
     },
     {
+      "id": "cardstock",
+      "label": "Cardstock \u2014 HTML, PDF (and PPTX image-only) slides via Quarto and Decktape. Default styling replaces lists with colored cards. Tell Claude to change styling to whatever you like",
+      "author": "Kerry Back",
+      "name": "cardstock",
+      "marketplace": "kerryback-skills",
+      "marketplaceRepo": "kerryback/skills",
+      "plugin": "cardstock",
+      "version": 1,
+      "prereq": "quarto",
+      "category": "general",
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "1.0.0"
+    },
+    {
+      "id": "critique",
+      "label": "Critique — simple skill to evaluate AI text output. Instructs Claude to use three subagents to critique from different perspectives; then the main agent integrates and prioritizes",
+      "author": "Kerry Back",
+      "name": "critique",
+      "marketplace": "kerryback-skills",
+      "marketplaceRepo": "kerryback/skills",
+      "plugin": "critique",
+      "version": 1,
+      "category": "general",
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "1.0.0"
+    },
+    {
       "id": "finance-data",
-      "label": "Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub, Financial Modeling Prep) and save as CSV",
+      "label": "Finance Data \u2014 fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub, Financial Modeling Prep) and save as CSV",
       "author": "Kerry Back",
       "name": "finance-data",
       "marketplace": "kerryback-skills",
@@ -32,7 +59,7 @@
     },
     {
       "id": "litdb",
-      "label": "LitDB — library management tool for research papers and your notes; add PDFs and search their full text by keyword & meaning, find new work (OpenAlex/Semantic Scholar), track citations, export BibTeX; optional Zotero",
+      "label": "LitDB \u2014 library management tool for research papers and your notes; add PDFs and search their full text by keyword & meaning, find new work (OpenAlex/Semantic Scholar), track citations, export BibTeX; optional Zotero",
       "author": "Kerry Back",
       "name": "litdb",
       "marketplace": "kerryback-skills",
@@ -46,7 +73,7 @@
     },
     {
       "id": "voiceover",
-      "label": "Voiceover Builder — narrate a PDF slide deck into an MP4 video + transcript (Claude writes the narration, ElevenLabs voices it)",
+      "label": "Voiceover Builder \u2014 narrate a PDF slide deck into an MP4 video + transcript (Claude writes the narration, ElevenLabs voices it)",
       "author": "Kerry Back",
       "name": "voiceover",
       "marketplace": "kerryback-skills",
@@ -59,7 +86,7 @@
     },
     {
       "id": "participation",
-      "label": "Participation — record class participation: a 1-3 score for amount and quality against each student, saved to participation.csv in the class folder. Needs only a list of names; photos optional",
+      "label": "Participation \u2014 record class participation: a 1-3 score for amount and quality against each student, saved to participation.csv in the class folder. Needs only a list of names; photos optional",
       "author": "Kerry Back",
       "name": "participation",
       "marketplace": "kerryback-skills",
@@ -72,8 +99,36 @@
       "latestVersion": "1.2.0"
     },
     {
+      "id": "screenshare",
+      "label": "Screen Share — put a student's screen on the classroom projector: students join from an https link on their own laptops, pick a screen, window or tab, and you choose who is shown. Needs cloudflared installed",
+      "author": "Kerry Back",
+      "name": "screenshare",
+      "marketplace": "kerryback-skills",
+      "marketplaceRepo": "kerryback/skills",
+      "plugin": "screenshare",
+      "version": 1,
+      "prereq": "python",
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "1.0.0"
+    },
+    {
+      "id": "polls",
+      "label": "Polls — live in-class polls on the projector: multiple choice, word clouds, confidence scales, numeric estimates, rankings. Claude writes the questions; students answer anonymously from their own devices. Needs cloudflared installed",
+      "author": "Kerry Back",
+      "name": "polls",
+      "marketplace": "kerryback-skills",
+      "marketplaceRepo": "kerryback/skills",
+      "plugin": "polls",
+      "version": 1,
+      "prereq": "python",
+      "category": "teaching-research",
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "1.0.0"
+    },
+    {
       "id": "wrds",
-      "label": "WRDS — connection code, query building blocks, twelve WRDS (Drechsler) reference scripts, and the competing Ken French / Drechsler / OpenAP conventions written out and compared, for pulling and constructing CRSP, Compustat, and IBES data",
+      "label": "WRDS \u2014 connection code, query building blocks, twelve WRDS (Drechsler) reference scripts, and the competing Ken French / Drechsler / OpenAP conventions written out and compared, for pulling and constructing CRSP, Compustat, and IBES data",
       "author": "Kerry Back",
       "name": "wrds",
       "marketplace": "kerryback-skills",
@@ -87,7 +142,7 @@
     },
     {
       "id": "coauthor",
-      "label": "Coauthor — multi-agent system for empirical research papers (debate panel + verification over LitDB + empirics)",
+      "label": "Coauthor \u2014 multi-agent system for empirical research papers (debate panel + verification over LitDB + empirics)",
       "author": "Kerry Back",
       "name": "coauthor",
       "marketplace": "kerryback-skills",
@@ -101,7 +156,7 @@
     },
     {
       "id": "econ-slides",
-      "label": "Econ Slides — turn an economics paper into a Beamer talk with a timed speaker script",
+      "label": "Econ Slides \u2014 turn an economics paper into a Beamer talk with a timed speaker script",
       "author": "Lu Han (OpenEconAI)",
       "name": "econ-slides",
       "source": "hanlulong/econ-slides-skill#v0.1.1",
@@ -111,7 +166,7 @@
     },
     {
       "id": "econ-write",
-      "label": "Econ Writing — write, edit, restructure, and audit economics papers with field-aware guidance",
+      "label": "Econ Writing \u2014 write, edit, restructure, and audit economics papers with field-aware guidance",
       "author": "Lu Han (OpenEconAI)",
       "name": "econ-write",
       "source": "hanlulong/econ-writing-skill#econ-write--v0.1.2",
@@ -121,7 +176,7 @@
     },
     {
       "id": "econ-review",
-      "label": "Econ Paper Review — a rigorous referee report and prioritized revision plan for an economics paper",
+      "label": "Econ Paper Review \u2014 a rigorous referee report and prioritized revision plan for an economics paper",
       "author": "Lu Han (OpenEconAI)",
       "name": "econ-review",
       "source": "hanlulong/econ-paper-review-skill#econ-review--v0.2.2",

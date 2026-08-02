@@ -1034,7 +1034,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 
 	<fieldset id="packages">
 		<legend>Plugins</legend>
-		<p class="note">Optional Claude skills for specific kinds of work, each installed from its source repository and maintained online. Items you already have are grayed out; nothing here is checked by default — add what you want.</p>
+		<p class="note">Academic Studio runs all Claude Code skills, plugins, and MCP connectors. These plugins are from Kerry Back's plugin marketplace. Install and adapt to your needs if you think they may be useful. Items you already have are grayed out; nothing here is checked by default — add what you want.</p>
 		${generalRows}
 		${trLink}
 	</fieldset>
