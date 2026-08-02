@@ -3,6 +3,20 @@
   "catalogVersion": 2,
   "packages": [
     {
+      "id": "smithers",
+      "label": "Smithers — your email and calendar desk: inbox split into what needs a reply, a 7-day calendar, tasks, and a Compose tab; Claude Code writes your morning briefing, drafts replies you review and send, and proposes calendar changes you confirm",
+      "author": "Kerry Back",
+      "name": "smithers",
+      "marketplace": "kerryback-skills",
+      "marketplaceRepo": "kerryback/skills",
+      "plugin": "smithers",
+      "version": 1,
+      "prereq": "python",
+      "category": "general",
+      "authorUrl": "https://github.com/kerryback/skills",
+      "latestVersion": "1.0.0"
+    },
+    {
       "id": "finance-data",
       "label": "Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub, Financial Modeling Prep) and save as CSV",
       "author": "Kerry Back",
