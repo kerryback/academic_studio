@@ -166,6 +166,22 @@ const PROGRAMS = [
 		],
 	},
 	{
+		id: 'cloudflared', label: 'cloudflared (Cloudflare tunnel — required by the screen sharing and polls plugins)', group: 'optin',
+		detect: process.platform === 'win32' ? 'where cloudflared' : 'command -v cloudflared',
+		manualUrl: 'https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/',
+		manualSteps: process.platform === 'win32' ? 'Run: winget install --id Cloudflare.cloudflared (then open a new terminal so PATH picks it up).' : 'Run: brew install cloudflared',
+		// Cloudflare's own release binary rather than Homebrew, matching how the
+		// other programs here install, so it works on a machine without brew.
+		installMac: [
+			'case "$(uname -m)" in arm64) A=arm64;; *) A=amd64;; esac',
+			'TMP=$(mktemp -d); curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-$A.tgz" -o "$TMP/cf.tgz"',
+			'tar -xzf "$TMP/cf.tgz" -C "$TMP"',
+			'[ -f "$TMP/cloudflared" ] || { echo "cloudflared not found in the download."; exit 1; }',
+			'sudo install -m 0755 "$TMP/cloudflared" /usr/local/bin/cloudflared',
+			'rm -rf "$TMP"',
+		],
+	},
+	{
 		id: 'libreoffice', label: 'LibreOffice (PDF export & thumbnails for the Word/PowerPoint skills)', group: 'optin',
 		detect: process.platform === 'win32' ? 'where soffice' : '[ -d /Applications/LibreOffice.app ] && echo installed',
 		manualUrl: 'https://www.libreoffice.org/download/download/',
@@ -289,9 +305,12 @@ function validPackage(p) {
 	if (p.pipImports !== undefined && !(Array.isArray(p.pipImports) && p.pipImports.every(n => typeof n === 'string' && RE_PY_MODULE.test(n)))) { return false; }
 	// category groups the plugin in the UI ('general' shows inline on Run Setup;
 	// anything else is filed under the Teaching & Research panel). authorUrl is the
-	// "by <author> ↗" landing page for that author's group. Both optional.
+	// "by <author> ↗" landing page for that author's group. docsUrl is this one
+	// plugin's own page -- its README -- and replaces the row's repo link, which
+	// is otherwise identical for every plugin in the same marketplace. All optional.
 	if (p.category !== undefined && !(typeof p.category === 'string' && RE_PKG_ID.test(p.category))) { return false; }
 	if (p.authorUrl !== undefined && !(typeof p.authorUrl === 'string' && safeHttpsUrl(p.authorUrl))) { return false; }
+	if (p.docsUrl !== undefined && !(typeof p.docsUrl === 'string' && safeHttpsUrl(p.docsUrl))) { return false; }
 	// latestVersion advertises the plugin's current release (a dotted version). When
 	// it's newer than the installed one, Run Setup shows "update available". Only
 	// meaningful for marketplace plugins (skills carry no installed-version record).
@@ -924,9 +943,14 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	// under an author heading; true (default) keeps the inline "by <author>".
 	const pkgRowFor = (p, showBy) => {
 		const by = (showBy !== false && p.author) ? ` <em class="by">by ${escHtml(p.author)}</em>` : '';
+		// docsUrl is this plugin's own page. Prefer it: the repo link below is the
+		// same for every plugin from one marketplace, so it can't answer "what
+		// does this one actually do".
+		const docs = safeHttpsUrl(p.docsUrl);
 		// A skill links to its source repo; a marketplace plugin to its marketplace repo.
 		const repo = sourceRepo(p.source) || (p.marketplaceRepo || '');
-		const src = repo ? ` <a class="info-link" href="https://github.com/${escHtml(repo)}">${escHtml(repo)} ↗</a>`
+		const src = docs ? ` <a class="info-link" href="${escHtml(docs)}">details ↗</a>`
+			: repo ? ` <a class="info-link" href="https://github.com/${escHtml(repo)}">${escHtml(repo)} ↗</a>`
 			: (p.infoUrl ? ` <a class="info-link" href="${escHtml(p.infoUrl)}">Learn more</a>` : '');
 		return `<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span>${by}${src} <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
 	};

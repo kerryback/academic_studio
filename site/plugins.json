@@ -14,7 +14,8 @@
       "prereq": "python",
       "category": "general",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.0.0"
+      "latestVersion": "1.0.0",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/smithers"
     },
     {
       "id": "cardstock",
@@ -28,11 +29,12 @@
       "prereq": "quarto",
       "category": "general",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.0.0"
+      "latestVersion": "1.0.0",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/cardstock"
     },
     {
       "id": "critique",
-      "label": "Critique — simple skill to evaluate AI text output. Instructs Claude to use three subagents to critique from different perspectives; then the main agent integrates and prioritizes",
+      "label": "Critique \u2014 simple skill to evaluate AI text output. Instructs Claude to use three subagents to critique from different perspectives; then the main agent integrates and prioritizes",
       "author": "Kerry Back",
       "name": "critique",
       "marketplace": "kerryback-skills",
@@ -41,7 +43,8 @@
       "version": 1,
       "category": "general",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.0.0"
+      "latestVersion": "1.0.0",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/critique"
     },
     {
       "id": "finance-data",
@@ -55,7 +58,8 @@
       "prereq": "python",
       "category": "general",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.1.0"
+      "latestVersion": "1.1.0",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/finance-data"
     },
     {
       "id": "litdb",
@@ -69,7 +73,8 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.4.1"
+      "latestVersion": "0.4.1",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/litdb"
     },
     {
       "id": "voiceover",
@@ -82,7 +87,8 @@
       "version": 1,
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.2.3"
+      "latestVersion": "1.2.3",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/voiceover"
     },
     {
       "id": "participation",
@@ -96,11 +102,12 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.2.0"
+      "latestVersion": "1.2.0",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/participation"
     },
     {
       "id": "screenshare",
-      "label": "Screen Share — put a student's screen on the classroom projector: students join from an https link on their own laptops, pick a screen, window or tab, and you choose who is shown. Needs cloudflared installed",
+      "label": "Screen Share \u2014 put a student's screen on the classroom projector: students join from an https link on their own laptops, pick a screen, window or tab, and you choose who is shown. Needs cloudflared, under Supporting programs",
       "author": "Kerry Back",
       "name": "screenshare",
       "marketplace": "kerryback-skills",
@@ -110,11 +117,12 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.0.0"
+      "latestVersion": "1.0.0",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/screenshare"
     },
     {
       "id": "polls",
-      "label": "Polls — live in-class polls on the projector: multiple choice, word clouds, confidence scales, numeric estimates, rankings. Claude writes the questions; students answer anonymously from their own devices. Needs cloudflared installed",
+      "label": "Polls \u2014 live in-class polls on the projector: multiple choice, word clouds, confidence scales, numeric estimates, rankings. Claude writes the questions; students answer anonymously from their own devices. Needs cloudflared, under Supporting programs",
       "author": "Kerry Back",
       "name": "polls",
       "marketplace": "kerryback-skills",
@@ -124,7 +132,8 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.0.0"
+      "latestVersion": "1.0.0",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/polls"
     },
     {
       "id": "wrds",
@@ -138,7 +147,8 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.3.0"
+      "latestVersion": "0.3.0",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/wrds"
     },
     {
       "id": "coauthor",
@@ -152,7 +162,8 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.3.1"
+      "latestVersion": "0.3.1",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/coauthor"
     },
     {
       "id": "econ-slides",
