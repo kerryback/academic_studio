@@ -151,19 +151,19 @@
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/wrds"
     },
     {
-      "id": "coauthor",
-      "label": "Coauthor \u2014 multi-agent system for empirical research papers (debate panel + verification over LitDB + empirics)",
+      "id": "research-setup",
+      "label": "Research Setup \u2014 structure a research repo that several people and their Claudes can share: per-author folders, portable paths, one canonical dataset, provenance (what produced this / what breaks if I change it), a round lock, and a generated CLAUDE.md that makes it self-explaining",
       "author": "Kerry Back",
-      "name": "coauthor",
+      "name": "research-setup",
       "marketplace": "kerryback-skills",
       "marketplaceRepo": "kerryback/skills",
-      "plugin": "coauthor",
+      "plugin": "research-setup",
       "version": 1,
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.3.1",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/coauthor"
+      "latestVersion": "0.1.0",
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/research-setup"
     },
     {
       "id": "econ-slides",
