@@ -78,7 +78,7 @@
     },
     {
       "id": "voiceover",
-      "label": "Voiceover Builder \u2014 narrate a PDF slide deck into an MP4 video + transcript (Claude writes the narration, ElevenLabs voices it)",
+      "label": "Voiceover Builder \u2014 narrate a slide deck into an MP4 video + transcript (Claude writes the narration into your .qmd/.pptx speaker notes, ElevenLabs voices it)",
       "author": "Kerry Back",
       "name": "voiceover",
       "marketplace": "kerryback-skills",
@@ -87,7 +87,7 @@
       "version": 1,
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.4.0",
+      "latestVersion": "2.0.0",
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/voiceover"
     },
     {
