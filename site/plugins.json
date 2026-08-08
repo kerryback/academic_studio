@@ -121,19 +121,19 @@
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/screenshare"
     },
     {
-      "id": "polls",
-      "label": "Polls \u2014 live in-class polls on the projector: multiple choice, word clouds, confidence scales, numeric estimates, rankings. Claude writes the questions; students answer anonymously from their own devices. Needs cloudflared, under Supporting programs",
+      "id": "poll",
+      "label": "Poll \u2014 put a question to the class on the projector: type /poll followed by the question and it goes up immediately, or /poll <file> for one written before class. Multiple choice, word clouds, confidence scales, numeric estimates, rankings. Students answer anonymously from their own devices. Needs cloudflared, under Supporting programs",
       "author": "Kerry Back",
-      "name": "polls",
+      "name": "poll",
       "marketplace": "kerryback-skills",
       "marketplaceRepo": "kerryback/skills",
-      "plugin": "polls",
+      "plugin": "poll",
       "version": 1,
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
       "latestVersion": "1.0.0",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/polls"
+      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/poll"
     },
     {
       "id": "wrds",
