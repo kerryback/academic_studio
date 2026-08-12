@@ -11,6 +11,9 @@ ENGINE="$ROOT/build-engine"
 OVERLAY="$ROOT/overlay"
 OVERRIDES="$OVERLAY/product.overrides.json"
 [ -f "$OVERRIDES" ] || { echo "missing $OVERRIDES"; exit 1; }
+# Sourced here rather than inherited, so this script still works run on its own.
+# shellcheck disable=SC1091
+. "$ROOT/scripts/versions.sh"
 
 # 1) product.json branding overrides ----------------------------------------
 # VSCodium merges build-engine/product.json (root) LAST over the vscode base,
@@ -37,6 +40,38 @@ jq -s '.[0] * .[1]' \
   > "$ENGINE/product.json"
 echo "[overlay] merged branding -> build-engine/product.json"
 
+# 1b) remote extension host download URL -------------------------------------
+# We publish no REH of our own, so open-remote-ssh installs VSCodium's. The
+# release is pinned in scripts/versions.sh and injected here so it lives in one
+# place; ${os}/${arch} stay as literals because server-setup.sh resolves them on
+# the remote host (one installer serves linux-x64, linux-arm64, darwin, win32).
+# jq interpolates only \(...), so ${os}/${arch} pass through untouched.
+#
+# Hardcoding the version is what lets remote.SSH.serverVersion stay at its
+# default "match": the extension then returns early instead of querying the
+# GitHub releases API, which is unauthenticated and rate-limited per IP (a real
+# hazard behind a shared campus NAT).
+REH_URL_BASE="https://github.com/VSCodium/vscodium/releases/download/${AS_VSCODIUM_REH}"
+
+# Fail loudly at build time if the pinned release is gone or was never right.
+# Without this the mistake is invisible until a user cannot connect, and
+# serverValidation:force suppresses the version check that would have caught it.
+if ! curl -sfIL -o /dev/null "${REH_URL_BASE}/vscodium-reh-linux-x64-${AS_VSCODIUM_REH}.tar.gz"; then
+  echo "ERROR: pinned VSCodium REH ${AS_VSCODIUM_REH} has no linux-x64 asset at"
+  echo "  ${REH_URL_BASE}/"
+  echo "Set AS_VSCODIUM_REH in scripts/versions.sh to a release matching the VS"
+  echo "Code minor that AS_VSCODIUM_REF builds. Releases:"
+  echo "  https://github.com/VSCodium/vscodium/releases"
+  exit 1
+fi
+
+jq --arg reh "$AS_VSCODIUM_REH" \
+  '.configurationDefaults["remote.SSH.serverDownloadUrlTemplate"] =
+     "https://github.com/VSCodium/vscodium/releases/download/\($reh)/vscodium-reh-${os}-${arch}-\($reh).tar.gz"' \
+  "$ENGINE/product.json" > "$ENGINE/product.json.tmp"
+mv "$ENGINE/product.json.tmp" "$ENGINE/product.json"
+echo "[overlay] pinned remote SSH server to VSCodium ${AS_VSCODIUM_REH}"
+
 # 2) source patches ----------------------------------------------------------
 # VSCodium auto-applies patches/user/*.patch last. We stage our common patches,
 # prefixed 'as-' so order is deterministic. Clear stale copies first so removals
@@ -53,14 +88,22 @@ if compgen -G "$OVERLAY/patches/common/*.patch" > /dev/null; then
 fi
 [ "$staged" -eq 0 ] && echo "[overlay] no source patches"
 
-# 2b) drop unwanted VSCodium community patches -------------------------------
-# These ship in the engine's own patches/ dir (not our overlay). We remove the
-# "announcements" patch so the Get Started page has no announcements section.
+# 2b) drop unwanted VSCodium patches -----------------------------------------
+# These ship in the engine's own patches/ dir (not our overlay).
+#   announcements   removes the announcements section from the Get Started page.
+#   remote-add-url  bakes a serverDownloadUrlTemplate into product.json pointing
+#                   at OUR releases: "<assets repo>/<release version>/<app name
+#                   lowercased>-reh-...". Every part of that is wrong for us — we
+#                   publish no REH, the release version is time-derived so no such
+#                   tag exists, and lowercasing "Academic Studio" puts a space in
+#                   the filename. Step 1b supplies the real URL via settings,
+#                   which take precedence, so this only survives as a misleading
+#                   dead string in product.json for the next person to debug.
 # build-engine is regenerable, so re-doing this each run is fine + idempotent.
-for cp in 00-community-add-announcements.patch; do
+for cp in 00-community-add-announcements.patch 00-remote-add-url.patch; do
   if [ -f "$ENGINE/patches/$cp" ]; then
     rm -f "$ENGINE/patches/$cp"
-    echo "[overlay] dropped community patch: $cp"
+    echo "[overlay] dropped upstream patch: $cp"
   fi
 done
 

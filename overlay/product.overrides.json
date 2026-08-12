@@ -1,5 +1,6 @@
 {
   "_academicStudioNote": "VSCodium's native updater is a deliberate no-op here: we don't set updateUrl and our release tags/assets don't match its expectations. Update checks go through academicStudio.checkForUpdates (Help menu) instead. Packages are NOT part of app updates — they come from the online catalog (site/packages.json).",
+  "_remoteSshNote": "open-remote-ssh installs VSCodium's remote extension host, not one of ours (we publish no REH). configurationDefaults below supplies serverBinaryName (the tarball ships bin/codium-server, not our serverApplicationName) and serverValidation:force (our commit is a sha1 of a time-based release version, so it can never equal VSCodium's). The third setting, remote.SSH.serverDownloadUrlTemplate, is deliberately NOT here: apply-overlay.sh injects it at build time from AS_VSCODIUM_REH in scripts/versions.sh, so the pinned release lives in exactly one place. serverVersion stays at its default 'match', which makes the extension skip its GitHub releases API lookup entirely.",
   "nameShort": "Academic Studio",
   "nameLong": "Academic Studio",
   "applicationName": "academic-studio",
@@ -80,7 +81,7 @@
     "streetsidesoftware.code-spell-checker",
     "Anthropic.claude-code"
   ],
-  "academicStudioVersion": "1.1",
+  "academicStudioVersion": "1.2",
   "configurationDefaults": {
     "workbench.colorTheme": "Visual Studio Light",
     "update.titleBar": false,
@@ -88,6 +89,8 @@
       "*.pdf": "latex-workshop-pdf-hook"
     },
     "latex-workshop.view.pdf.viewer": "tab",
-    "latex-workshop.view.pdf.internal.port": 8090
+    "latex-workshop.view.pdf.internal.port": 8090,
+    "remote.SSH.serverBinaryName": "codium-server",
+    "remote.SSH.serverValidation": "force"
   }
 }

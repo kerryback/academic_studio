@@ -26,8 +26,8 @@
     },
     {
       "name": "jeanp413.open-remote-ssh",
-      "version": "0.1.2",
-      "sha256": "4c4305484d35a119eeac6ba57c77e8cc181b1e21a748f80a7b79b967e89a5681",
+      "version": "0.3.1",
+      "sha256": "c6f16b225ab86925f2bd9e8cc5ba31e614978ccfa120f1509bdf6e99e5bef13f",
       "vsix": "as-extensions/jeanp413.open-remote-ssh.vsix"
     },
     {
