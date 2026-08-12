@@ -12,6 +12,7 @@ const fs = require('fs');
 
 function activate(context) {
 	setupSkillAppsInApp(context);
+	seedRemoteSshValidation();
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('academicStudio.openHelp', async () => {
@@ -109,6 +110,32 @@ function activate(context) {
 // Claude Code versions title the tab with the conversation name (not "Claude
 // Code"), so a restored Claude tab is NOT reliably detectable — which is why
 // startup auto-open must not depend on this returning true (see below).
+// ---- Remote SSH ---------------------------------------------------------------
+// open-remote-ssh installs VSCodium's remote extension host (we publish none of
+// our own), and its commit can never match ours -- BUILD_SOURCEVERSION is a sha1
+// of a time-based release version -- so the remote server has to have its commit
+// rewritten to match the client. That is remote.SSH.serverValidation:force.
+//
+// The URL and the server binary name both come from product.json, which the
+// extension reads off disk. This one has no product.json equivalent: it exists
+// only as a setting, and product.json's configurationDefaults does NOT reach it
+// (1.2 shipped it that way and the extension never saw it). So write it as a
+// real user setting instead.
+//
+// Only when there is no global value at all. Once written, the value is defined,
+// so anyone who later sets it back to 'strict' or 'skip' keeps their choice --
+// this never fights the user, and never runs again on their machine.
+async function seedRemoteSshValidation() {
+	try {
+		const config = vscode.workspace.getConfiguration('remote.SSH');
+		if (config.inspect('serverValidation')?.globalValue === undefined) {
+			await config.update('serverValidation', 'force', vscode.ConfigurationTarget.Global);
+		}
+	} catch (e) {
+		// A failure here costs remote SSH, not the whole editor — stay quiet.
+	}
+}
+
 function claudeTabIsOpen() {
 	try {
 		for (const group of vscode.window.tabGroups.all) {

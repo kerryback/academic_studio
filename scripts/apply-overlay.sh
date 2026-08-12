@@ -65,8 +65,15 @@ if ! curl -sfIL -o /dev/null "${REH_URL_BASE}/vscodium-reh-linux-x64-${AS_VSCODI
   exit 1
 fi
 
+# TOP LEVEL, not configurationDefaults. open-remote-ssh reads product.json off
+# disk itself (getVSCodeServerConfig) and takes this key directly; it resolves
+# the URL as `setting || product.json || its own hardcoded default`. Shipping it
+# as a configurationDefaults entry does NOT work -- 1.2 did that and the
+# extension ignored it, falling through to the hardcoded default and 404ing on
+# ".../1.121.0./vscodium-reh-linux-x64-1.121.0..tar.gz". Same placement as the
+# VSCodium patch we drop in 2b, just with a URL that exists.
 jq --arg reh "$AS_VSCODIUM_REH" \
-  '.configurationDefaults["remote.SSH.serverDownloadUrlTemplate"] =
+  '.serverDownloadUrlTemplate =
      "https://github.com/VSCodium/vscodium/releases/download/\($reh)/vscodium-reh-${os}-${arch}-\($reh).tar.gz"' \
   "$ENGINE/product.json" > "$ENGINE/product.json.tmp"
 mv "$ENGINE/product.json.tmp" "$ENGINE/product.json"
