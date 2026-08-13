@@ -7,7 +7,6 @@ project:
     - voiceovers.qmd
     - participation.qmd
     - litdb.qmd
-    - coauthor.qmd
     - finance-data.qmd
     - wrds.qmd
   resources:
@@ -30,8 +29,6 @@ website:
         file: participation.qmd
       - text: "LitDB"
         file: litdb.qmd
-      - text: "Coauthor"
-        file: coauthor.qmd
       - text: "Finance Data"
         file: finance-data.qmd
       - text: "WRDS"
