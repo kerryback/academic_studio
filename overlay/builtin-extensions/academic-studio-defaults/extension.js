@@ -12,7 +12,7 @@ const fs = require('fs');
 
 function activate(context) {
 	setupSkillAppsInApp(context);
-	seedRemoteSshValidation();
+	seedDefaults();
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('academicStudio.openHelp', async () => {
@@ -110,29 +110,42 @@ function activate(context) {
 // Claude Code versions title the tab with the conversation name (not "Claude
 // Code"), so a restored Claude tab is NOT reliably detectable — which is why
 // startup auto-open must not depend on this returning true (see below).
-// ---- Remote SSH ---------------------------------------------------------------
-// open-remote-ssh installs VSCodium's remote extension host (we publish none of
-// our own), and its commit can never match ours -- BUILD_SOURCEVERSION is a sha1
-// of a time-based release version -- so the remote server has to have its commit
-// rewritten to match the client. That is remote.SSH.serverValidation:force.
+// ---- Shipped defaults ---------------------------------------------------------
+// Settings we want every install to start with.
 //
-// The URL and the server binary name both come from product.json, which the
-// extension reads off disk. This one has no product.json equivalent: it exists
-// only as a setting, and product.json's configurationDefaults does NOT reach it
-// (1.2 shipped it that way and the extension never saw it). So write it as a
-// real user setting instead.
+// This has to be code. product.json has a `configurationDefaults` block that
+// LOOKS like the right home for these, but nothing reads it: the workbench has
+// no consumer for product.configurationDefaults (only the ConfigurationRegistry
+// internals and the web/server `options.configurationDefaults`), and no patch
+// wires one up. Entries put there are silently inert -- 1.2 shipped the remote
+// SSH settings that way and the extension never saw any of them.
 //
-// Only when there is no global value at all. Once written, the value is defined,
-// so anyone who later sets it back to 'strict' or 'skip' keeps their choice --
-// this never fights the user, and never runs again on their machine.
-async function seedRemoteSshValidation() {
-	try {
-		const config = vscode.workspace.getConfiguration('remote.SSH');
-		if (config.inspect('serverValidation')?.globalValue === undefined) {
-			await config.update('serverValidation', 'force', vscode.ConfigurationTarget.Global);
+//   remote.SSH.serverValidation   We install VSCodium's remote extension host,
+//     whose commit can never equal ours (BUILD_SOURCEVERSION is a sha1 of a
+//     time-based release version), so the remote server's commit has to be
+//     rewritten to match the client. The other two remote SSH values live at
+//     product.json TOP level, which open-remote-ssh does read off disk; this one
+//     exists only as a setting.
+//   terminal.integrated.defaultLocation   Open terminals as editor tabs rather
+//     than in the cramped bottom panel -- notably for running claude.
+//
+// Each is written only when there is no global value at all, so a user who
+// changes one keeps their choice and this never runs again on their machine.
+const SEEDED_DEFAULTS = [
+	{ section: 'remote.SSH', key: 'serverValidation', value: 'force' },
+	{ section: 'terminal.integrated', key: 'defaultLocation', value: 'editor' },
+];
+
+async function seedDefaults() {
+	for (const { section, key, value } of SEEDED_DEFAULTS) {
+		try {
+			const config = vscode.workspace.getConfiguration(section);
+			if (config.inspect(key)?.globalValue === undefined) {
+				await config.update(key, value, vscode.ConfigurationTarget.Global);
+			}
+		} catch (e) {
+			// One bad seed shouldn't stop the others, or the editor.
 		}
-	} catch (e) {
-		// A failure here costs remote SSH, not the whole editor — stay quiet.
 	}
 }
 
