@@ -162,7 +162,7 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.2.0",
+      "latestVersion": "0.3.0",
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/research-setup"
     },
     {
