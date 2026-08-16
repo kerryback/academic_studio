@@ -9,6 +9,8 @@
   "categories": ["Other"],
   "main": "./extension.js",
   "activationEvents": ["onStartupFinished"],
+  "_extensionKindNote": "REQUIRED. Without it VS Code deduces ['workspace'] for any extension with a `main`, and a workspace extension that is not installed on the remote runs NOWHERE in a Remote-SSH window (nativeExtensionService.pickExtensionHostKind returns null) -- so every command AND every configurationDefaults entry below silently vanished over SSH. This extension is built into the desktop app only, so listing 'ui' lets it fall back to the local extension host. That is also where it belongs: help, tour, about, updates, and the beginner defaults are all properties of the app on this machine. Anything that must read the REMOTE ~/.claude lives in core instead (patch 55).",
+  "extensionKind": ["workspace", "ui"],
   "contributes": {
     "commands": [
       {
@@ -25,51 +27,6 @@
         "command": "academicStudio.checkForUpdates",
         "title": "Check for Updates…",
         "category": "Help"
-      },
-      {
-        "command": "academicStudio.claudeNewChat",
-        "title": "New Chat",
-        "category": "Claude"
-      },
-      {
-        "command": "academicStudio.claudeConversations",
-        "title": "Conversations…",
-        "category": "Claude"
-      },
-      {
-        "command": "academicStudio.claudePermissions",
-        "title": "Permissions…",
-        "category": "Claude"
-      },
-      {
-        "command": "academicStudio.claudeInstalledSkills",
-        "title": "Installed Skills…",
-        "category": "Claude"
-      },
-      {
-        "command": "academicStudio.claudeNewSkill",
-        "title": "New Skill…",
-        "category": "Claude"
-      },
-      {
-        "command": "academicStudio.claudeGetSkills",
-        "title": "Get More Skills",
-        "category": "Claude"
-      },
-      {
-        "command": "academicStudio.claudeMemoryFiles",
-        "title": "Memory Files (CLAUDE.md)…",
-        "category": "Claude"
-      },
-      {
-        "command": "academicStudio.claudeMcpConnectors",
-        "title": "MCP Connectors…",
-        "category": "Claude"
-      },
-      {
-        "command": "academicStudio.claudePlugins",
-        "title": "Plugins…",
-        "category": "Claude"
       },
       {
         "command": "academicStudio.about",

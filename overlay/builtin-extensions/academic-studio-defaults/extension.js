@@ -13,6 +13,7 @@ const fs = require('fs');
 function activate(context) {
 	setupSkillAppsInApp(context);
 	seedRemoteSshValidation();
+	seedRemoteSshExtensions(context);
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('academicStudio.openHelp', async () => {
@@ -61,34 +62,11 @@ function activate(context) {
 			() => checkForUpdates(context))
 	);
 
-	// Claude menu (top-level, added by patch 54). Commands surface Claude Code
-	// workflows — permissions, skills, memory files, MCP connectors, plugins —
-	// so students can see and manage them without knowing CLI conventions.
-	context.subscriptions.push(
-		// Wrapper so the menu item passes NO arguments: menu-invoked commands
-		// receive a {from:'menu'} arg, which the Claude extension's own
-		// commands choke on (e.replace is not a function).
-		vscode.commands.registerCommand('academicStudio.claudeNewChat', async () => {
-			try { await vscode.commands.executeCommand('claude-vscode.newConversation'); }
-			catch (e) { await vscode.commands.executeCommand('claude-vscode.primaryEditor.open'); }
-		}),
-		vscode.commands.registerCommand('academicStudio.claudeConversations',
-			() => pickConversations()),
-		vscode.commands.registerCommand('academicStudio.claudePermissions',
-			() => pickClaudePermissions()),
-		vscode.commands.registerCommand('academicStudio.claudeInstalledSkills',
-			() => pickInstalledSkills()),
-		vscode.commands.registerCommand('academicStudio.claudeNewSkill',
-			() => createNewSkill()),
-		vscode.commands.registerCommand('academicStudio.claudeGetSkills',
-			() => vscode.env.openExternal(vscode.Uri.parse('https://github.com/anthropics/skills'))),
-		vscode.commands.registerCommand('academicStudio.claudeMemoryFiles',
-			() => pickMemoryFiles()),
-		vscode.commands.registerCommand('academicStudio.claudeMcpConnectors',
-			() => pickMcpConnectors()),
-		vscode.commands.registerCommand('academicStudio.claudePlugins',
-			() => pickPlugins())
-	);
+	// The Claude menu's nine commands are NOT registered here. They live in core
+	// (patch 55, contrib/academicStudio/browser/claudeMenu.contribution.ts) because
+	// an extension cannot serve them in a Remote-SSH window: see the extensionKind
+	// note in package.json. Core also reaches the REMOTE ~/.claude, which is the
+	// one Claude Code reads when the window is remote.
 
 	// File → New File entries for file types that don't add their own. Each opens
 	// a new untitled document in the right language (save it with the extension).
@@ -133,6 +111,53 @@ async function seedRemoteSshValidation() {
 		}
 	} catch (e) {
 		// A failure here costs remote SSH, not the whole editor — stay quiet.
+	}
+}
+
+// Our bundled extensions are built INTO the desktop app. The remote extension
+// host is stock VSCodium, so none of them exist there -- and an extension with a
+// `main` is deduced as extensionKind ['workspace'], which in a remote window can
+// only run on the remote. Result before this: no Claude Code, no Quarto, no
+// LaTeX Workshop, no Python over Remote-SSH.
+//
+// open-remote-ssh's remote.SSH.defaultExtensions turns each id into
+// `--install-extension <id>` when it sets the server up, resolved from our
+// gallery (Open VSX). So name the bundled set there and every host gets them.
+// Ids come from product.json rather than a second hardcoded list, so this cannot
+// drift from what the app actually ships.
+//
+// Client-only extensions are excluded: open-remote-ssh IS the client, and the
+// js-debug trio backs a debugger Academic Studio hides anyway.
+const REMOTE_EXTENSION_DENYLIST = new Set([
+	'jeanp413.open-remote-ssh',
+	'ms-vscode.js-debug',
+	'ms-vscode.js-debug-companion',
+	'ms-vscode.vscode-js-profile-table',
+]);
+
+// The app's product.json, two levels up from this built-in extension's folder.
+function readProductJson(context) {
+	try {
+		return JSON.parse(fs.readFileSync(
+			path.join(context.extensionPath, '..', '..', 'product.json'), 'utf8'));
+	} catch (e) { return null; }
+}
+
+// Seeded only when there is no global value at all, exactly like
+// serverValidation above: once written it is the user's setting, and adding or
+// removing bundled extensions in a later release will not overwrite their list.
+async function seedRemoteSshExtensions(context) {
+	try {
+		const config = vscode.workspace.getConfiguration('remote.SSH');
+		if (config.inspect('defaultExtensions')?.globalValue !== undefined) { return; }
+		const product = readProductJson(context);
+		const ids = ((product && product.builtInExtensions) || [])
+			.map(e => e && e.name)
+			.filter(id => id && !REMOTE_EXTENSION_DENYLIST.has(String(id).toLowerCase()));
+		if (!ids.length) { return; }
+		await config.update('defaultExtensions', ids, vscode.ConfigurationTarget.Global);
+	} catch (e) {
+		// Same bargain as above — a failure costs remote extensions, not the editor.
 	}
 }
 
@@ -204,466 +229,6 @@ function openClaudeOnStartup(context) {
 	}, MAX_WAIT);
 }
 
-// ---- Claude Permissions ------------------------------------------------------
-// The Claude Code extension exposes claudeCode.initialPermissionMode with these
-// four values (its full allowed set). "bypassPermissions" is additionally gated
-// behind claudeCode.allowDangerouslySkipPermissions, which we set/clear here so
-// the picked mode actually works.
-const CLAUDE_PERMISSION_MODES = [
-	{
-		mode: 'default', label: 'Ask before changes',
-		detail: 'Claude asks your permission before editing files or running commands.',
-	},
-	{
-		mode: 'acceptEdits', label: 'Allow file edits',
-		detail: 'Claude edits files without asking, but still asks before running commands.',
-	},
-	{
-		mode: 'plan', label: 'Plan first',
-		detail: 'Claude only reads and proposes a plan; nothing changes until you approve it.',
-	},
-	{
-		mode: 'bypassPermissions', label: 'Allow everything',
-		detail: 'Claude edits files and runs commands without ever asking. Use with care.',
-	},
-];
-
-async function pickClaudePermissions() {
-	const config = vscode.workspace.getConfiguration('claudeCode');
-	const current = config.get('initialPermissionMode') || 'default';
-	const pick = await vscode.window.showQuickPick(
-		CLAUDE_PERMISSION_MODES.map(m => ({
-			label: m.label,
-			description: m.mode === current ? 'current setting' : undefined,
-			detail: m.detail,
-			mode: m.mode,
-		})),
-		{
-			title: 'Claude Permissions',
-			placeHolder: 'How much can Claude do without asking you first? Your choice takes effect when a new chat is opened.',
-		}
-	);
-	if (!pick || pick.mode === current) { return; }
-
-	if (pick.mode === 'bypassPermissions') {
-		const confirmed = await vscode.window.showWarningMessage(
-			'With "Allow everything", Claude will edit files and run commands without '
-			+ 'ever asking you. A mistaken command could delete or overwrite your work. '
-			+ 'Are you sure?',
-			{ modal: true }, 'Allow Everything');
-		if (confirmed !== 'Allow Everything') { return; }
-		await config.update('allowDangerouslySkipPermissions', true, vscode.ConfigurationTarget.Global);
-	} else {
-		// Close the dangerous gate again when moving off "Allow everything".
-		await config.update('allowDangerouslySkipPermissions', undefined, vscode.ConfigurationTarget.Global);
-	}
-	await config.update('initialPermissionMode', pick.mode, vscode.ConfigurationTarget.Global);
-	vscode.window.showInformationMessage(
-		`Claude permissions set to "${pick.label}". This applies to new Claude conversations; `
-		+ 'a conversation that is already open keeps its current setting.');
-}
-
-// ---- Claude skills -----------------------------------------------------------
-// Skills are folders with a SKILL.md whose frontmatter carries a name and a
-// description. Global skills live in ~/.claude/skills/ (every project; same
-// location the setup extension installs package skills into); local skills
-// live in <workspace>/.claude/skills/ (this folder only).
-function claudeSkillsHome() { return path.join(os.homedir(), '.claude', 'skills'); }
-
-function claudeSkillsLocal() {
-	const ws = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0];
-	return ws ? path.join(ws.uri.fsPath, '.claude', 'skills') : null;
-}
-
-function listSkillsIn(dir) {
-	let names = [];
-	try {
-		names = fs.readdirSync(dir).filter(n => {
-			try { return fs.statSync(path.join(dir, n)).isDirectory() && fs.existsSync(path.join(dir, n, 'SKILL.md')); }
-			catch (e) { return false; }
-		});
-	} catch (e) { /* no skills dir */ }
-	return names.sort().map(name => {
-		let desc = '';
-		try {
-			const text = fs.readFileSync(path.join(dir, name, 'SKILL.md'), 'utf8');
-			const m = text.match(/^description:\s*["']?(.+?)["']?\s*$/m);
-			if (m) { desc = m[1]; }
-		} catch (e) { /* unreadable SKILL.md — list it anyway */ }
-		return {
-			label: name,
-			detail: desc.length > 140 ? desc.slice(0, 140) + '…' : desc,
-			buttons: [{ iconPath: new vscode.ThemeIcon('trash'), tooltip: 'Delete this skill' }],
-			skillName: name,
-			skillRoot: dir,
-		};
-	});
-}
-
-function listInstalledSkills() {
-	const items = [];
-	const localDir = claudeSkillsLocal();
-	if (localDir) {
-		const local = listSkillsIn(localDir);
-		if (local.length) {
-			items.push({ label: 'Local — this folder only', kind: vscode.QuickPickItemKind.Separator });
-			items.push(...local);
-		}
-	}
-	const global = listSkillsIn(claudeSkillsHome());
-	if (global.length) {
-		items.push({ label: 'Global — every project', kind: vscode.QuickPickItemKind.Separator });
-		items.push(...global);
-	}
-	return items;
-}
-
-async function pickInstalledSkills() {
-	const items = listInstalledSkills();
-	if (!items.length) {
-		const pick = await vscode.window.showInformationMessage(
-			'No Claude skills are installed yet. Skills are step-by-step instructions '
-			+ 'Claude can follow for specialized tasks.',
-			'Create New Skill…', 'Get Skills from Anthropic');
-		if (pick === 'Create New Skill…') { createNewSkill(); }
-		if (pick === 'Get Skills from Anthropic') {
-			vscode.env.openExternal(vscode.Uri.parse('https://github.com/anthropics/skills'));
-		}
-		return;
-	}
-	const qp = vscode.window.createQuickPick();
-	qp.title = 'Installed Claude Skills';
-	qp.placeholder = 'Select a skill to open its instructions — or click the trash icon to delete it';
-	qp.ignoreFocusOut = true; // survive the focus shift to the delete-confirmation dialog
-	qp.items = items;
-	qp.onDidAccept(async () => {
-		const sel = qp.selectedItems[0];
-		if (!sel || !sel.skillRoot) { return; }
-		qp.hide();
-		const doc = await vscode.workspace.openTextDocument(
-			path.join(sel.skillRoot, sel.skillName, 'SKILL.md'));
-		await vscode.window.showTextDocument(doc);
-	});
-	qp.onDidTriggerItemButton(async (e) => {
-		const name = e.item.skillName;
-		const dir = e.item.skillRoot;
-		const ok = await vscode.window.showWarningMessage(
-			`Delete the skill "${name}"? Its whole folder is removed and Claude will no longer know it.`,
-			{ modal: true }, 'Delete Skill');
-		if (ok !== 'Delete Skill') { return; }
-		const target = path.join(dir, name);
-		// Only ever delete a direct child of a skills folder.
-		if (path.dirname(target) !== dir) { return; }
-		try { fs.rmSync(target, { recursive: true, force: true }); }
-		catch (err) {
-			vscode.window.showErrorMessage(`Could not delete "${name}": ${err && err.message ? err.message : err}`);
-			return;
-		}
-		const rest = listInstalledSkills();
-		if (rest.length) { qp.items = rest; } else { qp.hide(); }
-		vscode.window.showInformationMessage(`Deleted skill "${name}".`);
-	});
-	qp.onDidHide(() => qp.dispose());
-	qp.show();
-}
-
-async function createNewSkill() {
-	// Scope first: global (default) or local to the open folder.
-	let root = claudeSkillsHome();
-	const localDir = claudeSkillsLocal();
-	if (localDir) {
-		const scope = await vscode.window.showQuickPick([
-			{ label: 'Global', detail: 'Claude can use it in every project (~/.claude/skills).', root: claudeSkillsHome() },
-			{ label: 'Local', detail: 'Claude can use it only in this folder (.claude/skills).', root: localDir },
-		], { title: 'New Claude Skill', placeHolder: 'Where should this skill live?' });
-		if (!scope) { return; }
-		root = scope.root;
-	}
-	const name = await vscode.window.showInputBox({
-		title: 'New Claude Skill',
-		prompt: 'Name the new skill (lowercase letters, numbers, and hyphens)',
-		placeHolder: 'e.g. lit-review-summaries',
-		validateInput: (v) => {
-			if (!v || !/^[a-z0-9][a-z0-9-]*$/.test(v)) {
-				return 'Use lowercase letters, numbers, and hyphens.';
-			}
-			if (fs.existsSync(path.join(root, v))) {
-				return 'A skill with this name already exists.';
-			}
-			return null;
-		},
-	});
-	if (!name) { return; }
-	const dir = path.join(root, name);
-	fs.mkdirSync(dir, { recursive: true });
-	const skillFile = path.join(dir, 'SKILL.md');
-	fs.writeFileSync(skillFile, [
-		'---',
-		`name: ${name}`,
-		'description: One sentence saying what this skill does and when Claude should use it.',
-		'---',
-		'',
-		`# ${name}`,
-		'',
-		'Write the step-by-step instructions Claude should follow when using this skill.',
-		'',
-		'1. First step…',
-		'2. Second step…',
-		'',
-		'Tips: the description above is how Claude decides when to use the skill, so',
-		'make it specific. After saving, start a new Claude conversation to try it out.',
-		'You can also ask Claude to improve this skill for you.',
-		'',
-	].join('\n'));
-	const doc = await vscode.workspace.openTextDocument(skillFile);
-	await vscode.window.showTextDocument(doc);
-}
-
-// ---- Claude memory files (CLAUDE.md / AGENTS.md) -----------------------------
-// Claude Code reads CLAUDE.md (project and ~/.claude). It does NOT read
-// AGENTS.md directly — the documented pattern is a CLAUDE.md line "@AGENTS.md"
-// that imports it, which we wire up automatically when creating AGENTS.md.
-async function pickMemoryFiles() {
-	const ws = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0];
-	const items = [];
-	if (ws) {
-		items.push({
-			label: 'CLAUDE.md — this folder',
-			detail: `Project instructions Claude reads whenever it works in "${ws.name}".`,
-			kind: 'project',
-		});
-	}
-	items.push({
-		label: 'CLAUDE.md — global',
-		detail: 'Personal instructions Claude reads in every project (~/.claude/CLAUDE.md).',
-		kind: 'global',
-	});
-	if (ws) {
-		items.push({
-			label: 'AGENTS.md — this folder',
-			detail: 'Cross-tool instructions. CLAUDE.md gets an "@AGENTS.md" line so Claude reads it too.',
-			kind: 'agents',
-		});
-	}
-	const pick = await vscode.window.showQuickPick(items, {
-		title: 'Claude Memory Files',
-		placeHolder: 'Instruction files Claude reads at the start of every conversation — pick one to create or edit',
-	});
-	if (!pick) { return; }
-
-	let file;
-	if (pick.kind === 'global') {
-		file = path.join(os.homedir(), '.claude', 'CLAUDE.md');
-		ensureFile(file, [
-			'# My Instructions for Claude (all projects)',
-			'',
-			'Claude reads this file at the start of every conversation, in every folder.',
-			'Write personal preferences here — for example:',
-			'',
-			'- Explain what you are doing in plain language.',
-			'- I use Python; prefer pandas for data work.',
-			'',
-		].join('\n'));
-	} else if (pick.kind === 'project') {
-		file = path.join(ws.uri.fsPath, 'CLAUDE.md');
-		ensureFile(file, [
-			'# Instructions for Claude (this folder)',
-			'',
-			'Claude reads this file at the start of every conversation in this folder.',
-			'Write facts and rules about this project — for example:',
-			'',
-			'- The data files live in data/ and results go in output/.',
-			'- Always show plots with labeled axes.',
-			'',
-		].join('\n'));
-	} else {
-		file = path.join(ws.uri.fsPath, 'AGENTS.md');
-		ensureFile(file, [
-			'# Instructions for AI agents',
-			'',
-			'Instructions any AI coding tool should follow when working in this folder.',
-			'',
-		].join('\n'));
-		// Claude only reads AGENTS.md through a CLAUDE.md import — make sure it exists.
-		const claudeMd = path.join(ws.uri.fsPath, 'CLAUDE.md');
-		try {
-			const cur = fs.existsSync(claudeMd) ? fs.readFileSync(claudeMd, 'utf8') : '';
-			if (!/^@AGENTS\.md\s*$/m.test(cur)) {
-				fs.writeFileSync(claudeMd, '@AGENTS.md\n' + (cur ? '\n' + cur : ''));
-			}
-		} catch (e) { /* leave AGENTS.md usable even if CLAUDE.md is unwritable */ }
-	}
-	const doc = await vscode.workspace.openTextDocument(file);
-	await vscode.window.showTextDocument(doc);
-}
-
-function ensureFile(file, template) {
-	if (!fs.existsSync(file)) {
-		fs.mkdirSync(path.dirname(file), { recursive: true });
-		fs.writeFileSync(file, template);
-	}
-}
-
-// ---- Claude conversations (resume a prior session) -----------------------------
-// Claude Code stores each conversation as
-// ~/.claude/projects/<encoded-cwd>/<sessionId>.jsonl — the folder name is the
-// workspace path with every non-alphanumeric character turned into '-'. We list
-// this project's conversations, show a quick pick, and reopen the chosen one in
-// the Claude Code panel via claude-vscode.primaryEditor.open (see
-// resumeConversation) — the same in-session resume the /resume command does.
-function claudeProjectsDir(fsPath) {
-	return path.join(os.homedir(), '.claude', 'projects', fsPath.replace(/[^a-zA-Z0-9]/g, '-'));
-}
-
-// Read the first maxBytes of a file (conversations can be tens of MB; the cwd and
-// the opening user message are always near the top).
-function readPrefix(file, maxBytes) {
-	let fd;
-	try {
-		fd = fs.openSync(file, 'r');
-		const buf = Buffer.alloc(maxBytes);
-		const n = fs.readSync(fd, buf, 0, maxBytes, 0);
-		return buf.toString('utf8', 0, n);
-	} catch (e) { return ''; }
-	finally { if (fd !== undefined) { try { fs.closeSync(fd); } catch (_) {} } }
-}
-
-// Best-effort human title from a session file: the first genuine user message,
-// skipping slash-command / system-wrapper turns (which start with '<').
-function sessionTitle(file) {
-	const text = readPrefix(file, 65536);
-	for (const line of text.split('\n')) {
-		if (!line.trim()) continue;
-		let d; try { d = JSON.parse(line); } catch (e) { continue; }
-		if (d.type === 'user' && d.message) {
-			const c = d.message.content;
-			let t = typeof c === 'string' ? c
-				: Array.isArray(c) ? c.filter(p => p && p.type === 'text').map(p => p.text).join(' ') : '';
-			t = (t || '').replace(/\s+/g, ' ').trim();
-			if (t && t[0] !== '<') return t.length > 90 ? t.slice(0, 90) + '…' : t;
-		}
-	}
-	return '';
-}
-
-async function pickConversations() {
-	const ws = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0];
-	if (!ws) {
-		vscode.window.showInformationMessage('Open a project folder first — conversations are listed per project.');
-		return;
-	}
-	const dir = claudeProjectsDir(ws.uri.fsPath);
-	let files = [];
-	try {
-		files = fs.readdirSync(dir)
-			.filter(f => f.endsWith('.jsonl'))
-			.map(f => ({ id: f.slice(0, -6), file: path.join(dir, f) }));
-	} catch (e) { /* directory absent — no conversations yet */ }
-
-	if (!files.length) {
-		vscode.window.showInformationMessage('No previous Claude conversations for this project yet.');
-		return;
-	}
-
-	// Newest first, by last-modified time.
-	for (const f of files) { try { f.mtime = fs.statSync(f.file).mtimeMs; } catch (e) { f.mtime = 0; } }
-	files.sort((a, b) => b.mtime - a.mtime);
-
-	const fmt = (ms) => {
-		try { return new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
-		catch (e) { return ''; }
-	};
-	const items = files.map(f => ({
-		label: sessionTitle(f.file) || '(untitled conversation)',
-		description: fmt(f.mtime),
-		sessionId: f.id,
-	}));
-
-	const pick = await vscode.window.showQuickPick(items, {
-		title: 'Claude Conversations — ' + ws.name,
-		placeHolder: 'Select a previous conversation to reopen it in Claude',
-	});
-	if (!pick) { return; }
-	resumeConversation(pick.sessionId);
-}
-
-// Reopen the chosen conversation in the Claude Code panel — the same thing typing
-// /resume and picking it does. claude-vscode.primaryEditor.open takes a session id
-// as its first argument (this is exactly what the extension's own
-// vscode://anthropic.claude-code/open?session=… deep link calls) and resumes that
-// session in the editor area.
-async function resumeConversation(sessionId) {
-	try {
-		await vscode.commands.executeCommand('claude-vscode.primaryEditor.open', sessionId);
-	} catch (e) {
-		vscode.window.showErrorMessage('Could not reopen the conversation: ' + (e && e.message ? e.message : String(e)));
-	}
-}
-
-// ---- Claude MCP connectors ----------------------------------------------------
-// User-scope servers live in ~/.claude.json (mcpServers); a project can add its
-// own in <folder>/.mcp.json. Read-only list; picking an entry opens the file it
-// came from. Guided installs stay in Run Setup's package catalog.
-async function pickMcpConnectors() {
-	const userCfg = path.join(os.homedir(), '.claude.json');
-	const ws = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0];
-	const items = [];
-	const describe = (cfg) =>
-		cfg && cfg.command ? [cfg.command].concat(cfg.args || []).join(' ') : (cfg && (cfg.url || cfg.type)) || '';
-	const addFrom = (file, scopeLabel) => {
-		try {
-			const cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
-			for (const [name, server] of Object.entries(cfg.mcpServers || {})) {
-				items.push({ label: name, description: scopeLabel, detail: describe(server), file });
-			}
-		} catch (e) { /* missing or unparsable config — skip */ }
-	};
-	addFrom(userCfg, 'all projects');
-	if (ws) { addFrom(path.join(ws.uri.fsPath, '.mcp.json'), 'this folder'); }
-
-	const tail = [
-		{ label: '', kind: vscode.QuickPickItemKind.Separator },
-		{ label: '$(gear) Open the connector configuration file', detail: '~/.claude.json — user-level MCP servers live under "mcpServers"', file: userCfg, isConfig: true },
-		{ label: '$(book) Learn about MCP connectors', detail: 'code.claude.com/docs/en/mcp', isDocs: true },
-	];
-	const pick = await vscode.window.showQuickPick(items.concat(tail), {
-		title: 'Claude MCP Connectors',
-		placeHolder: items.length
-			? 'Connectors give Claude extra tools (databases, web services, …) — select one to open its configuration'
-			: 'No MCP connectors configured yet — packages in Run Setup can add them, or edit the configuration file',
-	});
-	if (!pick) { return; }
-	if (pick.isDocs) {
-		vscode.env.openExternal(vscode.Uri.parse('https://code.claude.com/docs/en/mcp'));
-		return;
-	}
-	if (pick.file) {
-		if (pick.isConfig) { ensureFile(pick.file, '{\n  "mcpServers": {}\n}\n'); }
-		const doc = await vscode.workspace.openTextDocument(pick.file);
-		await vscode.window.showTextDocument(doc);
-	}
-}
-
-// ---- Claude plugins ------------------------------------------------------------
-async function pickPlugins() {
-	const pick = await vscode.window.showQuickPick([
-		{
-			label: 'Anthropic plugins directory',
-			detail: 'claude.com/plugins — browse official plugins',
-			url: 'https://claude.com/plugins',
-		},
-		{
-			label: 'Community plugins',
-			detail: 'github.com/anthropics/claude-plugins-community — plugins contributed by the community',
-			url: 'https://github.com/anthropics/claude-plugins-community',
-		},
-	], {
-		title: 'Claude Plugins',
-		placeHolder: 'Plugins bundle skills, connectors, and commands you can install into Claude',
-	});
-	if (pick) { vscode.env.openExternal(vscode.Uri.parse(pick.url)); }
-}
-
 // ---- Check for Updates -----------------------------------------------------
 const LATEST_API = 'https://api.github.com/repos/kerryback/academic_studio/releases/latest';
 // Open the downloads page rather than a direct installer URL: it always resolves
@@ -672,14 +237,10 @@ const LATEST_API = 'https://api.github.com/repos/kerryback/academic_studio/relea
 // right build for their machine.
 const DOWNLOADS_PAGE = 'https://academic-studio.com/#downloads';
 
-// Installed product version (academicStudioVersion lives in the app's
-// product.json, two levels up from this built-in extension's folder).
+// Installed product version (academicStudioVersion lives in product.json).
 function currentVersion(context) {
-	try {
-		const pj = JSON.parse(fs.readFileSync(
-			path.join(context.extensionPath, '..', '..', 'product.json'), 'utf8'));
-		return pj.academicStudioVersion || null;
-	} catch (e) { return null; }
+	const pj = readProductJson(context);
+	return (pj && pj.academicStudioVersion) || null;
 }
 
 // Numeric dotted-version compare: returns >0 if a is newer than b.
@@ -749,6 +310,12 @@ async function checkForUpdates(context) {
 // ~/.academic-studio is the generic channel every new skill app should use.
 // ~/.voiceover is kept because shipped copies of the voiceover launcher still
 // look there.
+//
+// Local-only by nature: this extension runs in the local extension host, so the
+// channel directories are on THIS machine. In a Remote-SSH window the skill app
+// launches on the host and writes its app-url there, where nothing is watching —
+// the handoff to Simple Browser does not happen and the launcher falls back to
+// its own browser. Fixing that means a port-forwarded watcher, not a marker file.
 function skillAppChannels() {
 	const generic = process.env.ACADEMIC_STUDIO_HOME
 		|| path.join(os.homedir(), '.academic-studio');

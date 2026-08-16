@@ -1,0 +1,845 @@
+diff --git a/src/vs/workbench/contrib/academicStudio/browser/claudeMenu.contribution.ts b/src/vs/workbench/contrib/academicStudio/browser/claudeMenu.contribution.ts
+new file mode 100644
+--- /dev/null
++++ b/src/vs/workbench/contrib/academicStudio/browser/claudeMenu.contribution.ts
+@@ -0,0 +1,829 @@
++/*---------------------------------------------------------------------------------------------
++ *  Copyright (c) Microsoft Corporation. All rights reserved.
++ *  Licensed under the MIT License. See License.txt in the project root for license information.
++ *--------------------------------------------------------------------------------------------*/
++
++// Academic Studio: handlers for the top-level Claude menu (the menu itself is
++// registered in vs/workbench/browser/parts/titlebar/menubar.contribution.ts).
++//
++// These used to live in the academic-studio-defaults built-in extension. They
++// cannot: an extension with a `main` and no `extensionKind` is deduced as
++// ['workspace'], and in a remote window a workspace extension that is not
++// installed on the remote runs nowhere at all -- so every menu item failed with
++// "command not found" over Remote-SSH. Core has no such placement problem, and
++// IPathService.userHome() resolves to the REMOTE home directory in a remote
++// window, which is the one that matters: Claude Code runs on the remote host,
++// so ~/.claude there is the config it actually reads.
++
++import { VSBuffer } from '../../../../base/common/buffer.js';
++import { Codicon } from '../../../../base/common/codicons.js';
++import { joinPath } from '../../../../base/common/resources.js';
++import { ThemeIcon } from '../../../../base/common/themables.js';
++import { URI } from '../../../../base/common/uri.js';
++import { localize, localize2 } from '../../../../nls.js';
++import { Action2, registerAction2 } from '../../../../platform/actions/common/actions.js';
++import { ICommandService } from '../../../../platform/commands/common/commands.js';
++import { ConfigurationTarget, IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
++import { IDialogService } from '../../../../platform/dialogs/common/dialogs.js';
++import { IFileService } from '../../../../platform/files/common/files.js';
++import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
++import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
++import { IOpenerService } from '../../../../platform/opener/common/opener.js';
++import { IQuickInputService, IQuickPickItem, QuickPickInput } from '../../../../platform/quickinput/common/quickInput.js';
++import { IWorkspaceFolder, IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
++import { IEditorService } from '../../../services/editor/common/editorService.js';
++import { IPathService } from '../../../services/path/common/pathService.js';
++
++const CLAUDE_CATEGORY = localize2('academicStudioClaudeCategory', "Claude");
++
++const SKILLS_URL = 'https://github.com/anthropics/skills';
++const MCP_DOCS_URL = 'https://code.claude.com/docs/en/mcp';
++const PLUGINS_URL = 'https://claude.com/plugins';
++const COMMUNITY_PLUGINS_URL = 'https://github.com/anthropics/claude-plugins-community';
++
++//#region helpers
++
++/**
++ * Every service these commands use, resolved in one synchronous pass.
++ *
++ * This is not a style preference: `ServicesAccessor.get` throws
++ * ("service accessor is only valid during the invocation of its target method")
++ * as soon as the action's `run` yields, and every command here is async. Grab
++ * the lot before the first await, then pass this around.
++ */
++interface IClaudeServices {
++	readonly commandService: ICommandService;
++	readonly configurationService: IConfigurationService;
++	readonly dialogService: IDialogService;
++	readonly editorService: IEditorService;
++	readonly fileService: IFileService;
++	readonly notificationService: INotificationService;
++	readonly openerService: IOpenerService;
++	readonly pathService: IPathService;
++	readonly quickInputService: IQuickInputService;
++	readonly workspaceContextService: IWorkspaceContextService;
++}
++
++function claudeServices(accessor: ServicesAccessor): IClaudeServices {
++	return {
++		commandService: accessor.get(ICommandService),
++		configurationService: accessor.get(IConfigurationService),
++		dialogService: accessor.get(IDialogService),
++		editorService: accessor.get(IEditorService),
++		fileService: accessor.get(IFileService),
++		notificationService: accessor.get(INotificationService),
++		openerService: accessor.get(IOpenerService),
++		pathService: accessor.get(IPathService),
++		quickInputService: accessor.get(IQuickInputService),
++		workspaceContextService: accessor.get(IWorkspaceContextService)
++	};
++}
++
++/**
++ * ~/.claude for the environment Claude Code actually runs in: the remote home
++ * over Remote-SSH, the local one otherwise.
++ */
++async function claudeHome(services: IClaudeServices): Promise<URI> {
++	return joinPath(await services.pathService.userHome(), '.claude');
++}
++
++function firstFolder(services: IClaudeServices): IWorkspaceFolder | undefined {
++	return services.workspaceContextService.getWorkspace().folders[0];
++}
++
++/**
++ * The filesystem path a folder has on the machine Claude Code runs on. For a
++ * remote workspace that is the path on the host (URI.path); locally it is the
++ * platform path, which on Windows means backslashes.
++ */
++function agentPath(resource: URI): string {
++	return resource.scheme === 'file' ? resource.fsPath : resource.path;
++}
++
++async function readText(services: IClaudeServices, resource: URI, length?: number): Promise<string | undefined> {
++	try {
++		const content = await services.fileService.readFile(resource, length ? { length } : undefined);
++		return content.value.toString();
++	} catch (e) {
++		return undefined; // missing or unreadable
++	}
++}
++
++/** Create the file with `template` if it is not there yet, then open it. */
++async function ensureAndOpen(services: IClaudeServices, resource: URI, template: string): Promise<void> {
++	if (!(await services.fileService.exists(resource))) {
++		await services.fileService.writeFile(resource, VSBuffer.fromString(template));
++	}
++	await services.editorService.openEditor({ resource, options: { pinned: true } });
++}
++
++function openUrl(services: IClaudeServices, url: string): Promise<boolean> {
++	return services.openerService.open(URI.parse(url), { openExternal: true });
++}
++
++//#endregion
++
++//#region New Chat / Conversations
++
++class ClaudeNewChatAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudeNewChat',
++			title: localize2('academicStudioClaudeNewChat', "New Chat"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	// Deliberately passes NO arguments through: a menu-invoked command receives
++	// a { from: 'menu' } argument, which the Claude Code extension's own
++	// commands choke on ("e.replace is not a function").
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		const commandService = services.commandService;
++		try {
++			await commandService.executeCommand('claude-vscode.newConversation');
++		} catch (e) {
++			await commandService.executeCommand('claude-vscode.primaryEditor.open');
++		}
++	}
++}
++
++interface IConversationItem extends IQuickPickItem {
++	sessionId: string;
++}
++
++/**
++ * Claude Code stores each conversation as
++ * ~/.claude/projects/<encoded-cwd>/<sessionId>.jsonl, where the folder name is
++ * the workspace path with every non-alphanumeric character turned into '-'.
++ */
++function claudeProjectsDirName(folder: IWorkspaceFolder): string {
++	return agentPath(folder.uri).replace(/[^a-zA-Z0-9]/g, '-');
++}
++
++/**
++ * Best-effort human title for a session: its first genuine user message,
++ * skipping slash-command and system-wrapper turns (which start with '<').
++ * Conversations run to tens of megabytes, so only the head is read.
++ */
++function sessionTitle(text: string): string {
++	for (const line of text.split('\n')) {
++		if (!line.trim()) {
++			continue;
++		}
++		let entry: any;
++		try {
++			entry = JSON.parse(line);
++		} catch (e) {
++			continue; // a truncated last line is expected
++		}
++		if (entry?.type === 'user' && entry.message) {
++			const content = entry.message.content;
++			let title = typeof content === 'string'
++				? content
++				: Array.isArray(content) ? content.filter((p: any) => p?.type === 'text').map((p: any) => p.text).join(' ') : '';
++			title = (title || '').replace(/\s+/g, ' ').trim();
++			if (title && title[0] !== '<') {
++				return title.length > 90 ? title.slice(0, 90) + '…' : title;
++			}
++		}
++	}
++	return '';
++}
++
++class ClaudeConversationsAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudeConversations',
++			title: localize2('academicStudioClaudeConversations', "Conversations…"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		const notificationService = services.notificationService;
++		const folder = firstFolder(services);
++		if (!folder) {
++			notificationService.info(localize('academicStudioClaudeNoFolder', "Open a project folder first — conversations are listed per project."));
++			return;
++		}
++
++		const dir = joinPath(await claudeHome(services), 'projects', claudeProjectsDirName(folder));
++		let sessions: { id: string; resource: URI; mtime: number }[] = [];
++		try {
++			const stat = await services.fileService.resolve(dir, { resolveMetadata: true });
++			sessions = (stat.children ?? [])
++				.filter(child => !child.isDirectory && child.name.endsWith('.jsonl'))
++				.map(child => ({ id: child.name.slice(0, -6), resource: child.resource, mtime: child.mtime }));
++		} catch (e) {
++			// directory absent — no conversations yet
++		}
++
++		if (!sessions.length) {
++			notificationService.info(localize('academicStudioClaudeNoConversations', "No previous Claude conversations for this project yet."));
++			return;
++		}
++
++		sessions.sort((a, b) => b.mtime - a.mtime);
++
++		const items: IConversationItem[] = [];
++		for (const session of sessions) {
++			const head = await readText(services, session.resource, 65536);
++			items.push({
++				label: (head ? sessionTitle(head) : '') || localize('academicStudioClaudeUntitled', "(untitled conversation)"),
++				description: new Date(session.mtime).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
++				sessionId: session.id
++			});
++		}
++
++		const picked = await services.quickInputService.pick(items, {
++			title: localize('academicStudioClaudeConversationsTitle', "Claude Conversations — {0}", folder.name),
++			placeHolder: localize('academicStudioClaudeConversationsPlaceholder', "Select a previous conversation to reopen it in Claude")
++		});
++		if (!picked) {
++			return;
++		}
++
++		// Same in-session resume that /resume performs: the extension's own
++		// vscode://anthropic.claude-code/open?session=… deep link calls exactly this.
++		try {
++			await services.commandService.executeCommand('claude-vscode.primaryEditor.open', picked.sessionId);
++		} catch (e) {
++			notificationService.error(localize('academicStudioClaudeResumeFailed', "Could not reopen the conversation: {0}", e instanceof Error ? e.message : String(e)));
++		}
++	}
++}
++
++//#endregion
++
++//#region Permissions
++
++// The Claude Code extension exposes claudeCode.initialPermissionMode with these
++// four values (its full allowed set). "bypassPermissions" is additionally gated
++// behind claudeCode.allowDangerouslySkipPermissions, set and cleared here so the
++// picked mode actually takes effect.
++interface IPermissionItem extends IQuickPickItem {
++	mode: string;
++}
++
++class ClaudePermissionsAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudePermissions',
++			title: localize2('academicStudioClaudePermissions', "Permissions…"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		const configurationService = services.configurationService;
++		const current = configurationService.getValue<string>('claudeCode.initialPermissionMode') || 'default';
++
++		const modes: IPermissionItem[] = [
++			{
++				mode: 'default',
++				label: localize('academicStudioClaudePermAsk', "Ask before changes"),
++				detail: localize('academicStudioClaudePermAskDetail', "Claude asks your permission before editing files or running commands.")
++			},
++			{
++				mode: 'acceptEdits',
++				label: localize('academicStudioClaudePermEdits', "Allow file edits"),
++				detail: localize('academicStudioClaudePermEditsDetail', "Claude edits files without asking, but still asks before running commands.")
++			},
++			{
++				mode: 'plan',
++				label: localize('academicStudioClaudePermPlan', "Plan first"),
++				detail: localize('academicStudioClaudePermPlanDetail', "Claude only reads and proposes a plan; nothing changes until you approve it.")
++			},
++			{
++				mode: 'bypassPermissions',
++				label: localize('academicStudioClaudePermAll', "Allow everything"),
++				detail: localize('academicStudioClaudePermAllDetail', "Claude edits files and runs commands without ever asking. Use with care.")
++			}
++		];
++		for (const mode of modes) {
++			if (mode.mode === current) {
++				mode.description = localize('academicStudioClaudePermCurrent', "current setting");
++			}
++		}
++
++		const picked = await services.quickInputService.pick(modes, {
++			title: localize('academicStudioClaudePermissionsTitle', "Claude Permissions"),
++			placeHolder: localize('academicStudioClaudePermissionsPlaceholder', "How much can Claude do without asking you first? Your choice takes effect when a new chat is opened.")
++		});
++		if (!picked || picked.mode === current) {
++			return;
++		}
++
++		if (picked.mode === 'bypassPermissions') {
++			const { confirmed } = await services.dialogService.confirm({
++				type: 'warning',
++				message: localize('academicStudioClaudePermConfirm', "Allow Claude to do everything without asking?"),
++				detail: localize('academicStudioClaudePermConfirmDetail', "With \"Allow everything\", Claude will edit files and run commands without ever asking you. A mistaken command could delete or overwrite your work."),
++				primaryButton: localize('academicStudioClaudePermConfirmButton', "Allow Everything")
++			});
++			if (!confirmed) {
++				return;
++			}
++			await configurationService.updateValue('claudeCode.allowDangerouslySkipPermissions', true, ConfigurationTarget.USER);
++		} else {
++			// Close the dangerous gate again when moving off "Allow everything".
++			await configurationService.updateValue('claudeCode.allowDangerouslySkipPermissions', undefined, ConfigurationTarget.USER);
++		}
++
++		await configurationService.updateValue('claudeCode.initialPermissionMode', picked.mode, ConfigurationTarget.USER);
++		services.notificationService.info(localize('academicStudioClaudePermDone', "Claude permissions set to \"{0}\". This applies to new Claude conversations; a conversation that is already open keeps its current setting.", picked.label));
++	}
++}
++
++//#endregion
++
++//#region Skills
++
++// Skills are folders with a SKILL.md whose frontmatter carries a name and a
++// description. Global skills live in ~/.claude/skills (every project); local
++// skills live in <workspace>/.claude/skills (this folder only).
++interface ISkillItem extends IQuickPickItem {
++	skillName: string;
++	skillRoot: URI;
++}
++
++async function listSkillsIn(services: IClaudeServices, dir: URI): Promise<ISkillItem[]> {
++	const fileService = services.fileService;
++	let names: string[] = [];
++	try {
++		const stat = await fileService.resolve(dir);
++		names = (stat.children ?? []).filter(child => child.isDirectory).map(child => child.name).sort();
++	} catch (e) {
++		return []; // no skills dir
++	}
++
++	const items: ISkillItem[] = [];
++	for (const name of names) {
++		const skillFile = joinPath(dir, name, 'SKILL.md');
++		const text = await readText(services, skillFile);
++		if (text === undefined) {
++			continue; // a folder without SKILL.md is not a skill
++		}
++		const match = text.match(/^description:\s*["']?(.+?)["']?\s*$/m);
++		const description = match ? match[1] : '';
++		items.push({
++			label: name,
++			detail: description.length > 140 ? description.slice(0, 140) + '…' : description,
++			buttons: [{ iconClass: ThemeIcon.asClassName(Codicon.trash), tooltip: localize('academicStudioClaudeDeleteSkill', "Delete this skill") }],
++			skillName: name,
++			skillRoot: dir
++		});
++	}
++	return items;
++}
++
++function localSkillsDir(services: IClaudeServices): URI | undefined {
++	const folder = firstFolder(services);
++	return folder ? joinPath(folder.uri, '.claude', 'skills') : undefined;
++}
++
++async function listInstalledSkills(services: IClaudeServices): Promise<QuickPickInput<ISkillItem>[]> {
++	const items: QuickPickInput<ISkillItem>[] = [];
++
++	const localDir = localSkillsDir(services);
++	if (localDir) {
++		const local = await listSkillsIn(services, localDir);
++		if (local.length) {
++			items.push({ type: 'separator', label: localize('academicStudioClaudeSkillsLocal', "Local — this folder only") });
++			items.push(...local);
++		}
++	}
++
++	const global = await listSkillsIn(services, joinPath(await claudeHome(services), 'skills'));
++	if (global.length) {
++		items.push({ type: 'separator', label: localize('academicStudioClaudeSkillsGlobal', "Global — every project") });
++		items.push(...global);
++	}
++
++	return items;
++}
++
++class ClaudeInstalledSkillsAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudeInstalledSkills',
++			title: localize2('academicStudioClaudeInstalledSkills', "Installed Skills…"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		const items = await listInstalledSkills(services);
++		if (!items.length) {
++			const commandService = services.commandService;
++			services.notificationService.prompt(
++				Severity.Info,
++				localize('academicStudioClaudeNoSkills', "No Claude skills are installed yet. Skills are step-by-step instructions Claude can follow for specialized tasks."),
++				[
++					{ label: localize('academicStudioClaudeCreateSkill', "Create New Skill…"), run: () => commandService.executeCommand('academicStudio.claudeNewSkill') },
++					{ label: localize('academicStudioClaudeGetSkillsButton', "Get Skills from Anthropic"), run: () => { openUrl(services, SKILLS_URL); } }
++				]
++			);
++			return;
++		}
++
++		const fileService = services.fileService;
++		const editorService = services.editorService;
++		const dialogService = services.dialogService;
++		const notificationService = services.notificationService;
++
++		const quickPick = services.quickInputService.createQuickPick<ISkillItem>({ useSeparators: true });
++		quickPick.title = localize('academicStudioClaudeSkillsTitle', "Installed Claude Skills");
++		quickPick.placeholder = localize('academicStudioClaudeSkillsPlaceholder', "Select a skill to open its instructions — or click the trash icon to delete it");
++		quickPick.ignoreFocusOut = true; // survive the focus shift to the delete confirmation
++		quickPick.items = items;
++
++		quickPick.onDidAccept(async () => {
++			const selected = quickPick.selectedItems[0];
++			if (!selected) {
++				return;
++			}
++			quickPick.hide();
++			await editorService.openEditor({ resource: joinPath(selected.skillRoot, selected.skillName, 'SKILL.md'), options: { pinned: true } });
++		});
++
++		quickPick.onDidTriggerItemButton(async e => {
++			const { skillName, skillRoot } = e.item;
++			const { confirmed } = await dialogService.confirm({
++				type: 'warning',
++				message: localize('academicStudioClaudeDeleteSkillConfirm', "Delete the skill \"{0}\"?", skillName),
++				detail: localize('academicStudioClaudeDeleteSkillDetail', "Its whole folder is removed and Claude will no longer know it."),
++				primaryButton: localize('academicStudioClaudeDeleteSkillButton', "Delete Skill")
++			});
++			if (!confirmed) {
++				return;
++			}
++			try {
++				await fileService.del(joinPath(skillRoot, skillName), { recursive: true, useTrash: false });
++			} catch (err) {
++				notificationService.error(localize('academicStudioClaudeDeleteSkillFailed', "Could not delete \"{0}\": {1}", skillName, err instanceof Error ? err.message : String(err)));
++				return;
++			}
++			const rest = await listInstalledSkills(services);
++			if (rest.length) {
++				quickPick.items = rest;
++			} else {
++				quickPick.hide();
++			}
++			notificationService.info(localize('academicStudioClaudeDeleteSkillDone', "Deleted skill \"{0}\".", skillName));
++		});
++
++		quickPick.onDidHide(() => quickPick.dispose());
++		quickPick.show();
++	}
++}
++
++interface ISkillScopeItem extends IQuickPickItem {
++	root: URI;
++}
++
++class ClaudeNewSkillAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudeNewSkill',
++			title: localize2('academicStudioClaudeNewSkill', "New Skill…"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		const fileService = services.fileService;
++		const quickInputService = services.quickInputService;
++		const title = localize('academicStudioClaudeNewSkillTitle', "New Claude Skill");
++
++		// Scope first: global (default) or local to the open folder.
++		let root = joinPath(await claudeHome(services), 'skills');
++		const localDir = localSkillsDir(services);
++		if (localDir) {
++			const scope = await quickInputService.pick<ISkillScopeItem>([
++				{ label: localize('academicStudioClaudeSkillGlobal', "Global"), detail: localize('academicStudioClaudeSkillGlobalDetail', "Claude can use it in every project (~/.claude/skills)."), root },
++				{ label: localize('academicStudioClaudeSkillLocal', "Local"), detail: localize('academicStudioClaudeSkillLocalDetail', "Claude can use it only in this folder (.claude/skills)."), root: localDir }
++			], {
++				title,
++				placeHolder: localize('academicStudioClaudeNewSkillScope', "Where should this skill live?")
++			});
++			if (!scope) {
++				return;
++			}
++			root = scope.root;
++		}
++
++		const name = await quickInputService.input({
++			title,
++			prompt: localize('academicStudioClaudeNewSkillPrompt', "Name the new skill (lowercase letters, numbers, and hyphens)"),
++			placeHolder: localize('academicStudioClaudeNewSkillPlaceholder', "e.g. lit-review-summaries"),
++			validateInput: async (value: string) => {
++				if (!value || !/^[a-z0-9][a-z0-9-]*$/.test(value)) {
++					return localize('academicStudioClaudeNewSkillInvalid', "Use lowercase letters, numbers, and hyphens.");
++				}
++				if (await fileService.exists(joinPath(root, value))) {
++					return localize('academicStudioClaudeNewSkillExists', "A skill with this name already exists.");
++				}
++				return null;
++			}
++		});
++		if (!name) {
++			return;
++		}
++
++		await fileService.createFolder(joinPath(root, name));
++		await ensureAndOpen(services, joinPath(root, name, 'SKILL.md'), [
++			'---',
++			`name: ${name}`,
++			'description: One sentence saying what this skill does and when Claude should use it.',
++			'---',
++			'',
++			`# ${name}`,
++			'',
++			'Write the step-by-step instructions Claude should follow when using this skill.',
++			'',
++			'1. First step…',
++			'2. Second step…',
++			'',
++			'Tips: the description above is how Claude decides when to use the skill, so',
++			'make it specific. After saving, start a new Claude conversation to try it out.',
++			'You can also ask Claude to improve this skill for you.',
++			''
++		].join('\n'));
++	}
++}
++
++class ClaudeGetSkillsAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudeGetSkills',
++			title: localize2('academicStudioClaudeGetSkills', "Get More Skills"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		await openUrl(services, SKILLS_URL);
++	}
++}
++
++//#endregion
++
++//#region Memory files
++
++// Claude Code reads CLAUDE.md (project and ~/.claude). It does NOT read
++// AGENTS.md directly — the documented pattern is a CLAUDE.md line "@AGENTS.md"
++// that imports it, which is wired up automatically when creating AGENTS.md.
++interface IMemoryFileItem extends IQuickPickItem {
++	kind: 'project' | 'global' | 'agents';
++}
++
++class ClaudeMemoryFilesAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudeMemoryFiles',
++			title: localize2('academicStudioClaudeMemoryFiles', "Memory Files (CLAUDE.md)…"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		const folder = firstFolder(services);
++		const items: IMemoryFileItem[] = [];
++		if (folder) {
++			items.push({
++				label: localize('academicStudioClaudeMemProject', "CLAUDE.md — this folder"),
++				detail: localize('academicStudioClaudeMemProjectDetail', "Project instructions Claude reads whenever it works in \"{0}\".", folder.name),
++				kind: 'project'
++			});
++		}
++		items.push({
++			label: localize('academicStudioClaudeMemGlobal', "CLAUDE.md — global"),
++			detail: localize('academicStudioClaudeMemGlobalDetail', "Personal instructions Claude reads in every project (~/.claude/CLAUDE.md)."),
++			kind: 'global'
++		});
++		if (folder) {
++			items.push({
++				label: localize('academicStudioClaudeMemAgents', "AGENTS.md — this folder"),
++				detail: localize('academicStudioClaudeMemAgentsDetail', "Cross-tool instructions. CLAUDE.md gets an \"@AGENTS.md\" line so Claude reads it too."),
++				kind: 'agents'
++			});
++		}
++
++		const picked = await services.quickInputService.pick(items, {
++			title: localize('academicStudioClaudeMemTitle', "Claude Memory Files"),
++			placeHolder: localize('academicStudioClaudeMemPlaceholder', "Instruction files Claude reads at the start of every conversation — pick one to create or edit")
++		});
++		if (!picked) {
++			return;
++		}
++
++		if (picked.kind === 'global') {
++			await ensureAndOpen(services, joinPath(await claudeHome(services), 'CLAUDE.md'), [
++				'# My Instructions for Claude (all projects)',
++				'',
++				'Claude reads this file at the start of every conversation, in every folder.',
++				'Write personal preferences here — for example:',
++				'',
++				'- Explain what you are doing in plain language.',
++				'- I use Python; prefer pandas for data work.',
++				''
++			].join('\n'));
++			return;
++		}
++
++		if (!folder) {
++			return;
++		}
++
++		if (picked.kind === 'project') {
++			await ensureAndOpen(services, joinPath(folder.uri, 'CLAUDE.md'), [
++				'# Instructions for Claude (this folder)',
++				'',
++				'Claude reads this file at the start of every conversation in this folder.',
++				'Write facts and rules about this project — for example:',
++				'',
++				'- The data files live in data/ and results go in output/.',
++				'- Always show plots with labeled axes.',
++				''
++			].join('\n'));
++			return;
++		}
++
++		// Claude only reads AGENTS.md through a CLAUDE.md import — make sure the
++		// import exists before opening AGENTS.md itself.
++		const claudeMd = joinPath(folder.uri, 'CLAUDE.md');
++		const existing = await readText(services, claudeMd) ?? '';
++		if (!/^@AGENTS\.md\s*$/m.test(existing)) {
++			try {
++				await services.fileService.writeFile(claudeMd, VSBuffer.fromString('@AGENTS.md\n' + (existing ? '\n' + existing : '')));
++			} catch (e) {
++				// leave AGENTS.md usable even if CLAUDE.md is unwritable
++			}
++		}
++		await ensureAndOpen(services, joinPath(folder.uri, 'AGENTS.md'), [
++			'# Instructions for AI agents',
++			'',
++			'Instructions any AI coding tool should follow when working in this folder.',
++			''
++		].join('\n'));
++	}
++}
++
++//#endregion
++
++//#region MCP connectors
++
++// User-scope servers live in ~/.claude.json (mcpServers); a project can add its
++// own in <folder>/.mcp.json. Read-only list; picking an entry opens the file it
++// came from. Guided installs stay in Run Setup's package catalog.
++interface IMcpItem extends IQuickPickItem {
++	resource?: URI;
++	isConfig?: boolean;
++	isDocs?: boolean;
++}
++
++class ClaudeMcpConnectorsAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudeMcpConnectors',
++			title: localize2('academicStudioClaudeMcpConnectors', "MCP Connectors…"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		const userConfig = joinPath(await services.pathService.userHome(), '.claude.json');
++		const folder = firstFolder(services);
++		const items: IMcpItem[] = [];
++
++		const describe = (server: any): string => server?.command
++			? [server.command].concat(server.args ?? []).join(' ')
++			: (server?.url || server?.type || '');
++
++		const addFrom = async (resource: URI, scopeLabel: string) => {
++			const text = await readText(services, resource);
++			if (text === undefined) {
++				return;
++			}
++			try {
++				const config = JSON.parse(text);
++				for (const [name, server] of Object.entries<any>(config.mcpServers ?? {})) {
++					items.push({ label: name, description: scopeLabel, detail: describe(server), resource });
++				}
++			} catch (e) {
++				// unparsable config — skip
++			}
++		};
++
++		await addFrom(userConfig, localize('academicStudioClaudeMcpAllProjects', "all projects"));
++		if (folder) {
++			await addFrom(joinPath(folder.uri, '.mcp.json'), localize('academicStudioClaudeMcpThisFolder', "this folder"));
++		}
++
++		const picks: QuickPickInput<IMcpItem>[] = [...items,
++		{ type: 'separator' },
++		{
++			label: '$(gear) ' + localize('academicStudioClaudeMcpOpenConfig', "Open the connector configuration file"),
++			detail: localize('academicStudioClaudeMcpOpenConfigDetail', "~/.claude.json — user-level MCP servers live under \"mcpServers\""),
++			resource: userConfig,
++			isConfig: true
++		},
++		{
++			label: '$(book) ' + localize('academicStudioClaudeMcpDocs', "Learn about MCP connectors"),
++			detail: 'code.claude.com/docs/en/mcp',
++			isDocs: true
++		}];
++
++		const picked = await services.quickInputService.pick(picks, {
++			title: localize('academicStudioClaudeMcpTitle', "Claude MCP Connectors"),
++			placeHolder: items.length
++				? localize('academicStudioClaudeMcpPlaceholder', "Connectors give Claude extra tools (databases, web services, …) — select one to open its configuration")
++				: localize('academicStudioClaudeMcpEmpty', "No MCP connectors configured yet — packages in Run Setup can add them, or edit the configuration file")
++		});
++		if (!picked) {
++			return;
++		}
++
++		if (picked.isDocs) {
++			await openUrl(services, MCP_DOCS_URL);
++			return;
++		}
++		if (picked.resource) {
++			if (picked.isConfig) {
++				await ensureAndOpen(services, picked.resource, '{\n  "mcpServers": {}\n}\n');
++			} else {
++				await services.editorService.openEditor({ resource: picked.resource, options: { pinned: true } });
++			}
++		}
++	}
++}
++
++//#endregion
++
++//#region Plugins
++
++interface IPluginItem extends IQuickPickItem {
++	url: string;
++}
++
++class ClaudePluginsAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudePlugins',
++			title: localize2('academicStudioClaudePlugins', "Plugins…"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		const picked = await services.quickInputService.pick<IPluginItem>([
++			{
++				label: localize('academicStudioClaudePluginsOfficial', "Anthropic plugins directory"),
++				detail: localize('academicStudioClaudePluginsOfficialDetail', "claude.com/plugins — browse official plugins"),
++				url: PLUGINS_URL
++			},
++			{
++				label: localize('academicStudioClaudePluginsCommunity', "Community plugins"),
++				detail: localize('academicStudioClaudePluginsCommunityDetail', "github.com/anthropics/claude-plugins-community — plugins contributed by the community"),
++				url: COMMUNITY_PLUGINS_URL
++			}
++		], {
++			title: localize('academicStudioClaudePluginsTitle', "Claude Plugins"),
++			placeHolder: localize('academicStudioClaudePluginsPlaceholder', "Plugins bundle skills, connectors, and commands you can install into Claude")
++		});
++		if (picked) {
++			await openUrl(services, picked.url);
++		}
++	}
++}
++
++//#endregion
++
++registerAction2(ClaudeNewChatAction);
++registerAction2(ClaudeConversationsAction);
++registerAction2(ClaudePermissionsAction);
++registerAction2(ClaudeInstalledSkillsAction);
++registerAction2(ClaudeNewSkillAction);
++registerAction2(ClaudeGetSkillsAction);
++registerAction2(ClaudeMemoryFilesAction);
++registerAction2(ClaudeMcpConnectorsAction);
++registerAction2(ClaudePluginsAction);
+diff --git a/src/vs/workbench/workbench.common.main.ts b/src/vs/workbench/workbench.common.main.ts
+--- a/src/vs/workbench/workbench.common.main.ts
++++ b/src/vs/workbench/workbench.common.main.ts
+@@ -465,4 +462,7 @@ import './contrib/editTelemetry/browser/editTelemetry.contribution.js';
+ // Opener
+ import './contrib/opener/browser/opener.contribution.js';
+ 
++// Academic Studio: Claude menu commands
++import './contrib/academicStudio/browser/claudeMenu.contribution.js';
++
+ //#endregion

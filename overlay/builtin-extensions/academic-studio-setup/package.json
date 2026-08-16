@@ -9,6 +9,8 @@
   "categories": ["Other"],
   "main": "./extension.js",
   "activationEvents": ["onStartupFinished"],
+  "_extensionKindNote": "See the same note in academic-studio-defaults. Setup manages THIS machine's app — bundled extensions, installed programs — so the local extension host is the right place for it in a remote window, and without 'ui' it would not run there at all.",
+  "extensionKind": ["workspace", "ui"],
   "contributes": {
     "commands": [
       {
