@@ -137,7 +137,7 @@
     },
     {
       "id": "wrds",
-      "label": "WRDS \u2014 connection code, query building blocks, twelve WRDS (Drechsler) reference scripts, and the competing Ken French / Drechsler / OpenAP conventions written out and compared, for pulling and constructing CRSP, Compustat, and IBES data",
+      "label": "WRDS \u2014 connection code that skips the 2FA prompt, query building blocks, twelve WRDS (Drechsler) reference scripts, and the competing Ken French / Drechsler / OpenAP conventions written out and compared, for pulling and constructing CRSP, Compustat, and IBES data",
       "author": "Kerry Back",
       "name": "wrds",
       "marketplace": "kerryback",
@@ -147,7 +147,7 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.3.0",
+      "latestVersion": "0.4.0",
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/wrds"
     },
     {
