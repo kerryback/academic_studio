@@ -38,7 +38,7 @@ Under the hood Academic Studio is VS Code (via the open-source VSCodium), so it 
 - Key Python libraries --- the scientific stack and libraries to create Office documents --- are installed with Python.
 - Shares skills, connectors, and CLAUDE.md files with Claude Code CLI and the Code mode of Claude Desktop; conversation history is shared with the CLI.
 - Help → Academic Studio Help provides instructions for getting started with LaTeX, Quarto, etc.
-- All Claude skills, connectors, and plugins work in Academic Studio.  Plugins created by the author are linked in the navigation bar above and have simplified install methods in Academic Studio.  The voiceover plugin runs entirely inside Academic Studio but opens a separate browser tab in VS Code, Claude Code CLI, etc.
+- All Claude skills, connectors, and plugins work in Academic Studio.  
 
 
 

@@ -18,21 +18,8 @@ project:
 website:
   title: ""
   search: false
-  navbar:
-    search: false
-    title: Academic Studio
-    file: index.qmd
-    right:
-      - text: "Voiceovers"
-        file: voiceovers.qmd
-      - text: "Participation"
-        file: participation.qmd
-      - text: "LitDB"
-        file: litdb.qmd
-      - text: "Finance Data"
-        file: finance-data.qmd
-      - text: "WRDS"
-        file: wrds.qmd
+  navbar: false
+
 
 format:
   html:

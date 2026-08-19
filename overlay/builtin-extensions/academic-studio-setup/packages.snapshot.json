@@ -18,21 +18,6 @@
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/smithers"
     },
     {
-      "id": "cardstock",
-      "label": "Cardstock \u2014 HTML, PDF (and PPTX image-only) slides via Quarto and Decktape. Default styling replaces lists with colored cards. Tell Claude to change styling to whatever you like",
-      "author": "Kerry Back",
-      "name": "cardstock",
-      "marketplace": "kerryback",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "cardstock",
-      "version": 1,
-      "prereq": "quarto",
-      "category": "general",
-      "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.4.0",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/cardstock"
-    },
-    {
       "id": "critique",
       "label": "Critique \u2014 simple skill to evaluate AI text output. Instructs Claude to use three subagents to critique from different perspectives; then the main agent integrates and prioritizes",
       "author": "Kerry Back",
