@@ -137,7 +137,7 @@
     },
     {
       "id": "research",
-      "label": "Research \u2014 structure a research repo that several people and their Claudes can share: per-author folders, portable paths, one canonical dataset, provenance (what produced this / what breaks if I change it), a round lock, and a generated CLAUDE.md that makes it self-explaining. Ships a writing guide that learns \u2014 corrections you give become rules you accept, written into the guide itself",
+      "label": "Research \u2014 structure a research repo that several people and their Claudes can share: per-author folders, portable paths, one canonical dataset, provenance (what produced this / what breaks if I change it), project state as one file per entry so everyone writes at the same time with nothing to lock or claim, and a generated CLAUDE.md that makes it self-explaining. Ships a writing guide that learns \u2014 corrections you give become rules you accept, written into the guide itself",
       "author": "Kerry Back",
       "name": "research",
       "marketplace": "kerryback",
@@ -147,7 +147,7 @@
       "prereq": "python",
       "category": "teaching-research",
       "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.6.0",
+      "latestVersion": "0.7.0",
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/research"
     },
     {
