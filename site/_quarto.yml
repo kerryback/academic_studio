@@ -4,8 +4,6 @@ project:
   render:
     - index.qmd
     - tour.qmd
-    - voiceovers.qmd
-    - participation.qmd
     - litdb.qmd
     - finance-data.qmd
     - wrds.qmd
