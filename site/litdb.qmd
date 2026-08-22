@@ -27,7 +27,7 @@ LitDB works either way, and you choose once during setup. By default LitDB owns 
 
 ### Installation
 
-Open Help → Run Setup…, follow the "Teaching & research plugins" link, and check LitDB. One click installs it, and Python is on the same screen under Supporting programs. The first time you use it, Claude asks a couple of questions and builds the rest for you. LitDB keeps its data in one place, independent of any project or folder, so there is nothing else to configure.
+Open Help → Run Setup…, follow the "Research skills" link, and check LitDB. One click installs it, and Python is on the same screen under Supporting programs. The first time you use it, Claude asks a couple of questions and builds the rest for you. LitDB keeps its data in one place, independent of any project or folder, so there is nothing else to configure.
 
 Run Setup is also where updates appear --- it flags a new version of the plugin when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed plugin lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.
 

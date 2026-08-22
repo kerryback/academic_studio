@@ -304,7 +304,9 @@ function validPackage(p) {
 	if (p.pip !== undefined && !(Array.isArray(p.pip) && p.pip.every(n => typeof n === 'string' && RE_PIP_NAME.test(n)))) { return false; }
 	if (p.pipImports !== undefined && !(Array.isArray(p.pipImports) && p.pipImports.every(n => typeof n === 'string' && RE_PY_MODULE.test(n)))) { return false; }
 	// category groups the plugin in the UI ('general' shows inline on Run Setup;
-	// anything else is filed under the Teaching & Research panel). authorUrl is the
+	// anything else is filed under the Research Skills panel -- the category key
+	// is still 'teaching-research', which older apps reading this catalog match
+	// on, so the panel was renamed without renaming the data). authorUrl is the
 	// "by <author> ↗" landing page for that author's group. docsUrl is this one
 	// plugin's own page -- its README -- and replaces the row's repo link, which
 	// is otherwise identical for every plugin in the same marketplace. All optional.
@@ -848,7 +850,7 @@ function reportRows(results, skipped, packages) {
 }
 
 // Plugin discovery is entirely in-panel now (the General list on Run Setup plus
-// the Teaching & Research panel). There is deliberately no startup notification:
+// the Research Skills panel). There is deliberately no startup notification:
 // it only ever nagged about plugins the user didn't have, never pushed updates
 // (detection is folder-based), and made every new catalog entry — including other
 // authors' — interrupt every user at launch.
@@ -939,7 +941,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	).join('\n');
 	const rowFor = p =>
 		`<label class="row" data-id="${escHtml(p.id)}"><input type="checkbox" class="prog" value="${escHtml(p.id)}"> <span>${escHtml(p.label)}</span> <em class="status" data-for="${escHtml(p.id)}">checking…</em></label>`;
-	// showBy=false in the Teaching & Research panel, where rows are already grouped
+	// showBy=false in the Research Skills panel, where rows are already grouped
 	// under an author heading; true (default) keeps the inline "by <author>".
 	const pkgRowFor = (p, showBy) => {
 		const by = (showBy !== false && p.author) ? ` <em class="by">by ${escHtml(p.author)}</em>` : '';
@@ -957,7 +959,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	const progRows = PROGRAMS.map(rowFor).join('\n');
 
 	// General plugins show inline on Run Setup; everything else moves to the
-	// Teaching & Research panel, grouped by author (Kerry Back first, then the
+	// Research Skills panel, grouped by author (Kerry Back first, then the
 	// rest in catalog order) with a link to each author's landing page.
 	const generalPkgs = packages.filter(p => pkgCategory(p) === GENERAL);
 	const trPkgs = packages.filter(p => pkgCategory(p) !== GENERAL);
@@ -981,7 +983,7 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	}).join('\n');
 	const trPanel = trPkgs.length ? trGroups : noCatalog;
 	const trLink = trPkgs.length
-		? `<p><a href="#" id="openPlugins" class="panel-link">Teaching &amp; research plugins (${trPkgs.length}) →</a></p>`
+		? `<p><a href="#" id="openPlugins" class="panel-link">Research skills (${trPkgs.length}) →</a></p>`
 		: '';
 
 	return `<!DOCTYPE html>
@@ -1070,8 +1072,8 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 	<div id="pluginsView" style="display:none">
 		<a href="#" id="backToSetup" class="back-link">← Back to setup</a>
 		<fieldset>
-			<legend>Teaching &amp; Research Plugins</legend>
-			<p class="note">Claude skills for teaching and research, grouped by author. Nothing is checked by default — pick what you want and install. Items you already have are grayed out.</p>
+			<legend>Research Skills</legend>
+			<p class="note">Claude skills for research, grouped by author. Nothing is checked by default — pick what you want and install. Items you already have are grayed out.</p>
 			${trPanel}
 			<p><button id="installPlugins">Install selected plugins</button></p>
 			<div id="report2"></div>
@@ -1220,12 +1222,12 @@ function renderHtml(audience, enabledExt, packages, catalogLive) {
 		vscode.postMessage({ type: 'installPrograms', ids: ids });
 	}
 	// Collect checked .prog boxes within a container (programs + inline General
-	// plugins from #mainView; Teaching & Research plugins from #pluginsView).
+	// plugins from #mainView; Research Skills plugins from #pluginsView).
 	function checkedIn(sel) {
 		return Array.from(document.querySelectorAll(sel + ' input.prog')).filter(b => b.checked).map(b => b.value);
 	}
 
-	// Toggle between the main setup view and the Teaching & Research panel.
+	// Toggle between the main setup view and the Research Skills panel.
 	const mainView = document.getElementById('mainView');
 	const pluginsView = document.getElementById('pluginsView');
 	function showPlugins(on) {

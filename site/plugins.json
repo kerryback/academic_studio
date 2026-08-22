@@ -47,21 +47,6 @@
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/litdb"
     },
     {
-      "id": "participation",
-      "label": "Participation \u2014 record class participation: a 1-3 score for amount and quality against each student, saved to participation.csv in the class folder. Needs only a list of names; photos optional",
-      "author": "Kerry Back",
-      "name": "participation",
-      "marketplace": "kerryback",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "participation",
-      "version": 1,
-      "prereq": "python",
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.2.0",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/participation"
-    },
-    {
       "id": "wrds",
       "label": "WRDS \u2014 connection code that skips the 2FA prompt, query building blocks, twelve WRDS (Drechsler) reference scripts, and the competing Ken French / Drechsler / OpenAP conventions written out and compared, for pulling and constructing CRSP, Compustat, and IBES data",
       "author": "Kerry Back",

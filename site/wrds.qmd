@@ -23,7 +23,7 @@ What it contains:
 
 ### Installation
 
-Open Help → Run Setup…, follow the "Teaching & research plugins" link, and check WRDS, along with Python under Supporting programs.
+Open Help → Run Setup…, follow the "Research skills" link, and check WRDS, along with Python under Supporting programs.
 
 Run Setup is also where updates appear --- it flags a new version of the plugin when one is available, so you don't need to download a new copy of Academic Studio to get it. The installed plugin lives in your shared Claude configuration, so it works from Claude Code CLI and the Code mode of Claude Desktop too.
 
