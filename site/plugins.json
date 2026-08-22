@@ -91,36 +91,6 @@
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/participation"
     },
     {
-      "id": "screenshare",
-      "label": "Screen Share \u2014 put a student's screen on the classroom projector: students join from an https link on their own laptops, pick a screen, window or tab, and you choose who is shown. Needs cloudflared, under Supporting programs",
-      "author": "Kerry Back",
-      "name": "screenshare",
-      "marketplace": "kerryback",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "screenshare",
-      "version": 1,
-      "prereq": "python",
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.0.0",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/screenshare"
-    },
-    {
-      "id": "poll",
-      "label": "Poll \u2014 put a question to the class on the projector: type /poll followed by the question and it goes up immediately, or /poll <file> for one written before class. Multiple choice, word clouds, confidence scales, numeric estimates, rankings. Students answer anonymously from their own devices. Needs cloudflared, under Supporting programs",
-      "author": "Kerry Back",
-      "name": "poll",
-      "marketplace": "kerryback",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "poll",
-      "version": 1,
-      "prereq": "python",
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.2.0",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/poll"
-    },
-    {
       "id": "wrds",
       "label": "WRDS \u2014 connection code that skips the 2FA prompt, query building blocks, twelve WRDS (Drechsler) reference scripts, and the competing Ken French / Drechsler / OpenAP conventions written out and compared, for pulling and constructing CRSP, Compustat, and IBES data",
       "author": "Kerry Back",
