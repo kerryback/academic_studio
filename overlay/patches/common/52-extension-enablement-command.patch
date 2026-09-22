@@ -1,8 +1,9 @@
 diff --git a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
+index 12380f3d..b602a832 100644
 --- a/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
 +++ b/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-@@ -2121,3 +2121,12 @@
- 			return [];
+@@ -2167,3 +2167,12 @@ Registry.as<IConfigurationMigrationRegistry>(ConfigurationMigrationExtensions.Co
+ 			return { value: 'on' };
  		}
  	}]);
 +

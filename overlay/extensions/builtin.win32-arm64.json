@@ -68,8 +68,8 @@
     },
     {
       "name": "anthropic.claude-code",
-      "version": "2.1.195",
-      "sha256": "dfc73df8a89946e299b87e295ce895d8aaa0b8e38c3f740fcd2833de904b3a1f",
+      "version": "2.1.278",
+      "sha256": "aec48bd870a542e835a7c156241c22fc79f81ab793ace8473b6562dc6947729e",
       "vsix": "as-extensions/anthropic.claude-code.vsix"
     }
   ]

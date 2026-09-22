@@ -15,7 +15,7 @@
 #                the build if the release does not exist, so a forgotten bump
 #                surfaces there rather than in a user's failed connection.
 #                Find the value at https://github.com/VSCodium/vscodium/releases
-#                (e.g. VS Code 1.121 -> 1.121.03429).
+#                (e.g. VS Code 1.135 -> 1.135.06055).
 AS_NODE_VERSION="22.22.1"
-AS_VSCODIUM_REF="eb5d6e23a9abe76460a22e41cccacf7a7d5fea96"
-AS_VSCODIUM_REH="1.121.03429"
+AS_VSCODIUM_REF="5a73682ca091082675b10c9dc3f348c1d824d94f"
+AS_VSCODIUM_REH="1.135.06055"

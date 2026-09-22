@@ -13,9 +13,9 @@
 // reads the marketplace's own manifest to find where the plugin lives, then reads
 // that plugin's plugin.json for its version, and rewrites the field.
 //
-// Standalone-skill entries ({source: "owner/repo#tag"}, e.g. the econ-* skills)
-// carry no `latestVersion` and are left alone — they pin a git tag, which is a
-// different freshness question.
+// Standalone-skill entries ({source: "owner/repo#tag"}) carry no `latestVersion`
+// and are left alone — they pin a git tag, which is a different freshness
+// question. The catalog has none at the moment; the handling stays for when it does.
 //
 //   node scripts/sync-plugin-versions.mjs           rewrite both catalog files
 //   node scripts/sync-plugin-versions.mjs --check   report drift, exit 1, write nothing

@@ -1,24 +1,10 @@
 {
-  "_comment": "Academic Studio 'Recommended Plugins' catalog (offline snapshot). Live version served at https://academic-studio.com/plugins.json; the app fetches it on startup and in Run Setup, so curating plugins = edit site/plugins.json + push (GitHub Pages deploys site/**). Each entry is declarative data \u2014 a git source installed as a Claude skill via `npx skills add`, plus optional pip libs \u2014 the app never executes shell text from this file. Keep this snapshot in sync with site/plugins.json.",
+  "_comment": "Academic Studio 'Recommended Plugins' catalog (offline snapshot). Live version served at https://academic-studio.com/plugins.json; the app fetches it on startup and in Run Setup, so curating plugins = edit site/plugins.json + push (GitHub Pages deploys site/**). Each entry is declarative data — a git source installed as a Claude skill via `npx skills add`, plus optional pip libs — the app never executes shell text from this file. Keep this snapshot in sync with site/plugins.json.",
   "catalogVersion": 2,
   "packages": [
     {
-      "id": "critique",
-      "label": "Critique \u2014 simple skill to evaluate AI text output. Instructs Claude to use three subagents to critique from different perspectives; then the main agent integrates and prioritizes",
-      "author": "Kerry Back",
-      "name": "critique",
-      "marketplace": "kerryback",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "critique",
-      "version": 1,
-      "category": "general",
-      "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "1.0.0",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/critique"
-    },
-    {
       "id": "finance-data",
-      "label": "Finance Data \u2014 fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub, Financial Modeling Prep) and save as CSV",
+      "label": "Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub, Financial Modeling Prep) and save as CSV",
       "author": "Kerry Back",
       "name": "finance-data",
       "marketplace": "kerryback",
@@ -26,85 +12,9 @@
       "plugin": "finance-data",
       "version": 1,
       "prereq": "python",
-      "category": "general",
       "authorUrl": "https://github.com/kerryback/skills",
       "latestVersion": "1.1.0",
       "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/finance-data"
-    },
-    {
-      "id": "litdb",
-      "label": "LitDB \u2014 library management tool for research papers and your notes; add PDFs and search their full text by keyword & meaning, find new work (OpenAlex/Semantic Scholar), track citations, export BibTeX; optional Zotero",
-      "author": "Kerry Back",
-      "name": "litdb",
-      "marketplace": "kerryback",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "litdb",
-      "version": 1,
-      "prereq": "python",
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.4.1",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/litdb"
-    },
-    {
-      "id": "wrds",
-      "label": "WRDS \u2014 connection code that skips the 2FA prompt, query building blocks, twelve WRDS (Drechsler) reference scripts, and the competing Ken French / Drechsler / OpenAP conventions written out and compared, for pulling and constructing CRSP, Compustat, and IBES data",
-      "author": "Kerry Back",
-      "name": "wrds",
-      "marketplace": "kerryback",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "wrds",
-      "version": 1,
-      "prereq": "python",
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.4.0",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/wrds"
-    },
-    {
-      "id": "research",
-      "label": "Research \u2014 structure a research repo that several people and their Claudes can share: per-author folders, portable paths, one canonical dataset, provenance (what produced this / what breaks if I change it), project state as one file per entry so everyone writes at the same time with nothing to lock or claim, and a generated CLAUDE.md that makes it self-explaining. Ships a writing guide that learns \u2014 corrections you give become rules you accept, written into the guide itself",
-      "author": "Kerry Back",
-      "name": "research",
-      "marketplace": "kerryback",
-      "marketplaceRepo": "kerryback/skills",
-      "plugin": "research",
-      "version": 1,
-      "prereq": "python",
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/kerryback/skills",
-      "latestVersion": "0.7.0",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/research"
-    },
-    {
-      "id": "econ-slides",
-      "label": "Econ Slides \u2014 turn an economics paper into a Beamer talk with a timed speaker script",
-      "author": "Lu Han (OpenEconAI)",
-      "name": "econ-slides",
-      "source": "hanlulong/econ-slides-skill#v0.1.1",
-      "version": 1,
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/hanlulong"
-    },
-    {
-      "id": "econ-write",
-      "label": "Econ Writing \u2014 write, edit, restructure, and audit economics papers with field-aware guidance",
-      "author": "Lu Han (OpenEconAI)",
-      "name": "econ-write",
-      "source": "hanlulong/econ-writing-skill#econ-write--v0.1.2",
-      "version": 1,
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/hanlulong"
-    },
-    {
-      "id": "econ-review",
-      "label": "Econ Paper Review \u2014 a rigorous referee report and prioritized revision plan for an economics paper",
-      "author": "Lu Han (OpenEconAI)",
-      "name": "econ-review",
-      "source": "hanlulong/econ-paper-review-skill#econ-review--v0.2.2",
-      "version": 1,
-      "category": "teaching-research",
-      "authorUrl": "https://github.com/hanlulong"
     }
   ]
 }

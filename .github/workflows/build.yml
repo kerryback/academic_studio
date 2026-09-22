@@ -24,7 +24,7 @@ permissions:
 # local build first), never implicitly.
 env:
   NODE_VERSION: '22.22.1'
-  VSCODIUM_REF: 'eb5d6e23a9abe76460a22e41cccacf7a7d5fea96'
+  VSCODIUM_REF: '5a73682ca091082675b10c9dc3f348c1d824d94f'
 
 jobs:
   # ---------------------------------------------------------------- macOS (arm64)

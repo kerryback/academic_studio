@@ -1,5 +1,5 @@
 diff --git a/src/vs/platform/actions/common/actions.ts b/src/vs/platform/actions/common/actions.ts
-index 2bea6c46..77eeed4d 100644
+index 2f404600..c53af5c8 100644
 --- a/src/vs/platform/actions/common/actions.ts
 +++ b/src/vs/platform/actions/common/actions.ts
 @@ -10,6 +10,7 @@ import { LinkedList } from '../../../base/common/linkedList.js';
@@ -10,7 +10,7 @@ index 2bea6c46..77eeed4d 100644
  import { CommandsRegistry, ICommandService } from '../../commands/common/commands.js';
  import { ContextKeyExpr, ContextKeyExpression, IContextKeyService } from '../../contextkey/common/contextkey.js';
  import { createDecorator, ServicesAccessor } from '../../instantiation/common/instantiation.js';
-@@ -491,6 +492,19 @@ export const MenuRegistry: IMenuRegistry = new class implements IMenuRegistry {
+@@ -506,6 +507,19 @@ export const MenuRegistry: IMenuRegistry = new class implements IMenuRegistry {
  	}
  
  	appendMenuItem(id: MenuId, item: IMenuItem | ISubmenuItem): IDisposable {
@@ -31,7 +31,7 @@ index 2bea6c46..77eeed4d 100644
  		if (!list) {
  			list = new LinkedList();
 diff --git a/src/vs/workbench/browser/parts/paneCompositeBar.ts b/src/vs/workbench/browser/parts/paneCompositeBar.ts
-index bc6003e2..41764d8a 100644
+index 048de8a0..4b11df78 100644
 --- a/src/vs/workbench/browser/parts/paneCompositeBar.ts
 +++ b/src/vs/workbench/browser/parts/paneCompositeBar.ts
 @@ -8,6 +8,7 @@ import { ActionsOrientation } from '../../../base/browser/ui/actionbar/actionbar
@@ -39,7 +39,7 @@ index bc6003e2..41764d8a 100644
  import { IWorkbenchLayoutService, Parts } from '../../services/layout/browser/layoutService.js';
  import { IInstantiationService } from '../../../platform/instantiation/common/instantiation.js';
 +import product from '../../../platform/product/common/product.js';
- import { IDisposable, DisposableStore, Disposable, DisposableMap } from '../../../base/common/lifecycle.js';
+ import { IDisposable, DisposableStore, Disposable, DisposableMap, combinedDisposable } from '../../../base/common/lifecycle.js';
  import { IColorTheme } from '../../../platform/theme/common/themeService.js';
  import { CompositeBar, ICompositeBarItem, CompositeDragAndDrop } from './compositeBar.js';
 @@ -117,7 +118,12 @@ export class PaneCompositeBar extends Disposable {
@@ -55,7 +55,7 @@ index bc6003e2..41764d8a 100644
  			.map(container => ({
  				id: container.id,
  				name: container.name,
-@@ -333,7 +339,12 @@ export class PaneCompositeBar extends Disposable {
+@@ -336,7 +342,12 @@ export class PaneCompositeBar extends Disposable {
  	}
  
  	private onDidRegisterViewContainers(viewContainers: readonly ViewContainer[]): void {
@@ -68,7 +68,7 @@ index bc6003e2..41764d8a 100644
  			this.addComposite(viewContainer);
  
  			// Pin it by default if it is new
-@@ -459,6 +470,13 @@ export class PaneCompositeBar extends Disposable {
+@@ -462,6 +473,13 @@ export class PaneCompositeBar extends Disposable {
  	}
  
  	private addComposite(viewContainer: ViewContainer): void {
@@ -82,7 +82,7 @@ index bc6003e2..41764d8a 100644
  		this.compositeBar.addComposite({ id: viewContainer.id, name: typeof viewContainer.title === 'string' ? viewContainer.title : viewContainer.title.value, order: viewContainer.order, requestedIndex: viewContainer.requestedIndex });
  	}
  
-@@ -521,7 +539,10 @@ export class PaneCompositeBar extends Disposable {
+@@ -520,7 +538,10 @@ export class PaneCompositeBar extends Disposable {
  	}
  
  	private getViewContainers(): readonly ViewContainer[] {
