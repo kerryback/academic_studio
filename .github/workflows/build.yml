@@ -112,8 +112,22 @@ jobs:
       - name: Use a node-gyp that knows Visual Studio 2026
         shell: bash
         run: |
-          npm install -g node-gyp@13
-          echo "npm_config_node_gyp=$(npm prefix -g)/node_modules/node-gyp/bin/node-gyp.js" >> "$GITHUB_ENV"
+          set -euo pipefail
+          # Replace the copy npm carries, rather than setting npm_config_node_gyp:
+          # that config is ignored for a package whose own install script shells out
+          # to `node-gyp rebuild` (@vscode/deviceid does), because npm puts its
+          # BUNDLED node-gyp on the script's PATH. Tried it, and the build still
+          # failed reporting `node-gyp -v v11.2.0`.
+          # Staged in a temp dir so the paths stay POSIX -- `npm prefix -g` answers
+          # with a backslashed Windows path that Git Bash then mangles.
+          mkdir -p /tmp/ng && cd /tmp/ng
+          npm init -y >/dev/null
+          npm install node-gyp@13 >/dev/null
+          bundled="$(dirname "$(command -v npm)")/node_modules/npm/node_modules/node-gyp"
+          [ -d "$bundled" ] || { echo "npm's bundled node-gyp is not at $bundled"; exit 1; }
+          rm -rf "$bundled"
+          cp -R /tmp/ng/node_modules/node-gyp "$bundled"
+          echo "bundled node-gyp is now $(node "$bundled/bin/node-gyp.js" --version)"
       - name: Clone build engine (VSCodium, pinned)
         run: |
           mkdir build-engine && cd build-engine
@@ -176,8 +190,22 @@ jobs:
       - name: Use a node-gyp that knows Visual Studio 2026
         shell: bash
         run: |
-          npm install -g node-gyp@13
-          echo "npm_config_node_gyp=$(npm prefix -g)/node_modules/node-gyp/bin/node-gyp.js" >> "$GITHUB_ENV"
+          set -euo pipefail
+          # Replace the copy npm carries, rather than setting npm_config_node_gyp:
+          # that config is ignored for a package whose own install script shells out
+          # to `node-gyp rebuild` (@vscode/deviceid does), because npm puts its
+          # BUNDLED node-gyp on the script's PATH. Tried it, and the build still
+          # failed reporting `node-gyp -v v11.2.0`.
+          # Staged in a temp dir so the paths stay POSIX -- `npm prefix -g` answers
+          # with a backslashed Windows path that Git Bash then mangles.
+          mkdir -p /tmp/ng && cd /tmp/ng
+          npm init -y >/dev/null
+          npm install node-gyp@13 >/dev/null
+          bundled="$(dirname "$(command -v npm)")/node_modules/npm/node_modules/node-gyp"
+          [ -d "$bundled" ] || { echo "npm's bundled node-gyp is not at $bundled"; exit 1; }
+          rm -rf "$bundled"
+          cp -R /tmp/ng/node_modules/node-gyp "$bundled"
+          echo "bundled node-gyp is now $(node "$bundled/bin/node-gyp.js" --version)"
       - name: Clone build engine (VSCodium, pinned)
         run: |
           mkdir build-engine && cd build-engine
