@@ -120,7 +120,7 @@ const PROGRAMS = [
 			'if (-not $url) { Write-Host \'Could not find a Python installer URL.\'; cmd /c exit 1 } else { $exe = Join-Path $env:TEMP \'python-setup.exe\'; Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $exe -TimeoutSec 600; $p = Start-Process -FilePath $exe -ArgumentList \'/quiet\',\'InstallAllUsers=0\',\'PrependPath=1\',\'Include_pip=1\',\'Include_test=0\' -Wait -PassThru; cmd /c exit $($p.ExitCode) }',
 			// PrependPath only affects NEW processes, so `python` is still unresolvable
 			// in this shell — call the interpreter we just installed by full path.
-			'$py = (Get-ChildItem "$env:LOCALAPPDATA\\Programs\\Python" -Filter python.exe -Recurse -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1).FullName; if (-not $py) { Write-Host \'Python was installed but python.exe could not be located.\'; cmd /c exit 1 } else { & $py -m pip install --upgrade pip; & $py -m pip install numpy pandas matplotlib scipy jupyter scikit-learn seaborn statsmodels sympy openpyxl python-pptx python-docx plotly fastapi uvicorn anthropic openai claude-agent-sdk }',
+			'$py = (Get-ChildItem "$env:LOCALAPPDATA\\Programs\\Python" -Filter python.exe -Recurse -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1).FullName; if (-not $py) { Write-Host \'Python was installed but python.exe could not be located.\'; cmd /c exit 1 } else { & $py -m pip install --upgrade pip; & $py -m pip install numpy pandas matplotlib scipy jupyter scikit-learn seaborn statsmodels sympy openpyxl python-pptx python-docx plotly fastapi uvicorn anthropic openai claude-agent-sdk python-dotenv }',
 		],
 		installMac: [
 			'V=$(for v in $(curl -fsSL https://www.python.org/ftp/python/ | grep -oE "3\\.[0-9]+\\.[0-9]+/" | tr -d / | sort -V -r | head -10); do curl -fsS -o /dev/null -I "https://www.python.org/ftp/python/$v/python-$v-macos11.pkg" 2>/dev/null && { echo "$v"; break; }; done)',
@@ -128,7 +128,7 @@ const PROGRAMS = [
 			'TMP=$(mktemp -d); curl -fsSL "https://www.python.org/ftp/python/$V/python-$V-macos11.pkg" -o "$TMP/python.pkg"',
 			'sudo installer -pkg "$TMP/python.pkg" -target /',
 			'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade pip',
-			'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install numpy pandas matplotlib scipy jupyter scikit-learn seaborn statsmodels sympy openpyxl python-pptx python-docx plotly fastapi uvicorn anthropic openai claude-agent-sdk',
+			'PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install numpy pandas matplotlib scipy jupyter scikit-learn seaborn statsmodels sympy openpyxl python-pptx python-docx plotly fastapi uvicorn anthropic openai claude-agent-sdk python-dotenv',
 		],
 	},
 	{
