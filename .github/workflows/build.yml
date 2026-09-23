@@ -127,7 +127,17 @@ jobs:
           [ -d "$bundled" ] || { echo "npm's bundled node-gyp is not at $bundled"; exit 1; }
           rm -rf "$bundled"
           cp -R /tmp/ng/node_modules/node-gyp "$bundled"
+          # node-gyp 13 needs its own dependencies (undici, among others) and npm's
+          # bundled tree carries the set that 11.2.0 wanted -- copying the package
+          # alone got `Cannot find module 'undici'`. Nest the deps under the package
+          # rather than flattening them beside npm's, so npm's own tree is untouched.
+          mkdir -p "$bundled/node_modules"
+          find /tmp/ng/node_modules -mindepth 1 -maxdepth 1 ! -name node-gyp ! -name '.*' \
+            -exec cp -R {} "$bundled/node_modules/" \;
           echo "bundled node-gyp is now $(node "$bundled/bin/node-gyp.js" --version)"
+          # Fail here, not 40 minutes later inside the native rebuild.
+          node -e "require.resolve('undici',{paths:['$bundled/lib']})" \
+            || { echo "node-gyp's dependencies did not come across"; exit 1; }
       - name: Clone build engine (VSCodium, pinned)
         run: |
           mkdir build-engine && cd build-engine
@@ -205,7 +215,17 @@ jobs:
           [ -d "$bundled" ] || { echo "npm's bundled node-gyp is not at $bundled"; exit 1; }
           rm -rf "$bundled"
           cp -R /tmp/ng/node_modules/node-gyp "$bundled"
+          # node-gyp 13 needs its own dependencies (undici, among others) and npm's
+          # bundled tree carries the set that 11.2.0 wanted -- copying the package
+          # alone got `Cannot find module 'undici'`. Nest the deps under the package
+          # rather than flattening them beside npm's, so npm's own tree is untouched.
+          mkdir -p "$bundled/node_modules"
+          find /tmp/ng/node_modules -mindepth 1 -maxdepth 1 ! -name node-gyp ! -name '.*' \
+            -exec cp -R {} "$bundled/node_modules/" \;
           echo "bundled node-gyp is now $(node "$bundled/bin/node-gyp.js" --version)"
+          # Fail here, not 40 minutes later inside the native rebuild.
+          node -e "require.resolve('undici',{paths:['$bundled/lib']})" \
+            || { echo "node-gyp's dependencies did not come across"; exit 1; }
       - name: Clone build engine (VSCodium, pinned)
         run: |
           mkdir build-engine && cd build-engine
