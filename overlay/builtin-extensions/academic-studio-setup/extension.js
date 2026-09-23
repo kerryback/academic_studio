@@ -69,6 +69,24 @@ function presetFor(audience) {
 //   group: common -> everyone, faculty -> Faculty, optin -> off by default
 //   prereq: another program id that must be present-or-selected first
 //   required: when missing, its checkbox is forced on and locked in the panel
+//
+// installWin conventions, which differ from installMac on purpose:
+//   - EVERY line must end by setting $LASTEXITCODE, because buildInstallScriptPS
+//     appends a check after each one. PowerShell cmdlets leave that variable
+//     alone, so a line that ends in a cmdlet is judged on some earlier command's
+//     result -- hence the explicit `cmd /c exit N`.
+//   - A failed line does NOT stop the ones after it (the bash script gets that
+//     from `set -e` inside a subshell; the PowerShell one has no equivalent), so
+//     each line re-tests what the previous line was supposed to produce.
+//   - Everything installs PER-USER, so no step raises a UAC prompt. macOS asks
+//     for a password once and installs system-wide; on Windows a student on a
+//     locked-down lab machine may simply not have an admin account. That means
+//     unpacking archives under %LOCALAPPDATA%\Programs and putting the directory
+//     on the user's Path with the Add-UserPath helper, rather than running MSIs
+//     into Program Files.
+//   - Add-UserPath also prepends to this script's own $env:PATH. A persisted Path
+//     only reaches NEW processes, and decktape has to run the npm that the node
+//     step unpacked moments earlier in the same script.
 const PROGRAMS = [
 	{
 		id: 'python', label: 'Python + scientific libraries + Office-related libraries', group: 'common',
@@ -118,6 +136,11 @@ const PROGRAMS = [
 		detect: 'node --version',
 		manualUrl: 'https://nodejs.org/',
 		manualSteps: 'Download the macOS Installer (.pkg) from nodejs.org and run it.',
+		installWin: [
+			'$arch = if ($env:PROCESSOR_ARCHITECTURE -eq \'ARM64\') { \'arm64\' } else { \'x64\' }; $lts = ((Invoke-WebRequest -UseBasicParsing \'https://nodejs.org/dist/index.json\' -TimeoutSec 60).Content | ConvertFrom-Json | Where-Object { $_.lts } | Select-Object -First 1).version; cmd /c exit 0',
+			'if (-not $lts) { Write-Host \'Could not find the latest Node LTS version.\'; cmd /c exit 1 } else { $z = Join-Path $env:TEMP \'node.zip\'; Invoke-WebRequest -UseBasicParsing -Uri "https://nodejs.org/dist/$lts/node-$lts-win-$arch.zip" -OutFile $z -TimeoutSec 900; cmd /c exit 0 }',
+			'$dst = Join-Path $env:LOCALAPPDATA \'Programs\'; New-Item -ItemType Directory -Force -Path $dst | Out-Null; $tmpd = Join-Path $env:TEMP \'nodejs-unpack\'; Remove-Item -Recurse -Force $tmpd -ErrorAction SilentlyContinue; Expand-Archive -Path $z -DestinationPath $tmpd -Force; $found = (Get-ChildItem $tmpd -Filter \'node.exe\' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1); if (-not $found) { Write-Host \'Could not find node.exe in the download.\'; cmd /c exit 1 } else { $root = Split-Path $found.FullName -Parent; $target = Join-Path $dst \'nodejs\'; Remove-Item -Recurse -Force $target -ErrorAction SilentlyContinue; Move-Item $root $target -Force; Add-UserPath $target; cmd /c exit 0 }',
+		],
 		installMac: [
 			'VER=$(curl -fsSL https://nodejs.org/dist/index.json | tr \'}\' \'\\n\' | grep \'"lts":"\' | head -1 | grep -oE \'v[0-9][0-9.]+\' | head -1)',
 			'[ -n "$VER" ] || { echo "Could not find the latest Node LTS version."; exit 1; }',
@@ -130,6 +153,11 @@ const PROGRAMS = [
 		detect: 'quarto --version',
 		manualUrl: 'https://quarto.org/docs/get-started/',
 		manualSteps: 'Download the macOS .pkg from quarto.org and run it.',
+		installWin: [
+			'$url = ((Invoke-WebRequest -UseBasicParsing \'https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest\' -TimeoutSec 60).Content | ConvertFrom-Json).assets | Where-Object { $_.name -like \'*win.zip\' } | Select-Object -First 1 -ExpandProperty browser_download_url; cmd /c exit 0',
+			'if (-not $url) { Write-Host \'Could not find the latest Quarto installer URL.\'; cmd /c exit 1 } else { $z = Join-Path $env:TEMP \'quarto.zip\'; Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $z -TimeoutSec 900; cmd /c exit 0 }',
+			'$dst = Join-Path $env:LOCALAPPDATA \'Programs\'; New-Item -ItemType Directory -Force -Path $dst | Out-Null; $tmpd = Join-Path $env:TEMP \'quarto-unpack\'; Remove-Item -Recurse -Force $tmpd -ErrorAction SilentlyContinue; Expand-Archive -Path $z -DestinationPath $tmpd -Force; $found = (Get-ChildItem $tmpd -Filter \'quarto.exe\' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1); if (-not $found) { Write-Host \'Could not find quarto.exe in the download.\'; cmd /c exit 1 } else { $root = Split-Path (Split-Path $found.FullName -Parent) -Parent; $target = Join-Path $dst \'quarto\'; Remove-Item -Recurse -Force $target -ErrorAction SilentlyContinue; Move-Item $root $target -Force; Add-UserPath (Join-Path $target \'bin\'); cmd /c exit 0 }',
+		],
 		installMac: [
 			'URL=$(curl -fsSL https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest | grep -oE "https://[^\\"]+macos\\.pkg" | head -1)',
 			'[ -n "$URL" ] || { echo "Could not find the latest Quarto installer URL."; exit 1; }',
@@ -142,6 +170,10 @@ const PROGRAMS = [
 		detect: 'git --version',
 		manualUrl: process.platform === 'win32' ? 'https://git-scm.com/download/win' : 'https://git-scm.com/download/mac',
 		manualSteps: process.platform === 'win32' ? 'Download Git for Windows from git-scm.com and run the installer.' : 'Run "xcode-select --install" in Terminal and complete the macOS dialog.',
+		installWin: [
+			'$arch = if ($env:PROCESSOR_ARCHITECTURE -eq \'ARM64\') { \'arm64\' } else { \'x64\' }; $pat = if ($arch -eq \'arm64\') { \'-arm64.exe\' } else { \'-64-bit.exe\' }; $url = ((Invoke-WebRequest -UseBasicParsing \'https://api.github.com/repos/git-for-windows/git/releases/latest\' -TimeoutSec 60).Content | ConvertFrom-Json).assets | Where-Object { $_.name -like "Git-*$pat" } | Select-Object -First 1 -ExpandProperty browser_download_url; cmd /c exit 0',
+			'if (-not $url) { Write-Host \'Could not find the latest Git for Windows installer URL.\'; cmd /c exit 1 } else { $exe = Join-Path $env:TEMP \'git-setup.exe\'; Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $exe -TimeoutSec 900; $p = Start-Process -FilePath $exe -ArgumentList \'/VERYSILENT\',\'/NORESTART\',\'/NOCANCEL\',\'/SP-\',\'/SUPPRESSMSGBOXES\' -Wait -PassThru; Add-UserPath (Join-Path $env:LOCALAPPDATA \'Programs\\Git\\cmd\'); cmd /c exit $($p.ExitCode) }',
+		],
 		installMac: [
 			'xcode-select --install 2>/dev/null || true',
 			'echo "If a macOS dialog appeared, click Install and wait for it to finish (this can take several minutes)…"',
@@ -154,6 +186,11 @@ const PROGRAMS = [
 		detect: 'gh --version',
 		manualUrl: 'https://cli.github.com/',
 		manualSteps: 'Download the macOS .pkg from cli.github.com and run it.',
+		installWin: [
+			'$arch = if ($env:PROCESSOR_ARCHITECTURE -eq \'ARM64\') { \'arm64\' } else { \'x64\' }; $a = if ($arch -eq \'arm64\') { \'arm64\' } else { \'amd64\' }; $url = ((Invoke-WebRequest -UseBasicParsing \'https://api.github.com/repos/cli/cli/releases/latest\' -TimeoutSec 60).Content | ConvertFrom-Json).assets | Where-Object { $_.name -like "*windows_$a.zip" } | Select-Object -First 1 -ExpandProperty browser_download_url; cmd /c exit 0',
+			'if (-not $url) { Write-Host \'Could not find the latest gh installer URL.\'; cmd /c exit 1 } else { $z = Join-Path $env:TEMP \'gh.zip\'; Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $z -TimeoutSec 900; cmd /c exit 0 }',
+			'$dst = Join-Path $env:LOCALAPPDATA \'Programs\'; New-Item -ItemType Directory -Force -Path $dst | Out-Null; $tmpd = Join-Path $env:TEMP \'gh-unpack\'; Remove-Item -Recurse -Force $tmpd -ErrorAction SilentlyContinue; Expand-Archive -Path $z -DestinationPath $tmpd -Force; $found = (Get-ChildItem $tmpd -Filter \'gh.exe\' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1); if (-not $found) { Write-Host \'Could not find gh.exe in the download.\'; cmd /c exit 1 } else { $root = Split-Path (Split-Path $found.FullName -Parent) -Parent; $target = Join-Path $dst \'gh\'; Remove-Item -Recurse -Force $target -ErrorAction SilentlyContinue; Move-Item $root $target -Force; Add-UserPath (Join-Path $target \'bin\'); cmd /c exit 0 }',
+		],
 		installMac: [
 			'URL=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | grep -oE "https://[^\\"]+_macOS_universal\\.pkg" | head -1)',
 			'[ -n "$URL" ] || { echo "Could not find the latest gh installer URL."; exit 1; }',
@@ -166,6 +203,11 @@ const PROGRAMS = [
 		detect: process.platform === 'win32' ? 'Rscript --version' : 'R --version',
 		manualUrl: 'https://cran.r-project.org/',
 		manualSteps: process.platform === 'win32' ? 'Download R for Windows from CRAN and run the installer.' : 'Download the macOS .pkg from CRAN and run it.',
+		installWin: [
+			'$page = (Invoke-WebRequest -UseBasicParsing \'https://cran.r-project.org/bin/windows/base/\' -TimeoutSec 60).Content; $rel = [regex]::Matches($page, \'R-\\d+\\.\\d+\\.\\d+-win\\.exe\') | ForEach-Object { $_.Value } | Sort-Object -Unique | Select-Object -Last 1; cmd /c exit 0',
+			'if (-not $rel) { Write-Host \'Could not find the latest R installer URL.\'; cmd /c exit 1 } else { $exe = Join-Path $env:TEMP \'R-setup.exe\'; Invoke-WebRequest -UseBasicParsing -Uri "https://cran.r-project.org/bin/windows/base/$rel" -OutFile $exe -TimeoutSec 900; $p = Start-Process -FilePath $exe -ArgumentList \'/VERYSILENT\',\'/NORESTART\',\'/SP-\',\'/SUPPRESSMSGBOXES\' -Wait -PassThru; cmd /c exit $($p.ExitCode) }',
+			'$rs = (Get-ChildItem (Join-Path $env:LOCALAPPDATA \'Programs\\R\') -Filter Rscript.exe -Recurse -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1).FullName; if (-not $rs) { $rs = (Get-ChildItem \'C:\\Program Files\\R\' -Filter Rscript.exe -Recurse -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1).FullName }; if (-not $rs) { Write-Host \'R was installed but Rscript.exe could not be located.\'; cmd /c exit 1 } else { Add-UserPath (Split-Path $rs -Parent); & $rs -e "install.packages(\'languageserver\', repos=\'https://cloud.r-project.org\')"; cmd /c exit 0 }',
+		],
 		installMac: [
 			'REL=$(curl -fsSL https://cran.r-project.org/bin/macosx/big-sur-arm64/base/ | grep -oE "R-[0-9.]+-arm64\\.pkg" | sort -V | tail -1)',
 			'[ -n "$REL" ] || { echo "Could not find the latest R installer URL."; exit 1; }',
@@ -179,6 +221,11 @@ const PROGRAMS = [
 		detect: 'tlmgr --version',
 		manualUrl: 'https://yihui.org/tinytex/',
 		manualSteps: 'Run: curl -fsSL https://yihui.org/tinytex/install-bin-unix.sh | sh',
+		installWin: [
+			'$bat = Join-Path $env:TEMP \'install-tinytex.bat\'; Invoke-WebRequest -UseBasicParsing -Uri \'https://yihui.org/tinytex/install-bin-windows.bat\' -OutFile $bat -TimeoutSec 600; cmd /c exit 0',
+			'cmd /c "$bat"',
+			'Add-UserPath (Join-Path $env:APPDATA \'TinyTeX\\bin\\windows\'); cmd /c exit 0',
+		],
 		installMac: [
 			'curl -fsSL https://yihui.org/tinytex/install-bin-unix.sh | sh',
 		],
@@ -190,6 +237,9 @@ const PROGRAMS = [
 		detect: process.platform === 'win32' ? 'where decktape' : 'command -v decktape',
 		manualUrl: 'https://github.com/astefanutti/decktape',
 		manualSteps: 'With Node.js installed, run: npm install -g decktape',
+		installWin: [
+			'$npm = Join-Path $env:LOCALAPPDATA \'Programs\\nodejs\\npm.cmd\'; if (-not (Test-Path $npm)) { $npm = \'npm.cmd\' }; & $npm install -g decktape',
+		],
 		installMac: [
 			'npm install -g decktape || sudo npm install -g decktape',
 		],
@@ -201,6 +251,9 @@ const PROGRAMS = [
 		manualSteps: process.platform === 'win32' ? 'Run: winget install --id Cloudflare.cloudflared (then open a new terminal so PATH picks it up).' : 'Run: brew install cloudflared',
 		// Cloudflare's own release binary rather than Homebrew, matching how the
 		// other programs here install, so it works on a machine without brew.
+		installWin: [
+			'$dst = Join-Path $env:LOCALAPPDATA \'Programs\'; New-Item -ItemType Directory -Force -Path $dst | Out-Null; $target = Join-Path $dst \'cloudflared\'; New-Item -ItemType Directory -Force -Path $target | Out-Null; Invoke-WebRequest -UseBasicParsing -Uri \'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe\' -OutFile (Join-Path $target \'cloudflared.exe\') -TimeoutSec 900; Add-UserPath $target; cmd /c exit 0',
+		],
 		installMac: [
 			'case "$(uname -m)" in arm64) A=arm64;; *) A=amd64;; esac',
 			'TMP=$(mktemp -d); curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-$A.tgz" -o "$TMP/cf.tgz"',
@@ -215,6 +268,10 @@ const PROGRAMS = [
 		detect: process.platform === 'win32' ? 'where soffice' : '[ -d /Applications/LibreOffice.app ] && echo installed',
 		manualUrl: 'https://www.libreoffice.org/download/download/',
 		manualSteps: process.platform === 'win32' ? 'Download LibreOffice for Windows from libreoffice.org and run the installer.' : 'Download LibreOffice for macOS from libreoffice.org and drag it to Applications.',
+		installWin: [
+			'$arch = if ($env:PROCESSOR_ARCHITECTURE -eq \'ARM64\') { \'arm64\' } else { \'x64\' }; $a = if ($arch -eq \'arm64\') { \'aarch64\' } else { \'x86_64\' }; $tag = if ($arch -eq \'arm64\') { \'aarch64\' } else { \'x86-64\' }; $page = (Invoke-WebRequest -UseBasicParsing \'https://download.documentfoundation.org/libreoffice/stable/\' -TimeoutSec 60).Content; $ver = [regex]::Matches($page, \'\\d+\\.\\d+\\.\\d+/\') | ForEach-Object { $_.Value.TrimEnd(\'/\') } | Sort-Object { [version]$_ } -Descending -Unique | Select-Object -First 1; cmd /c exit 0',
+			'if (-not $ver) { Write-Host \'Could not find the latest LibreOffice version.\'; cmd /c exit 1 } else { $m = Join-Path $env:TEMP \'libreoffice.msi\'; Invoke-WebRequest -UseBasicParsing -Uri "https://download.documentfoundation.org/libreoffice/stable/$ver/win/$a/LibreOffice_${ver}_Win_$tag.msi" -OutFile $m -TimeoutSec 1800; $p = Start-Process msiexec.exe -ArgumentList \'/i\',"`"$m`"",\'/qn\',\'MSIINSTALLPERUSER=1\',\'ALLUSERS=2\',\'/norestart\' -Wait -PassThru; cmd /c exit $($p.ExitCode) }',
+		],
 		installMac: [
 			'VER=$(curl -fsSL https://download.documentfoundation.org/libreoffice/stable/ | grep -oE "[0-9]+\\.[0-9]+\\.[0-9]+/" | tr -d / | sort -V | tail -1)',
 			'[ -n "$VER" ] || { echo "Could not find the latest LibreOffice version."; exit 1; }',
@@ -753,6 +810,14 @@ function buildInstallScriptPS(items, resultsPath) {
 		// Where the Claude Code installer puts claude.exe (marketplace-plugin install);
 		// not on a fresh shell's PATH.
 		"$env:PATH = \"$env:USERPROFILE\\.local\\bin;$env:PATH\"",
+		// Windows installs are per-user (no UAC prompt), which means putting the
+		// install dir on the USER Path ourselves. Persist it for future processes
+		// and prepend it to this script's PATH so a later step -- decktape needs the
+		// npm we just unpacked -- can actually run what an earlier one installed.
+		"function Add-UserPath { param([string]$d)"
+		+ " $u = [Environment]::GetEnvironmentVariable('Path','User'); if (-not $u) { $u = '' };"
+		+ " if (($u -split ';') -notcontains $d) { [Environment]::SetEnvironmentVariable('Path', (($u.TrimEnd(';') + ';' + $d).Trim(';')), 'User') };"
+		+ " $env:PATH = \"$d;$env:PATH\" }",
 		'$R = ' + psq(resultsPath),
 		'Set-Content -Path $R -Value $null',
 		"Write-Host 'Academic Studio - installing selected programs and packages.'",
