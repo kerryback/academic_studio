@@ -100,6 +100,20 @@ jobs:
           if (-not $vs) { Write-Error "No Visual Studio install found via vswhere"; exit 1 }
           "vs2022_install=$vs" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "vs2022_install=$vs"
+      # node-gyp discovers Visual Studio itself, separately from vs2022_install
+      # above, and the copy bundled with npm for Node 22 is 11.2.0. That version
+      # does not understand Visual Studio 18 (2026) -- it reports `unknown version
+      # "undefined" found at "C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise"`
+      # and then fails the native rebuild of @vscode/deviceid. The windows-11-arm
+      # image moved to VS 18 (the x64 image is still on VS 2022, so only arm64 broke
+      # first); VS 2026 support landed in node-gyp 12.1.0 with a follow-up fix in
+      # 13.0.1. Pin both Windows jobs to a current node-gyp so neither depends on
+      # which VS the runner image happens to ship.
+      - name: Use a node-gyp that knows Visual Studio 2026
+        shell: bash
+        run: |
+          npm install -g node-gyp@13
+          echo "npm_config_node_gyp=$(npm prefix -g)/node_modules/node-gyp/bin/node-gyp.js" >> "$GITHUB_ENV"
       - name: Clone build engine (VSCodium, pinned)
         run: |
           mkdir build-engine && cd build-engine
@@ -150,6 +164,20 @@ jobs:
           if (-not $vs) { Write-Error "No Visual Studio install found via vswhere"; exit 1 }
           "vs2022_install=$vs" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "vs2022_install=$vs"
+      # node-gyp discovers Visual Studio itself, separately from vs2022_install
+      # above, and the copy bundled with npm for Node 22 is 11.2.0. That version
+      # does not understand Visual Studio 18 (2026) -- it reports `unknown version
+      # "undefined" found at "C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise"`
+      # and then fails the native rebuild of @vscode/deviceid. The windows-11-arm
+      # image moved to VS 18 (the x64 image is still on VS 2022, so only arm64 broke
+      # first); VS 2026 support landed in node-gyp 12.1.0 with a follow-up fix in
+      # 13.0.1. Pin both Windows jobs to a current node-gyp so neither depends on
+      # which VS the runner image happens to ship.
+      - name: Use a node-gyp that knows Visual Studio 2026
+        shell: bash
+        run: |
+          npm install -g node-gyp@13
+          echo "npm_config_node_gyp=$(npm prefix -g)/node_modules/node-gyp/bin/node-gyp.js" >> "$GITHUB_ENV"
       - name: Clone build engine (VSCodium, pinned)
         run: |
           mkdir build-engine && cd build-engine
