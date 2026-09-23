@@ -122,7 +122,7 @@ jobs:
           # with a backslashed Windows path that Git Bash then mangles.
           mkdir -p /tmp/ng && cd /tmp/ng
           npm init -y >/dev/null
-          npm install node-gyp@13 >/dev/null
+          npm install node-gyp@12 >/dev/null
           bundled="$(dirname "$(command -v npm)")/node_modules/npm/node_modules/node-gyp"
           [ -d "$bundled" ] || { echo "npm's bundled node-gyp is not at $bundled"; exit 1; }
           rm -rf "$bundled"
@@ -135,8 +135,12 @@ jobs:
           find /tmp/ng/node_modules -mindepth 1 -maxdepth 1 ! -name node-gyp ! -name '.*' \
             -exec cp -R {} "$bundled/node_modules/" \;
           echo "bundled node-gyp is now $(node "$bundled/bin/node-gyp.js" --version)"
-          # Fail here, not 40 minutes later inside the native rebuild.
-          node -e "require.resolve('undici',{paths:['$bundled/lib']})" \
+          # Fail here, not 40 minutes later inside the native rebuild. Resolve from
+          # the cwd rather than passing `paths`: $bundled is a Git Bash path
+          # (/c/...), and inside a -e string there is no MSYS conversion, so Node
+          # reads it as a directory that does not exist and the check fails even
+          # when the copy was fine.
+          ( cd "$bundled/lib" && node -e "console.log('undici at ' + require.resolve('undici'))" ) \
             || { echo "node-gyp's dependencies did not come across"; exit 1; }
       - name: Clone build engine (VSCodium, pinned)
         run: |
@@ -210,7 +214,7 @@ jobs:
           # with a backslashed Windows path that Git Bash then mangles.
           mkdir -p /tmp/ng && cd /tmp/ng
           npm init -y >/dev/null
-          npm install node-gyp@13 >/dev/null
+          npm install node-gyp@12 >/dev/null
           bundled="$(dirname "$(command -v npm)")/node_modules/npm/node_modules/node-gyp"
           [ -d "$bundled" ] || { echo "npm's bundled node-gyp is not at $bundled"; exit 1; }
           rm -rf "$bundled"
@@ -223,8 +227,12 @@ jobs:
           find /tmp/ng/node_modules -mindepth 1 -maxdepth 1 ! -name node-gyp ! -name '.*' \
             -exec cp -R {} "$bundled/node_modules/" \;
           echo "bundled node-gyp is now $(node "$bundled/bin/node-gyp.js" --version)"
-          # Fail here, not 40 minutes later inside the native rebuild.
-          node -e "require.resolve('undici',{paths:['$bundled/lib']})" \
+          # Fail here, not 40 minutes later inside the native rebuild. Resolve from
+          # the cwd rather than passing `paths`: $bundled is a Git Bash path
+          # (/c/...), and inside a -e string there is no MSYS conversion, so Node
+          # reads it as a directory that does not exist and the check fails even
+          # when the copy was fine.
+          ( cd "$bundled/lib" && node -e "console.log('undici at ' + require.resolve('undici'))" ) \
             || { echo "node-gyp's dependencies did not come across"; exit 1; }
       - name: Clone build engine (VSCodium, pinned)
         run: |
