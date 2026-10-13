@@ -40,9 +40,14 @@ new chat is opened. Installed Skills… shows the step-by-step skills Claude
 knows — local ones that work only in the current folder and global ones that
 work everywhere (open one to read or edit it, or delete it with the trash
 icon). New Skill… creates one from a template, and Get More Skills opens
-Anthropic's public skills collection. Memory Files (CLAUDE.md)… creates or opens the
-instruction files Claude reads at the start of every conversation, and MCP
-Connectors… lists the extra tool connections Claude can use.
+Anthropic's public skills collection. Turn Skills On or Off… shows every
+installed skill, including those that come with plugins, as a checklist:
+uncheck one and Claude stops using it, without deleting it. Memory Files
+(CLAUDE.md)… creates or opens the instruction files Claude reads at the start
+of every conversation, and MCP Connectors… lists the extra tool connections
+Claude can use. Turn Connectors On or Off… is the same kind of checklist for
+connectors; an unchecked connector keeps its configuration, but Claude cannot
+use its tools. Changes to either checklist apply to new chats.
 
 Model… chooses which AI model does the work. The default, Claude (Anthropic),
 uses your Claude account and is the most capable. You can instead use a free
