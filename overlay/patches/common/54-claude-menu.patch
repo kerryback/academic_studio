@@ -1,13 +1,14 @@
 --- a/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts
 +++ b/src/vs/workbench/browser/parts/titlebar/menubar.contribution.ts
-@@ -87,3 +87,32 @@
+@@ -87,3 +87,34 @@
  	when: IsMacNativeContext,
  	order: 9
  });
 +
 +// Academic Studio: top-level Claude menu — surfaces Claude Code workflows
-+// (conversations, permissions, skills, memory files, MCP connectors, plugins)
-+// so they are discoverable for students. Command handlers live in the
++// (conversations, model, permissions, skills, memory files, MCP connectors, plugins)
++// so they are discoverable for students. Command handlers live in core
++// (contrib/academicStudio, patch 55), except Model…, which is in the
 +// academic-studio-defaults built-in extension. The macOS native menubar
 +// only renders
 +// explicitly listed menus, so a matching block is patched into
@@ -26,6 +27,7 @@
 +
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeNewChat', title: localize('asClaudeNewChat', "New Chat") }, group: '1_open', order: 1 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeConversations', title: localize('asClaudeConversations', "Conversations…") }, group: '1_open', order: 2 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeModel', title: localize('asClaudeModel', "Model…") }, group: '2_permissions', order: 0 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudePermissions', title: localize('asClaudePermissions', "Permissions…") }, group: '2_permissions', order: 1 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeInstalledSkills', title: localize('asClaudeInstalledSkills', "Installed Skills…") }, group: '3_skills', order: 1 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeNewSkill', title: localize('asClaudeNewSkill', "New Skill…") }, group: '3_skills', order: 2 });

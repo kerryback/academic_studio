@@ -34,6 +34,11 @@
         "category": "Help"
       },
       {
+        "command": "academicStudio.claudeModel",
+        "title": "Model…",
+        "category": "Claude"
+      },
+      {
         "command": "academicStudio.newLatexFile",
         "title": "LaTeX File",
         "category": "LaTeX"

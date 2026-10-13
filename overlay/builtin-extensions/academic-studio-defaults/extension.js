@@ -9,9 +9,11 @@ const vscode = require('vscode');
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
+const claudeModel = require('./claude-model');
 
 function activate(context) {
 	setupSkillAppsInApp(context);
+	claudeModel.register(context);
 	seedRemoteSshValidation();
 	seedRemoteSshExtensions(context);
 
@@ -62,11 +64,13 @@ function activate(context) {
 			() => checkForUpdates(context))
 	);
 
-	// The Claude menu's nine commands are NOT registered here. They live in core
-	// (patch 55, contrib/academicStudio/browser/claudeMenu.contribution.ts) because
-	// an extension cannot serve them in a Remote-SSH window: see the extensionKind
-	// note in package.json. Core also reaches the REMOTE ~/.claude, which is the
-	// one Claude Code reads when the window is remote.
+	// The Claude menu's other nine commands are NOT registered here. They live in
+	// core (patch 55, contrib/academicStudio/browser/claudeMenu.contribution.ts)
+	// because an extension cannot serve them in a Remote-SSH window: see the
+	// extensionKind note in package.json. Core also reaches the REMOTE ~/.claude,
+	// which is the one Claude Code reads when the window is remote. The exception
+	// is Claude → Model… (claude-model.js), which has to talk to Ollama over
+	// http://127.0.0.1 and core's CSP forbids that.
 
 	// File → New File entries for file types that don't add their own. Each opens
 	// a new untitled document in the right language (save it with the extension).

@@ -44,6 +44,18 @@ Anthropic's public skills collection. Memory Files (CLAUDE.md)… creates or ope
 instruction files Claude reads at the start of every conversation, and MCP
 Connectors… lists the extra tool connections Claude can use.
 
+Model… chooses which AI model does the work. The default, Claude (Anthropic),
+uses your Claude account and is the most capable. You can instead use a free
+model from Ollama, either one that runs on your own computer or one in Ollama
+Cloud. Install Ollama from Run Setup (it is under Supporting programs), then
+choose Claude → Model… → Download a model…; it suggests a model sized for your
+computer's memory. Models on your own computer work without an internet
+connection and keep everything on your machine, but they are much slower and
+make more mistakes than Claude. Cloud models are fast on any computer but need
+an ollama.com account; some are included in Ollama's free plan, and others need
+paid usage. The choice applies to new chats. Choose Claude (Anthropic) again to
+switch back.
+
 ### Office documents
 
 Claude can create and edit real Excel, Word, PowerPoint, and PDF files using the

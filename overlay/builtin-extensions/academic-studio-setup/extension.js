@@ -284,6 +284,30 @@ const PROGRAMS = [
 			'rm -rf "$TMP"',
 		],
 	},
+	{
+		id: 'ollama', label: 'Ollama (free AI models on this computer or in Ollama Cloud — then choose Claude → Model…)', group: 'optin',
+		detect: process.platform === 'win32'
+			? 'if exist "%LOCALAPPDATA%\\Programs\\Ollama\\ollama.exe" (echo installed) else (where ollama)'
+			: '[ -d /Applications/Ollama.app ] && echo installed',
+		manualUrl: 'https://ollama.com/download',
+		manualSteps: process.platform === 'win32' ? 'Download OllamaSetup.exe from ollama.com and run it.' : 'Download Ollama for macOS from ollama.com and drag it to Applications.',
+		// Per-user (the installer declares PrivilegesRequired=lowest), so no UAC
+		// prompt. The download is about 1.5 GB: it carries GPU libraries.
+		installWin: [
+			'$exe = Join-Path $env:TEMP \'OllamaSetup.exe\'; Invoke-WebRequest -UseBasicParsing -Uri \'https://ollama.com/download/OllamaSetup.exe\' -OutFile $exe -TimeoutSec 3600; $p = Start-Process -FilePath $exe -ArgumentList \'/VERYSILENT\',\'/NORESTART\',\'/SUPPRESSMSGBOXES\' -Wait -PassThru; cmd /c exit $($p.ExitCode)',
+		],
+		// The zip, not the dmg: ditto unpacks it with the code signature intact and
+		// nothing has to be mounted. Opening the app starts the Ollama server.
+		installMac: [
+			'TMP=$(mktemp -d); curl -fsSL https://ollama.com/download/Ollama-darwin.zip -o "$TMP/ollama.zip"',
+			'ditto -xk "$TMP/ollama.zip" "$TMP/unpacked"',
+			'[ -d "$TMP/unpacked/Ollama.app" ] || { echo "Ollama.app not found in the download."; exit 1; }',
+			'sudo rm -rf /Applications/Ollama.app',
+			'sudo ditto "$TMP/unpacked/Ollama.app" /Applications/Ollama.app',
+			'rm -rf "$TMP"',
+			'open -a /Applications/Ollama.app',
+		],
+	},
 ];
 
 // ---- small helpers ----------------------------------------------------------
