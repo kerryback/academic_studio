@@ -2,7 +2,7 @@ diff --git a/src/vs/workbench/contrib/academicStudio/browser/claudeMenu.contribu
 new file mode 100644
 --- /dev/null
 +++ b/src/vs/workbench/contrib/academicStudio/browser/claudeMenu.contribution.ts
-@@ -0,0 +1,1110 @@
+@@ -0,0 +1,1104 @@
 +/*---------------------------------------------------------------------------------------------
 + *  Copyright (c) Microsoft Corporation. All rights reserved.
 + *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -21,9 +21,7 @@ new file mode 100644
 +// so ~/.claude there is the config it actually reads.
 +
 +import { VSBuffer } from '../../../../base/common/buffer.js';
-+import { Codicon } from '../../../../base/common/codicons.js';
 +import { joinPath } from '../../../../base/common/resources.js';
-+import { ThemeIcon } from '../../../../base/common/themables.js';
 +import { URI } from '../../../../base/common/uri.js';
 +import { localize, localize2 } from '../../../../nls.js';
 +import { Action2, registerAction2 } from '../../../../platform/actions/common/actions.js';
@@ -32,7 +30,7 @@ new file mode 100644
 +import { IDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 +import { IFileService } from '../../../../platform/files/common/files.js';
 +import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
-+import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
++import { INotificationService } from '../../../../platform/notification/common/notification.js';
 +import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 +import { IQuickInputService, IQuickPickItem, QuickPickInput } from '../../../../platform/quickinput/common/quickInput.js';
 +import { IWorkspaceFolder, IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
@@ -380,7 +378,6 @@ new file mode 100644
 +		items.push({
 +			label: name,
 +			detail: description.length > 140 ? description.slice(0, 140) + '…' : description,
-+			buttons: [{ iconClass: ThemeIcon.asClassName(Codicon.trash), tooltip: localize('academicStudioClaudeDeleteSkill', "Delete this skill") }],
 +			skillName: name,
 +			skillRoot: dir
 +		});
@@ -391,104 +388,6 @@ new file mode 100644
 +function localSkillsDir(services: IClaudeServices): URI | undefined {
 +	const folder = firstFolder(services);
 +	return folder ? joinPath(folder.uri, '.claude', 'skills') : undefined;
-+}
-+
-+async function listInstalledSkills(services: IClaudeServices): Promise<QuickPickInput<ISkillItem>[]> {
-+	const items: QuickPickInput<ISkillItem>[] = [];
-+
-+	const localDir = localSkillsDir(services);
-+	if (localDir) {
-+		const local = await listSkillsIn(services, localDir);
-+		if (local.length) {
-+			items.push({ type: 'separator', label: localize('academicStudioClaudeSkillsLocal', "Local — this folder only") });
-+			items.push(...local);
-+		}
-+	}
-+
-+	const global = await listSkillsIn(services, joinPath(await claudeHome(services), 'skills'));
-+	if (global.length) {
-+		items.push({ type: 'separator', label: localize('academicStudioClaudeSkillsGlobal', "Global — every project") });
-+		items.push(...global);
-+	}
-+
-+	return items;
-+}
-+
-+class ClaudeInstalledSkillsAction extends Action2 {
-+	constructor() {
-+		super({
-+			id: 'academicStudio.claudeInstalledSkills',
-+			title: localize2('academicStudioClaudeInstalledSkills', "Installed Skills…"),
-+			category: CLAUDE_CATEGORY,
-+			f1: true
-+		});
-+	}
-+
-+	override async run(accessor: ServicesAccessor): Promise<void> {
-+		const services = claudeServices(accessor);
-+		const items = await listInstalledSkills(services);
-+		if (!items.length) {
-+			const commandService = services.commandService;
-+			services.notificationService.prompt(
-+				Severity.Info,
-+				localize('academicStudioClaudeNoSkills', "No Claude skills are installed yet. Skills are step-by-step instructions Claude can follow for specialized tasks."),
-+				[
-+					{ label: localize('academicStudioClaudeCreateSkill', "Create New Skill…"), run: () => commandService.executeCommand('academicStudio.claudeNewSkill') },
-+					{ label: localize('academicStudioClaudeGetSkillsButton', "Get Skills from Anthropic"), run: () => { openUrl(services, SKILLS_URL); } }
-+				]
-+			);
-+			return;
-+		}
-+
-+		const fileService = services.fileService;
-+		const editorService = services.editorService;
-+		const dialogService = services.dialogService;
-+		const notificationService = services.notificationService;
-+
-+		const quickPick = services.quickInputService.createQuickPick<ISkillItem>({ useSeparators: true });
-+		quickPick.title = localize('academicStudioClaudeSkillsTitle', "Installed Claude Skills");
-+		quickPick.placeholder = localize('academicStudioClaudeSkillsPlaceholder', "Select a skill to open its instructions — or click the trash icon to delete it");
-+		quickPick.ignoreFocusOut = true; // survive the focus shift to the delete confirmation
-+		quickPick.items = items;
-+
-+		quickPick.onDidAccept(async () => {
-+			const selected = quickPick.selectedItems[0];
-+			if (!selected) {
-+				return;
-+			}
-+			quickPick.hide();
-+			await editorService.openEditor({ resource: joinPath(selected.skillRoot, selected.skillName, 'SKILL.md'), options: { pinned: true } });
-+		});
-+
-+		quickPick.onDidTriggerItemButton(async e => {
-+			const { skillName, skillRoot } = e.item;
-+			const { confirmed } = await dialogService.confirm({
-+				type: 'warning',
-+				message: localize('academicStudioClaudeDeleteSkillConfirm', "Delete the skill \"{0}\"?", skillName),
-+				detail: localize('academicStudioClaudeDeleteSkillDetail', "Its whole folder is removed and Claude will no longer know it."),
-+				primaryButton: localize('academicStudioClaudeDeleteSkillButton', "Delete Skill")
-+			});
-+			if (!confirmed) {
-+				return;
-+			}
-+			try {
-+				await fileService.del(joinPath(skillRoot, skillName), { recursive: true, useTrash: false });
-+			} catch (err) {
-+				notificationService.error(localize('academicStudioClaudeDeleteSkillFailed', "Could not delete \"{0}\": {1}", skillName, err instanceof Error ? err.message : String(err)));
-+				return;
-+			}
-+			const rest = await listInstalledSkills(services);
-+			if (rest.length) {
-+				quickPick.items = rest;
-+			} else {
-+				quickPick.hide();
-+			}
-+			notificationService.info(localize('academicStudioClaudeDeleteSkillDone', "Deleted skill \"{0}\".", skillName));
-+		});
-+
-+		quickPick.onDidHide(() => quickPick.dispose());
-+		quickPick.show();
-+	}
 +}
 +
 +interface ISkillScopeItem extends IQuickPickItem {
@@ -599,7 +498,7 @@ new file mode 100644
 +	constructor() {
 +		super({
 +			id: 'academicStudio.claudeMemoryFiles',
-+			title: localize2('academicStudioClaudeMemoryFiles', "Memory Files (CLAUDE.md)…"),
++			title: localize2('academicStudioClaudeMemoryFiles', "CLAUDE.md…"),
 +			category: CLAUDE_CATEGORY,
 +			f1: true
 +		});
@@ -691,99 +590,14 @@ new file mode 100644
 +
 +//#endregion
 +
-+//#region MCP connectors
++//#region Skills and connectors: on or off, open, delete
 +
-+// User-scope servers live in ~/.claude.json (mcpServers); a project can add its
-+// own in <folder>/.mcp.json. Read-only list; picking an entry opens the file it
-+// came from. Guided installs stay in Run Setup's package catalog.
-+interface IMcpItem extends IQuickPickItem {
-+	resource?: URI;
-+	isConfig?: boolean;
-+	isDocs?: boolean;
-+}
-+
-+class ClaudeMcpConnectorsAction extends Action2 {
-+	constructor() {
-+		super({
-+			id: 'academicStudio.claudeMcpConnectors',
-+			title: localize2('academicStudioClaudeMcpConnectors', "MCP Connectors…"),
-+			category: CLAUDE_CATEGORY,
-+			f1: true
-+		});
-+	}
-+
-+	override async run(accessor: ServicesAccessor): Promise<void> {
-+		const services = claudeServices(accessor);
-+		const userConfig = joinPath(await services.pathService.userHome(), '.claude.json');
-+		const folder = firstFolder(services);
-+		const items: IMcpItem[] = [];
-+
-+		const describe = (server: any): string => server?.command
-+			? [server.command].concat(server.args ?? []).join(' ')
-+			: (server?.url || server?.type || '');
-+
-+		const addFrom = async (resource: URI, scopeLabel: string) => {
-+			const text = await readText(services, resource);
-+			if (text === undefined) {
-+				return;
-+			}
-+			try {
-+				const config = JSON.parse(text);
-+				for (const [name, server] of Object.entries<any>(config.mcpServers ?? {})) {
-+					items.push({ label: name, description: scopeLabel, detail: describe(server), resource });
-+				}
-+			} catch (e) {
-+				// unparsable config — skip
-+			}
-+		};
-+
-+		await addFrom(userConfig, localize('academicStudioClaudeMcpAllProjects', "all projects"));
-+		if (folder) {
-+			await addFrom(joinPath(folder.uri, '.mcp.json'), localize('academicStudioClaudeMcpThisFolder', "this folder"));
-+		}
-+
-+		const picks: QuickPickInput<IMcpItem>[] = [...items,
-+		{ type: 'separator' },
-+		{
-+			label: '$(gear) ' + localize('academicStudioClaudeMcpOpenConfig', "Open the connector configuration file"),
-+			detail: localize('academicStudioClaudeMcpOpenConfigDetail', "~/.claude.json — user-level MCP servers live under \"mcpServers\""),
-+			resource: userConfig,
-+			isConfig: true
-+		},
-+		{
-+			label: '$(book) ' + localize('academicStudioClaudeMcpDocs', "Learn about MCP connectors"),
-+			detail: 'code.claude.com/docs/en/mcp',
-+			isDocs: true
-+		}];
-+
-+		const picked = await services.quickInputService.pick(picks, {
-+			title: localize('academicStudioClaudeMcpTitle', "Claude MCP Connectors"),
-+			placeHolder: items.length
-+				? localize('academicStudioClaudeMcpPlaceholder', "Connectors give Claude extra tools (databases, web services, …) — select one to open its configuration")
-+				: localize('academicStudioClaudeMcpEmpty', "No MCP connectors configured yet — packages in Run Setup can add them, or edit the configuration file")
-+		});
-+		if (!picked) {
-+			return;
-+		}
-+
-+		if (picked.isDocs) {
-+			await openUrl(services, MCP_DOCS_URL);
-+			return;
-+		}
-+		if (picked.resource) {
-+			if (picked.isConfig) {
-+				await ensureAndOpen(services, picked.resource, '{\n  "mcpServers": {}\n}\n');
-+			} else {
-+				await services.editorService.openEditor({ resource: picked.resource, options: { pinned: true } });
-+			}
-+		}
-+	}
-+}
-+
-+//#endregion
-+
-+//#region Turn skills and connectors on or off
-+
++// Skills… and Connectors… each list every item with its state; picking one
++// opens a small follow-up menu (turn on or off, open, delete or remove).
++// MCP servers: user scope in ~/.claude.json (mcpServers), local scope under
++// projects[<path>].mcpServers there, project scope in <folder>/.mcp.json.
++// Guided installs stay in Run Setup's package catalog.
++//
 +// Turning a skill or connector off writes a deny rule into Claude Code's own
 +// settings, so it holds in the chat panel and the terminal alike: `Skill(name)`
 +// stops Claude using a skill, `mcp__<server>` blocks every tool a connector
@@ -791,11 +605,6 @@ new file mode 100644
 +// are denied in ~/.claude/settings.json; this-folder items in
 +// <folder>/.claude/settings.local.json, which is personal and not checked in.
 +// A deny in either file wins, so turning an item on removes its rule from both.
-+interface IToggleItem extends IQuickPickItem {
-+	rule: string;
-+	settingsFile: URI;
-+}
-+
 +interface IToggleFiles {
 +	readonly user: URI;
 +	readonly folder: URI | undefined;
@@ -827,83 +636,78 @@ new file mode 100644
 +	return Array.isArray(deny) ? deny.filter((rule: unknown): rule is string => typeof rule === 'string') : [];
 +}
 +
-+/**
-+ * Show `items` as a checklist (checked = on), then write the deny rules for
-+ * whatever the user changed. Refuses to touch a settings file it cannot parse
-+ * rather than overwrite the user's configuration.
-+ */
-+async function pickEnabled(services: IClaudeServices, items: QuickPickInput<IToggleItem>[], title: string, placeHolder: string, what: string): Promise<void> {
-+	const files = await toggleFiles(services);
-+	const resources = files.folder ? [files.user, files.folder] : [files.user];
-+
-+	const settings = new Map<string, any>();
-+	for (const resource of resources) {
++/** Both toggle settings files, parsed. Undefined (after telling the user) when one is not valid JSON. */
++async function readToggleSettings(services: IClaudeServices, files: IToggleFiles): Promise<Map<string, { resource: URI; value: any }> | undefined> {
++	const settings = new Map<string, { resource: URI; value: any }>();
++	for (const resource of files.folder ? [files.user, files.folder] : [files.user]) {
 +		try {
-+			settings.set(resource.toString(), await readSettings(services, resource));
++			settings.set(resource.toString(), { resource, value: await readSettings(services, resource) });
 +		} catch (err) {
 +			services.notificationService.error(localize('academicStudioClaudeSettingsUnreadable', "Could not read {0}: {1}. Fix the file, then try again.", agentPath(resource), err instanceof Error ? err.message : String(err)));
-+			return;
++			return undefined;
 +		}
 +	}
-+	const denied = new Set<string>();
-+	for (const value of settings.values()) {
-+		denyRules(value).forEach(rule => denied.add(rule));
-+	}
++	return settings;
++}
 +
-+	const toggles = items.filter((item): item is IToggleItem => item.type !== 'separator');
-+	for (const item of toggles) {
-+		item.picked = !denied.has(item.rule);
++function isDenied(settings: Map<string, { resource: URI; value: any }>, rule: string): boolean {
++	for (const { value } of settings.values()) {
++		if (denyRules(value).includes(rule)) {
++			return true;
++		}
 +	}
++	return false;
++}
 +
-+	const picked = await services.quickInputService.pick(items, { canPickMany: true, title, placeHolder });
-+	if (!picked) {
-+		return;
-+	}
-+	const on = new Set(picked.map(item => item.rule));
-+
-+	const turnedOff: string[] = [];
-+	const turnedOn: string[] = [];
-+	const changed = new Set<string>();
-+	for (const item of toggles) {
-+		const wasOn = !denied.has(item.rule);
-+		if (wasOn && !on.has(item.rule)) {
-+			const key = item.settingsFile.toString();
-+			const target = settings.get(key);
-+			target.permissions = target.permissions && typeof target.permissions === 'object' ? target.permissions : {};
-+			target.permissions.deny = [...denyRules(target), item.rule];
-+			changed.add(key);
-+			turnedOff.push(item.label);
-+		} else if (!wasOn && on.has(item.rule)) {
-+			for (const [key, value] of settings) {
-+				const deny = denyRules(value);
-+				if (deny.includes(item.rule)) {
-+					value.permissions.deny = deny.filter(rule => rule !== item.rule);
-+					changed.add(key);
-+				}
++/**
++ * Turn one skill or connector on or off. Off adds its deny rule to
++ * `settingsFile`; on removes the rule from every file, since a deny in either
++ * one wins. Writes only the files that changed.
++ */
++async function setEnabled(services: IClaudeServices, settings: Map<string, { resource: URI; value: any }>, rule: string, settingsFile: URI, on: boolean): Promise<void> {
++	const changed: { resource: URI; value: any }[] = [];
++	if (on) {
++		for (const entry of settings.values()) {
++			const deny = denyRules(entry.value);
++			if (deny.includes(rule)) {
++				entry.value.permissions.deny = deny.filter(r => r !== rule);
++				changed.push(entry);
 +			}
-+			turnedOn.push(item.label);
++		}
++	} else {
++		const entry = settings.get(settingsFile.toString());
++		if (entry && !denyRules(entry.value).includes(rule)) {
++			entry.value.permissions = entry.value.permissions && typeof entry.value.permissions === 'object' ? entry.value.permissions : {};
++			entry.value.permissions.deny = [...denyRules(entry.value), rule];
++			changed.push(entry);
 +		}
 +	}
-+	if (!changed.size) {
-+		return;
++	for (const { resource, value } of changed) {
++		await services.fileService.writeFile(resource, VSBuffer.fromString(JSON.stringify(value, undefined, 2) + '\n'));
 +	}
++}
 +
-+	for (const resource of resources) {
-+		const key = resource.toString();
-+		if (changed.has(key)) {
-+			await services.fileService.writeFile(resource, VSBuffer.fromString(JSON.stringify(settings.get(key), undefined, 2) + '\n'));
-+		}
-+	}
++function onOffLabel(name: string, on: boolean): string {
++	return (on ? '$(check) ' : '$(circle-slash) ') + name;
++}
 +
-+	const parts: string[] = [];
-+	if (turnedOff.length) {
-+		parts.push(localize('academicStudioClaudeTurnedOff', "Turned off: {0}.", turnedOff.join(', ')));
-+	}
-+	if (turnedOn.length) {
-+		parts.push(localize('academicStudioClaudeTurnedOn', "Turned on: {0}.", turnedOn.join(', ')));
-+	}
-+	parts.push(localize('academicStudioClaudeToggleNewChat', "Start a new chat for Claude to pick up the change to its {0}.", what));
-+	services.notificationService.info(parts.join(' '));
++function onOffDescription(on: boolean): string {
++	return on ? localize('academicStudioClaudeIsOn', "on") : localize('academicStudioClaudeIsOff', "off");
++}
++
++type FollowUp = 'toggle' | 'open' | 'delete';
++
++interface IFollowUpItem extends IQuickPickItem {
++	action: FollowUp;
++}
++
++/** The small menu shown after picking a skill or connector. Undefined when dismissed. */
++async function pickFollowUp(services: IClaudeServices, title: string, items: IFollowUpItem[]): Promise<FollowUp | undefined> {
++	const picked = await services.quickInputService.pick(items, {
++		title,
++		placeHolder: localize('academicStudioClaudeFollowUpPlaceholder', "Choose what to do — Escape goes back to the list")
++	});
++	return picked?.action;
 +}
 +
 +/** Installed plugins, from ~/.claude/plugins/installed_plugins.json: plugin name and install folder. */
@@ -935,53 +739,6 @@ new file mode 100644
 +	return match ? match[1] : item.skillName;
 +}
 +
-+class ClaudeEnableSkillsAction extends Action2 {
-+	constructor() {
-+		super({
-+			id: 'academicStudio.claudeEnableSkills',
-+			title: localize2('academicStudioClaudeEnableSkills', "Turn Skills On or Off…"),
-+			category: CLAUDE_CATEGORY,
-+			f1: true
-+		});
-+	}
-+
-+	override async run(accessor: ServicesAccessor): Promise<void> {
-+		const services = claudeServices(accessor);
-+		const files = await toggleFiles(services);
-+		const items: QuickPickInput<IToggleItem>[] = [];
-+
-+		const addGroup = async (label: string, skills: ISkillItem[], prefix: string, settingsFile: URI) => {
-+			if (!skills.length) {
-+				return;
-+			}
-+			items.push({ type: 'separator', label });
-+			for (const skill of skills) {
-+				const name = prefix + await skillInvocationName(services, skill);
-+				items.push({ label: name, detail: skill.detail, rule: `Skill(${name})`, settingsFile });
-+			}
-+		};
-+
-+		const localDir = localSkillsDir(services);
-+		if (localDir && files.folder) {
-+			await addGroup(localize('academicStudioClaudeToggleSkillsLocal', "Local — this folder only"), await listSkillsIn(services, localDir), '', files.folder);
-+		}
-+		await addGroup(localize('academicStudioClaudeToggleSkillsGlobal', "Global — every project"), await listSkillsIn(services, joinPath(await claudeHome(services), 'skills')), '', files.user);
-+		for (const plugin of await installedPlugins(services)) {
-+			await addGroup(localize('academicStudioClaudeSkillsPlugin', "From the {0} plugin", plugin.name), await listSkillsIn(services, joinPath(plugin.root, 'skills')), plugin.name + ':', files.user);
-+		}
-+
-+		if (!items.length) {
-+			services.notificationService.info(localize('academicStudioClaudeNoSkillsToToggle', "No Claude skills are installed yet, so there is nothing to turn on or off."));
-+			return;
-+		}
-+
-+		await pickEnabled(services, items,
-+			localize('academicStudioClaudeEnableSkillsTitle', "Turn Claude Skills On or Off"),
-+			localize('academicStudioClaudeEnableSkillsPlaceholder', "Checked skills are on. Uncheck a skill to stop Claude using it; nothing is deleted."),
-+			localize('academicStudioClaudeEnableSkillsWhat', "skills"));
-+	}
-+}
-+
 +/** Claude Code's tool-name form of a server name: anything outside [A-Za-z0-9_-] becomes `_`. */
 +function mcpToolName(name: string): string {
 +	return name.replace(/[^A-Za-z0-9_-]/g, '_');
@@ -999,11 +756,17 @@ new file mode 100644
 +	}
 +}
 +
-+class ClaudeEnableConnectorsAction extends Action2 {
++interface ISkillEntry extends IQuickPickItem {
++	skill?: { folder: URI; name: string; rule: string; settingsFile: URI; deletable: boolean; on: boolean };
++	command?: string;
++	url?: string;
++}
++
++class ClaudeSkillsAction extends Action2 {
 +	constructor() {
 +		super({
-+			id: 'academicStudio.claudeEnableConnectors',
-+			title: localize2('academicStudioClaudeEnableConnectors', "Turn Connectors On or Off…"),
++			id: 'academicStudio.claudeSkills',
++			title: localize2('academicStudioClaudeSkills', "Skills…"),
 +			category: CLAUDE_CATEGORY,
 +			f1: true
 +		});
@@ -1011,51 +774,284 @@ new file mode 100644
 +
 +	override async run(accessor: ServicesAccessor): Promise<void> {
 +		const services = claudeServices(accessor);
-+		const files = await toggleFiles(services);
-+		const folder = firstFolder(services);
-+		const items: QuickPickInput<IToggleItem>[] = [];
++		// After turning a skill on or off, or deleting one, come back to the
++		// refreshed list; opening a skill, or Escape on the list, ends it.
++		while (true) {
++			const files = await toggleFiles(services);
++			const settings = await readToggleSettings(services, files);
++			if (!settings) {
++				return;
++			}
++
++			const items: QuickPickInput<ISkillEntry>[] = [];
++			const addGroup = async (label: string, dir: URI, prefix: string, settingsFile: URI, deletable: boolean) => {
++				const skills = await listSkillsIn(services, dir);
++				if (!skills.length) {
++					return;
++				}
++				items.push({ type: 'separator', label });
++				for (const skill of skills) {
++					const name = prefix + await skillInvocationName(services, skill);
++					const rule = `Skill(${name})`;
++					const on = !isDenied(settings, rule);
++					items.push({
++						label: onOffLabel(name, on),
++						description: onOffDescription(on),
++						detail: skill.detail,
++						skill: { folder: joinPath(skill.skillRoot, skill.skillName), name, rule, settingsFile, deletable, on }
++					});
++				}
++			};
++
++			const localDir = localSkillsDir(services);
++			if (localDir && files.folder) {
++				await addGroup(localize('academicStudioClaudeSkillsLocal', "Local — this folder only"), localDir, '', files.folder, true);
++			}
++			await addGroup(localize('academicStudioClaudeSkillsGlobal', "Global — every project"), joinPath(await claudeHome(services), 'skills'), '', files.user, true);
++			for (const plugin of await installedPlugins(services)) {
++				await addGroup(localize('academicStudioClaudeSkillsPlugin', "From the {0} plugin", plugin.name), joinPath(plugin.root, 'skills'), plugin.name + ':', files.user, false);
++			}
++			const hasSkills = items.length > 0;
++
++			items.push({ type: 'separator' });
++			items.push({ label: '$(add) ' + localize('academicStudioClaudeSkillsCreate', "Create Skill…"), command: 'academicStudio.claudeNewSkill' });
++			items.push({ label: '$(globe) ' + localize('academicStudioClaudeSkillsSearch', "Search Anthropic"), detail: localize('academicStudioClaudeSkillsSearchDetail', "Anthropic's public skills collection"), url: SKILLS_URL });
++
++			const picked = await services.quickInputService.pick(items, {
++				title: localize('academicStudioClaudeSkillsTitle', "Claude Skills"),
++				placeHolder: hasSkills
++					? localize('academicStudioClaudeSkillsPlaceholder', "Select a skill to turn it on or off, open it, or delete it")
++					: localize('academicStudioClaudeSkillsEmpty', "No skills installed yet. Skills are step-by-step instructions Claude can follow for specialized tasks.")
++			});
++			if (!picked) {
++				return;
++			}
++			if (picked.command) {
++				await services.commandService.executeCommand(picked.command);
++				return;
++			}
++			if (picked.url) {
++				await openUrl(services, picked.url);
++				return;
++			}
++			const skill = picked.skill;
++			if (!skill) {
++				return;
++			}
++
++			const followUps: IFollowUpItem[] = [
++				skill.on
++					? { action: 'toggle', label: '$(circle-slash) ' + localize('academicStudioClaudeSkillTurnOff', "Turn Off"), detail: localize('academicStudioClaudeSkillTurnOffDetail', "Claude stops using this skill. Nothing is deleted.") }
++					: { action: 'toggle', label: '$(check) ' + localize('academicStudioClaudeSkillTurnOn', "Turn On"), detail: localize('academicStudioClaudeSkillTurnOnDetail', "Claude can use this skill again.") },
++				{ action: 'open', label: '$(go-to-file) ' + localize('academicStudioClaudeSkillOpen', "Open Instructions"), detail: 'SKILL.md' }
++			];
++			if (skill.deletable) {
++				followUps.push({ action: 'delete', label: '$(trash) ' + localize('academicStudioClaudeSkillDelete', "Delete"), detail: localize('academicStudioClaudeSkillDeleteDetail', "Remove the skill's folder. This cannot be undone.") });
++			}
++			const action = await pickFollowUp(services, skill.name, followUps);
++
++			if (action === 'toggle') {
++				await setEnabled(services, settings, skill.rule, skill.settingsFile, !skill.on);
++				services.notificationService.info(skill.on
++					? localize('academicStudioClaudeSkillTurnedOff', "Turned off {0}. Start a new chat for Claude to pick up the change.", skill.name)
++					: localize('academicStudioClaudeSkillTurnedOn', "Turned on {0}. Start a new chat for Claude to pick up the change.", skill.name));
++			} else if (action === 'open') {
++				await services.editorService.openEditor({ resource: joinPath(skill.folder, 'SKILL.md'), options: { pinned: true } });
++				return;
++			} else if (action === 'delete') {
++				const { confirmed } = await services.dialogService.confirm({
++					type: 'warning',
++					message: localize('academicStudioClaudeDeleteSkillConfirm', "Delete the skill \"{0}\"?", skill.name),
++					detail: localize('academicStudioClaudeDeleteSkillDetail', "Its whole folder is removed and Claude will no longer know it."),
++					primaryButton: localize('academicStudioClaudeDeleteSkillButton', "Delete Skill")
++				});
++				if (confirmed) {
++					try {
++						await services.fileService.del(skill.folder, { recursive: true, useTrash: false });
++					} catch (err) {
++						services.notificationService.error(localize('academicStudioClaudeDeleteSkillFailed', "Could not delete \"{0}\": {1}", skill.name, err instanceof Error ? err.message : String(err)));
++						return;
++					}
++					if (!skill.on) {
++						// drop the now-orphaned deny rule
++						await setEnabled(services, settings, skill.rule, skill.settingsFile, true);
++					}
++					services.notificationService.info(localize('academicStudioClaudeDeleteSkillDone', "Deleted skill \"{0}\".", skill.name));
++				}
++			}
++		}
++	}
++}
++
++
++interface IConnectorEntry extends IQuickPickItem {
++	connector?: {
++		name: string;
++		rule: string;
++		settingsFile: URI;
++		/** the file that defines it */
++		configFile: URI;
++		/** where in that file: `mcpServers` at the top, or under `projects[<path>]` */
++		projectPath?: string;
++		removable: boolean;
++		on: boolean;
++	};
++	openConfig?: boolean;
++	url?: string;
++}
++
++/** Delete one server from its config file. Refuses a file it cannot parse rather than overwrite it. */
++async function removeConnector(services: IClaudeServices, configFile: URI, name: string, projectPath: string | undefined): Promise<boolean> {
++	const text = await readText(services, configFile);
++	let config: any;
++	try {
++		config = JSON.parse(text ?? '');
++	} catch (err) {
++		services.notificationService.error(localize('academicStudioClaudeConnectorUnreadable', "Could not read {0}. Fix the file, then try again.", agentPath(configFile)));
++		return false;
++	}
++	const servers = projectPath === undefined ? config?.mcpServers : config?.projects?.[projectPath]?.mcpServers;
++	if (!servers || typeof servers !== 'object' || !(name in servers)) {
++		return false;
++	}
++	delete servers[name];
++	await services.fileService.writeFile(configFile, VSBuffer.fromString(JSON.stringify(config, undefined, 2) + '\n'));
++	return true;
++}
++
++class ClaudeConnectorsAction extends Action2 {
++	constructor() {
++		super({
++			id: 'academicStudio.claudeConnectors',
++			title: localize2('academicStudioClaudeConnectors', "Connectors…"),
++			category: CLAUDE_CATEGORY,
++			f1: true
++		});
++	}
++
++	override async run(accessor: ServicesAccessor): Promise<void> {
++		const services = claudeServices(accessor);
++		const userConfig = joinPath(await services.pathService.userHome(), '.claude.json');
 +
 +		const describe = (server: any): string => server?.command
 +			? [server.command].concat(server.args ?? []).join(' ')
 +			: (server?.url || server?.type || '');
 +
-+		const addGroup = (label: string, servers: [string, any][], toolPrefix: string, settingsFile: URI) => {
-+			if (!servers.length) {
++		while (true) {
++			const files = await toggleFiles(services);
++			const settings = await readToggleSettings(services, files);
++			if (!settings) {
 +				return;
 +			}
-+			items.push({ type: 'separator', label });
-+			for (const [name, server] of servers) {
-+				items.push({ label: name, detail: describe(server), rule: `mcp__${toolPrefix}${mcpToolName(name)}`, settingsFile });
++			const folder = firstFolder(services);
++			const items: QuickPickInput<IConnectorEntry>[] = [];
++
++			const addGroup = (label: string, servers: { name: string; server: any; configFile: URI; projectPath?: string }[], toolPrefix: string, settingsFile: URI, removable: boolean) => {
++				if (!servers.length) {
++					return;
++				}
++				items.push({ type: 'separator', label });
++				for (const { name, server, configFile, projectPath } of servers) {
++					const rule = `mcp__${toolPrefix}${mcpToolName(name)}`;
++					const on = !isDenied(settings, rule);
++					items.push({
++						label: onOffLabel(name, on),
++						description: onOffDescription(on),
++						detail: describe(server),
++						connector: { name, rule, settingsFile, configFile, projectPath, removable, on }
++					});
++				}
++			};
++
++			// ~/.claude.json holds user-scope servers under mcpServers, and local-scope
++			// ones (this folder, private to the user) under projects[<path>].mcpServers.
++			const userConfigText = await readText(services, userConfig);
++			if (folder && files.folder) {
++				const mcpJson = joinPath(folder.uri, '.mcp.json');
++				const local = mcpServersIn(await readText(services, mcpJson)).map(([name, server]) => ({ name, server, configFile: mcpJson }));
++				const projectPath = agentPath(folder.uri);
++				try {
++					for (const [name, server] of Object.entries<any>(JSON.parse(userConfigText ?? '{}')?.projects?.[projectPath]?.mcpServers ?? {})) {
++						local.push({ name, server, configFile: userConfig, projectPath } as { name: string; server: any; configFile: URI; projectPath?: string });
++					}
++				} catch (e) {
++					// unparsable — skip
++				}
++				addGroup(localize('academicStudioClaudeMcpThisFolderGroup', "This folder"), local, '', files.folder, true);
 +			}
-+		};
-+
-+		// ~/.claude.json holds user-scope servers under mcpServers, and local-scope
-+		// ones (this folder, private to the user) under projects[<path>].mcpServers.
-+		const userConfigText = await readText(services, joinPath(await services.pathService.userHome(), '.claude.json'));
-+		if (folder && files.folder) {
-+			const local: [string, any][] = [...mcpServersIn(await readText(services, joinPath(folder.uri, '.mcp.json')))];
-+			try {
-+				local.push(...Object.entries<any>(JSON.parse(userConfigText ?? '{}')?.projects?.[agentPath(folder.uri)]?.mcpServers ?? {}));
-+			} catch (e) {
-+				// unparsable — skip
++			addGroup(localize('academicStudioClaudeMcpAllProjectsGroup', "All projects"), mcpServersIn(userConfigText).map(([name, server]) => ({ name, server, configFile: userConfig })), '', files.user, true);
++			for (const plugin of await installedPlugins(services)) {
++				const pluginMcp = joinPath(plugin.root, '.mcp.json');
++				const servers = mcpServersIn(await readText(services, pluginMcp)).map(([name, server]) => ({ name, server, configFile: pluginMcp }));
++				addGroup(localize('academicStudioClaudeMcpPlugin', "From the {0} plugin", plugin.name), servers, `plugin_${mcpToolName(plugin.name)}_`, files.user, false);
 +			}
-+			addGroup(localize('academicStudioClaudeMcpThisFolderGroup', "This folder"), local, '', files.folder);
-+		}
-+		addGroup(localize('academicStudioClaudeMcpAllProjectsGroup', "All projects"), mcpServersIn(userConfigText), '', files.user);
-+		for (const plugin of await installedPlugins(services)) {
-+			const servers = mcpServersIn(await readText(services, joinPath(plugin.root, '.mcp.json')));
-+			addGroup(localize('academicStudioClaudeMcpPlugin', "From the {0} plugin", plugin.name), servers, `plugin_${mcpToolName(plugin.name)}_`, files.user);
-+		}
++			const hasConnectors = items.length > 0;
 +
-+		if (!items.length) {
-+			services.notificationService.info(localize('academicStudioClaudeNoConnectorsToToggle', "No MCP connectors are configured yet, so there is nothing to turn on or off."));
-+			return;
-+		}
++			items.push({ type: 'separator' });
++			items.push({
++				label: '$(gear) ' + localize('academicStudioClaudeMcpOpenConfig', "Open the connector configuration file"),
++				detail: localize('academicStudioClaudeMcpOpenConfigDetail', "~/.claude.json — user-level MCP servers live under \"mcpServers\""),
++				openConfig: true
++			});
++			items.push({ label: '$(book) ' + localize('academicStudioClaudeMcpDocs', "Learn about MCP connectors"), detail: 'code.claude.com/docs/en/mcp', url: MCP_DOCS_URL });
 +
-+		await pickEnabled(services, items,
-+			localize('academicStudioClaudeEnableConnectorsTitle', "Turn Claude Connectors On or Off"),
-+			localize('academicStudioClaudeEnableConnectorsPlaceholder', "Checked connectors are on. Uncheck one to block all of its tools; its configuration is kept."),
-+			localize('academicStudioClaudeEnableConnectorsWhat', "connectors"));
++			const picked = await services.quickInputService.pick(items, {
++				title: localize('academicStudioClaudeConnectorsTitle', "Claude Connectors"),
++				placeHolder: hasConnectors
++					? localize('academicStudioClaudeConnectorsPlaceholder', "Connectors give Claude extra tools — select one to turn it on or off, open its configuration, or remove it")
++					: localize('academicStudioClaudeMcpEmpty', "No MCP connectors configured yet — packages in Run Setup can add them, or edit the configuration file")
++			});
++			if (!picked) {
++				return;
++			}
++			if (picked.openConfig) {
++				await ensureAndOpen(services, userConfig, '{\n  "mcpServers": {}\n}\n');
++				return;
++			}
++			if (picked.url) {
++				await openUrl(services, picked.url);
++				return;
++			}
++			const connector = picked.connector;
++			if (!connector) {
++				return;
++			}
++
++			const followUps: IFollowUpItem[] = [
++				connector.on
++					? { action: 'toggle', label: '$(circle-slash) ' + localize('academicStudioClaudeConnectorTurnOff', "Turn Off"), detail: localize('academicStudioClaudeConnectorTurnOffDetail', "Block all of its tools. Its configuration is kept.") }
++					: { action: 'toggle', label: '$(check) ' + localize('academicStudioClaudeConnectorTurnOn', "Turn On"), detail: localize('academicStudioClaudeConnectorTurnOnDetail', "Claude can use its tools again.") },
++				{ action: 'open', label: '$(go-to-file) ' + localize('academicStudioClaudeConnectorOpen', "Open Configuration"), detail: agentPath(connector.configFile) }
++			];
++			if (connector.removable) {
++				followUps.push({ action: 'delete', label: '$(trash) ' + localize('academicStudioClaudeConnectorRemove', "Remove"), detail: localize('academicStudioClaudeConnectorRemoveDetail', "Delete it from {0}. This cannot be undone.", agentPath(connector.configFile)) });
++			}
++			const action = await pickFollowUp(services, connector.name, followUps);
++
++			if (action === 'toggle') {
++				await setEnabled(services, settings, connector.rule, connector.settingsFile, !connector.on);
++				services.notificationService.info(connector.on
++					? localize('academicStudioClaudeConnectorTurnedOff', "Turned off {0}. Start a new chat for Claude to pick up the change.", connector.name)
++					: localize('academicStudioClaudeConnectorTurnedOn', "Turned on {0}. Start a new chat for Claude to pick up the change.", connector.name));
++			} else if (action === 'open') {
++				await services.editorService.openEditor({ resource: connector.configFile, options: { pinned: true } });
++				return;
++			} else if (action === 'delete') {
++				const { confirmed } = await services.dialogService.confirm({
++					type: 'warning',
++					message: localize('academicStudioClaudeRemoveConnectorConfirm', "Remove the connector \"{0}\"?", connector.name),
++					detail: localize('academicStudioClaudeRemoveConnectorDetail', "Its entry is deleted from {0}, and Claude can no longer use its tools.", agentPath(connector.configFile)),
++					primaryButton: localize('academicStudioClaudeRemoveConnectorButton', "Remove Connector")
++				});
++				if (confirmed && await removeConnector(services, connector.configFile, connector.name, connector.projectPath)) {
++					if (!connector.on) {
++						// drop the now-orphaned deny rule
++						await setEnabled(services, settings, connector.rule, connector.settingsFile, true);
++					}
++					services.notificationService.info(localize('academicStudioClaudeRemoveConnectorDone', "Removed connector \"{0}\".", connector.name));
++				}
++			}
++		}
 +	}
 +}
 +
@@ -1105,13 +1101,11 @@ new file mode 100644
 +registerAction2(ClaudeNewChatAction);
 +registerAction2(ClaudeConversationsAction);
 +registerAction2(ClaudePermissionsAction);
-+registerAction2(ClaudeInstalledSkillsAction);
++registerAction2(ClaudeSkillsAction);
 +registerAction2(ClaudeNewSkillAction);
 +registerAction2(ClaudeGetSkillsAction);
 +registerAction2(ClaudeMemoryFilesAction);
-+registerAction2(ClaudeMcpConnectorsAction);
-+registerAction2(ClaudeEnableSkillsAction);
-+registerAction2(ClaudeEnableConnectorsAction);
++registerAction2(ClaudeConnectorsAction);
 +registerAction2(ClaudePluginsAction);
 diff --git a/src/vs/workbench/workbench.common.main.ts b/src/vs/workbench/workbench.common.main.ts
 --- a/src/vs/workbench/workbench.common.main.ts

@@ -85,6 +85,7 @@
   "configurationDefaults": {
     "workbench.colorTheme": "Visual Studio Light",
     "update.titleBar": false,
+    "update.showReleaseNotes": false,
     "workbench.editorAssociations": {
       "*.pdf": "latex-workshop-pdf-hook"
     },

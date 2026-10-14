@@ -36,18 +36,17 @@ The Claude menu in the menu bar collects everything about how Claude works
 for you. Permissions… controls how much Claude may do without asking — from
 always asking, to auto-approving file edits, to plan-first (nothing changes
 until you approve the plan), to never asking; the choice takes effect when a
-new chat is opened. Installed Skills… shows the step-by-step skills Claude
-knows — local ones that work only in the current folder and global ones that
-work everywhere (open one to read or edit it, or delete it with the trash
-icon). New Skill… creates one from a template, and Get More Skills opens
-Anthropic's public skills collection. Turn Skills On or Off… shows every
-installed skill, including those that come with plugins, as a checklist:
-uncheck one and Claude stops using it, without deleting it. Memory Files
-(CLAUDE.md)… creates or opens the instruction files Claude reads at the start
-of every conversation, and MCP Connectors… lists the extra tool connections
-Claude can use. Turn Connectors On or Off… is the same kind of checklist for
-connectors; an unchecked connector keeps its configuration, but Claude cannot
-use its tools. Changes to either checklist apply to new chats.
+new chat is opened. Skills… lists every skill Claude knows — local ones
+that work only in the current folder, global ones that work everywhere, and
+those that come with plugins — each marked on or off. Pick one to turn it
+on or off, open its instructions, or delete it; a skill that is turned off
+is kept but Claude stops using it. New Skill has two choices: Create Skill…
+makes one from a template, and Search Anthropic opens Anthropic's public
+skills collection. CLAUDE.md… creates or opens the instruction files Claude
+reads at the start of every conversation. Connectors… works the same way as
+Skills… for the extra tools Claude can use: pick a connector to turn it on or
+off, open the file it is configured in, or remove it. Turning a skill or
+connector on or off applies to new chats.
 
 ### Office documents
 

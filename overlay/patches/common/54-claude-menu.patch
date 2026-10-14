@@ -6,13 +6,13 @@
  });
 +
 +// Academic Studio: top-level Claude menu — surfaces Claude Code workflows
-+// (conversations, permissions, skills, memory files, MCP connectors, plugins,
-+// and switches to turn skills and connectors on or off)
++// (conversations, permissions, skills, CLAUDE.md, MCP connectors and plugins)
 +// so they are discoverable for students. Command handlers live in core
 +// (contrib/academicStudio, patch 55). The macOS native menubar only renders
 +// explicitly listed menus, so a matching block is patched into
 +// vs/platform/menubar/electron-main/menubar.ts.
 +const AcademicStudioClaudeMenu = new MenuId('AcademicStudioClaudeMenu');
++const AcademicStudioClaudeNewSkillMenu = new MenuId('AcademicStudioClaudeNewSkillMenu');
 +
 +MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
 +	submenu: AcademicStudioClaudeMenu,
@@ -27,13 +27,13 @@
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeNewChat', title: localize('asClaudeNewChat', "New Chat") }, group: '1_open', order: 1 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeConversations', title: localize('asClaudeConversations', "Conversations…") }, group: '1_open', order: 2 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudePermissions', title: localize('asClaudePermissions', "Permissions…") }, group: '2_permissions', order: 1 });
-+MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeInstalledSkills', title: localize('asClaudeInstalledSkills', "Installed Skills…") }, group: '3_skills', order: 1 });
-+MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeNewSkill', title: localize('asClaudeNewSkill', "New Skill…") }, group: '3_skills', order: 2 });
-+MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeGetSkills', title: localize('asClaudeGetSkills', "Get More Skills") }, group: '3_skills', order: 3 });
-+MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeEnableSkills', title: localize('asClaudeEnableSkills', "Turn Skills On or Off…") }, group: '3_skills', order: 4 });
-+MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeMemoryFiles', title: localize('asClaudeMemoryFiles', "Memory Files (CLAUDE.md)…") }, group: '4_config', order: 1 });
-+MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeMcpConnectors', title: localize('asClaudeMcpConnectors', "MCP Connectors…") }, group: '4_config', order: 2 });
-+MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeEnableConnectors', title: localize('asClaudeEnableConnectors', "Turn Connectors On or Off…") }, group: '4_config', order: 2.5 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeSkills', title: localize('asClaudeSkills', "Skills…") }, group: '3_skills', order: 1 });
++// New Skill forks: write one from scratch, or find one in Anthropic's collection.
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { submenu: AcademicStudioClaudeNewSkillMenu, title: localize('asClaudeNewSkillMenu', "New Skill"), group: '3_skills', order: 2 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeNewSkillMenu, { command: { id: 'academicStudio.claudeNewSkill', title: localize('asClaudeCreateSkill', "Create Skill…") }, order: 1 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeNewSkillMenu, { command: { id: 'academicStudio.claudeGetSkills', title: localize('asClaudeSearchAnthropic', "Search Anthropic") }, order: 2 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeMemoryFiles', title: localize('asClaudeMemoryFiles', "CLAUDE.md…") }, group: '4_config', order: 1 });
++MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudeConnectors', title: localize('asClaudeConnectors', "Connectors…") }, group: '4_config', order: 2 });
 +MenuRegistry.appendMenuItem(AcademicStudioClaudeMenu, { command: { id: 'academicStudio.claudePlugins', title: localize('asClaudePlugins', "Plugins…") }, group: '4_config', order: 3 });
 --- a/src/vs/platform/menubar/electron-main/menubar.ts
 +++ b/src/vs/platform/menubar/electron-main/menubar.ts
