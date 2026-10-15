@@ -40,7 +40,8 @@ new chat is opened. Skills… lists every skill Claude knows — local ones
 that work only in the current folder, global ones that work everywhere, and
 those that come with plugins — each marked on or off. Pick one to turn it
 on or off, open its instructions, or delete it; a skill that is turned off
-is kept but Claude stops using it. New Skill has two choices: Create Skill…
+is kept but Claude stops using it. Skills that come with a plugin go on and
+off together, with the whole plugin. New Skill has two choices: Create Skill…
 makes one from a template, and Search Anthropic opens Anthropic's public
 skills collection. CLAUDE.md… creates or opens the instruction files Claude
 reads at the start of every conversation. Connectors… works the same way as

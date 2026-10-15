@@ -2,7 +2,7 @@ diff --git a/src/vs/workbench/contrib/academicStudio/browser/claudeMenu.contribu
 new file mode 100644
 --- /dev/null
 +++ b/src/vs/workbench/contrib/academicStudio/browser/claudeMenu.contribution.ts
-@@ -0,0 +1,1104 @@
+@@ -0,0 +1,1171 @@
 +/*---------------------------------------------------------------------------------------------
 + *  Copyright (c) Microsoft Corporation. All rights reserved.
 + *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -598,13 +598,21 @@ new file mode 100644
 +// projects[<path>].mcpServers there, project scope in <folder>/.mcp.json.
 +// Guided installs stay in Run Setup's package catalog.
 +//
-+// Turning a skill or connector off writes a deny rule into Claude Code's own
-+// settings, so it holds in the chat panel and the terminal alike: `Skill(name)`
-+// stops Claude using a skill, `mcp__<server>` blocks every tool a connector
-+// offers. Nothing is deleted, so turning one back on loses nothing. Global items
-+// are denied in ~/.claude/settings.json; this-folder items in
++// Turning a skill or connector off writes the setting Claude Code itself uses
++// for that, so it holds in the chat panel and the terminal alike, and nothing
++// is deleted:
++//   - a skill:             "skillOverrides": { "<name>": "off" }
++//   - a plugin's skills:   "enabledPlugins": { "<plugin>@<marketplace>": false }
++//                          (Claude Code ignores skillOverrides for plugin
++//                          skills, so they go on and off with their plugin)
++//   - a .mcp.json server:  "disabledMcpjsonServers": [ "<name>" ]
++//   - any other server:    "deniedMcpServers": [ { "serverName": "<name>" } ],
++//                          where a plugin's server is named plugin:<plugin>:<server>
++// (A `Skill(name)` or `mcp__<server>` permission deny rule is NOT enough: the
++// skill stays listed and invocable as /name, and the server still connects.)
++// Global items go in ~/.claude/settings.json; this-folder items in
 +// <folder>/.claude/settings.local.json, which is personal and not checked in.
-+// A deny in either file wins, so turning an item on removes its rule from both.
++// Off in either file counts as off, so turning an item on clears it from both.
 +interface IToggleFiles {
 +	readonly user: URI;
 +	readonly folder: URI | undefined;
@@ -631,9 +639,67 @@ new file mode 100644
 +	return settings;
 +}
 +
-+function denyRules(settings: any): string[] {
-+	const deny = settings?.permissions?.deny;
-+	return Array.isArray(deny) ? deny.filter((rule: unknown): rule is string => typeof rule === 'string') : [];
++/** What turns one skill, plugin or connector on and off: see the comment above. */
++interface ISwitch {
++	readonly kind: 'skill' | 'plugin' | 'mcpjson' | 'mcp';
++	readonly key: string;
++	/** where turning it off is written */
++	readonly settingsFile: URI;
++}
++
++function objectAt(settings: any, field: string): Record<string, any> | undefined {
++	const value = settings?.[field];
++	return value && typeof value === 'object' && !Array.isArray(value) ? value : undefined;
++}
++
++function arrayAt(settings: any, field: string): any[] {
++	return Array.isArray(settings?.[field]) ? settings[field] : [];
++}
++
++function isOffIn(settings: any, sw: ISwitch): boolean {
++	switch (sw.kind) {
++		case 'skill': return objectAt(settings, 'skillOverrides')?.[sw.key] === 'off';
++		case 'plugin': return objectAt(settings, 'enabledPlugins')?.[sw.key] === false;
++		case 'mcpjson': return arrayAt(settings, 'disabledMcpjsonServers').includes(sw.key);
++		case 'mcp': return arrayAt(settings, 'deniedMcpServers').some(entry => entry?.serverName === sw.key);
++	}
++}
++
++/** Turn `sw` off in `settings`, or clear its off state. True when that changed anything. */
++function setOffIn(settings: any, sw: ISwitch, off: boolean): boolean {
++	if (isOffIn(settings, sw) === off) {
++		return false;
++	}
++	switch (sw.kind) {
++		case 'skill': {
++			const overrides = { ...objectAt(settings, 'skillOverrides') };
++			if (off) {
++				overrides[sw.key] = 'off';
++			} else {
++				delete overrides[sw.key];
++			}
++			settings.skillOverrides = overrides;
++			if (!Object.keys(overrides).length) {
++				delete settings.skillOverrides;
++			}
++			break;
++		}
++		case 'plugin':
++			// on is an explicit true: installing a plugin enables it this same way
++			settings.enabledPlugins = { ...objectAt(settings, 'enabledPlugins'), [sw.key]: !off };
++			break;
++		case 'mcpjson':
++			settings.disabledMcpjsonServers = off
++				? [...arrayAt(settings, 'disabledMcpjsonServers'), sw.key]
++				: arrayAt(settings, 'disabledMcpjsonServers').filter(name => name !== sw.key);
++			break;
++		case 'mcp':
++			settings.deniedMcpServers = off
++				? [...arrayAt(settings, 'deniedMcpServers'), { serverName: sw.key }]
++				: arrayAt(settings, 'deniedMcpServers').filter(entry => entry?.serverName !== sw.key);
++			break;
++	}
++	return true;
 +}
 +
 +/** Both toggle settings files, parsed. Undefined (after telling the user) when one is not valid JSON. */
@@ -650,9 +716,9 @@ new file mode 100644
 +	return settings;
 +}
 +
-+function isDenied(settings: Map<string, { resource: URI; value: any }>, rule: string): boolean {
++function isOff(settings: Map<string, { resource: URI; value: any }>, sw: ISwitch): boolean {
 +	for (const { value } of settings.values()) {
-+		if (denyRules(value).includes(rule)) {
++		if (isOffIn(value, sw)) {
 +			return true;
 +		}
 +	}
@@ -660,30 +726,16 @@ new file mode 100644
 +}
 +
 +/**
-+ * Turn one skill or connector on or off. Off adds its deny rule to
-+ * `settingsFile`; on removes the rule from every file, since a deny in either
-+ * one wins. Writes only the files that changed.
++ * Turn one skill, plugin or connector on or off. Off is written to
++ * `sw.settingsFile`; on clears the off state from every file, since off in
++ * either one wins. Writes only the files that changed.
 + */
-+async function setEnabled(services: IClaudeServices, settings: Map<string, { resource: URI; value: any }>, rule: string, settingsFile: URI, on: boolean): Promise<void> {
-+	const changed: { resource: URI; value: any }[] = [];
-+	if (on) {
-+		for (const entry of settings.values()) {
-+			const deny = denyRules(entry.value);
-+			if (deny.includes(rule)) {
-+				entry.value.permissions.deny = deny.filter(r => r !== rule);
-+				changed.push(entry);
-+			}
++async function setEnabled(services: IClaudeServices, settings: Map<string, { resource: URI; value: any }>, sw: ISwitch, on: boolean): Promise<void> {
++	const targets = on ? [...settings.values()] : [settings.get(sw.settingsFile.toString())];
++	for (const entry of targets) {
++		if (entry && setOffIn(entry.value, sw, !on)) {
++			await services.fileService.writeFile(entry.resource, VSBuffer.fromString(JSON.stringify(entry.value, undefined, 2) + '\n'));
 +		}
-+	} else {
-+		const entry = settings.get(settingsFile.toString());
-+		if (entry && !denyRules(entry.value).includes(rule)) {
-+			entry.value.permissions = entry.value.permissions && typeof entry.value.permissions === 'object' ? entry.value.permissions : {};
-+			entry.value.permissions.deny = [...denyRules(entry.value), rule];
-+			changed.push(entry);
-+		}
-+	}
-+	for (const { resource, value } of changed) {
-+		await services.fileService.writeFile(resource, VSBuffer.fromString(JSON.stringify(value, undefined, 2) + '\n'));
 +	}
 +}
 +
@@ -710,20 +762,29 @@ new file mode 100644
 +	return picked?.action;
 +}
 +
-+/** Installed plugins, from ~/.claude/plugins/installed_plugins.json: plugin name and install folder. */
-+async function installedPlugins(services: IClaudeServices): Promise<{ name: string; root: URI }[]> {
++interface IInstalledPlugin {
++	/** <plugin>@<marketplace>, the enabledPlugins key */
++	readonly id: string;
++	readonly name: string;
++	readonly root: URI;
++	/** user, project or local */
++	readonly scope: string;
++}
++
++/** Installed plugins, from ~/.claude/plugins/installed_plugins.json. */
++async function installedPlugins(services: IClaudeServices): Promise<IInstalledPlugin[]> {
 +	const home = await claudeHome(services);
 +	const text = await readText(services, joinPath(home, 'plugins', 'installed_plugins.json'));
 +	if (text === undefined) {
 +		return [];
 +	}
-+	const plugins: { name: string; root: URI }[] = [];
++	const plugins: IInstalledPlugin[] = [];
 +	try {
 +		for (const [id, installs] of Object.entries<any>(JSON.parse(text).plugins ?? {})) {
-+			const installPath = Array.isArray(installs) ? installs[0]?.installPath : undefined;
-+			if (typeof installPath === 'string') {
++			const install = Array.isArray(installs) ? installs[0] : undefined;
++			if (typeof install?.installPath === 'string') {
 +				// installPath is a path on the machine Claude Code runs on; keep the home's scheme and authority.
-+				plugins.push({ name: id.split('@')[0], root: home.with({ path: URI.file(installPath).path }) });
++				plugins.push({ id, name: id.split('@')[0], root: home.with({ path: URI.file(install.installPath).path }), scope: typeof install.scope === 'string' ? install.scope : 'user' });
 +			}
 +		}
 +	} catch (e) {
@@ -739,11 +800,6 @@ new file mode 100644
 +	return match ? match[1] : item.skillName;
 +}
 +
-+/** Claude Code's tool-name form of a server name: anything outside [A-Za-z0-9_-] becomes `_`. */
-+function mcpToolName(name: string): string {
-+	return name.replace(/[^A-Za-z0-9_-]/g, '_');
-+}
-+
 +function mcpServersIn(text: string | undefined): [string, any][] {
 +	if (text === undefined) {
 +		return [];
@@ -757,7 +813,8 @@ new file mode 100644
 +}
 +
 +interface ISkillEntry extends IQuickPickItem {
-+	skill?: { folder: URI; name: string; rule: string; settingsFile: URI; deletable: boolean; on: boolean };
++	/** `plugin` is set for a plugin's skill, which goes on and off with its whole plugin */
++	skill?: { folder: URI; name: string; sw: ISwitch; plugin?: string; deletable: boolean; on: boolean };
 +	command?: string;
 +	url?: string;
 +}
@@ -784,32 +841,34 @@ new file mode 100644
 +			}
 +
 +			const items: QuickPickInput<ISkillEntry>[] = [];
-+			const addGroup = async (label: string, dir: URI, prefix: string, settingsFile: URI, deletable: boolean) => {
++			const addGroup = async (label: string, dir: URI, settingsFile: URI, plugin?: IInstalledPlugin) => {
 +				const skills = await listSkillsIn(services, dir);
 +				if (!skills.length) {
 +					return;
 +				}
 +				items.push({ type: 'separator', label });
 +				for (const skill of skills) {
-+					const name = prefix + await skillInvocationName(services, skill);
-+					const rule = `Skill(${name})`;
-+					const on = !isDenied(settings, rule);
++					const name = (plugin ? plugin.name + ':' : '') + await skillInvocationName(services, skill);
++					const sw: ISwitch = plugin
++						? { kind: 'plugin', key: plugin.id, settingsFile: plugin.scope === 'user' ? files.user : files.folder ?? files.user }
++						: { kind: 'skill', key: name, settingsFile };
++					const on = !isOff(settings, sw);
 +					items.push({
 +						label: onOffLabel(name, on),
 +						description: onOffDescription(on),
 +						detail: skill.detail,
-+						skill: { folder: joinPath(skill.skillRoot, skill.skillName), name, rule, settingsFile, deletable, on }
++						skill: { folder: joinPath(skill.skillRoot, skill.skillName), name, sw, plugin: plugin?.name, deletable: !plugin, on }
 +					});
 +				}
 +			};
 +
 +			const localDir = localSkillsDir(services);
 +			if (localDir && files.folder) {
-+				await addGroup(localize('academicStudioClaudeSkillsLocal', "Local — this folder only"), localDir, '', files.folder, true);
++				await addGroup(localize('academicStudioClaudeSkillsLocal', "Local — this folder only"), localDir, files.folder);
 +			}
-+			await addGroup(localize('academicStudioClaudeSkillsGlobal', "Global — every project"), joinPath(await claudeHome(services), 'skills'), '', files.user, true);
++			await addGroup(localize('academicStudioClaudeSkillsGlobal', "Global — every project"), joinPath(await claudeHome(services), 'skills'), files.user);
 +			for (const plugin of await installedPlugins(services)) {
-+				await addGroup(localize('academicStudioClaudeSkillsPlugin', "From the {0} plugin", plugin.name), joinPath(plugin.root, 'skills'), plugin.name + ':', files.user, false);
++				await addGroup(localize('academicStudioClaudeSkillsPlugin', "From the {0} plugin", plugin.name), joinPath(plugin.root, 'skills'), files.user, plugin);
 +			}
 +			const hasSkills = items.length > 0;
 +
@@ -840,9 +899,13 @@ new file mode 100644
 +			}
 +
 +			const followUps: IFollowUpItem[] = [
-+				skill.on
-+					? { action: 'toggle', label: '$(circle-slash) ' + localize('academicStudioClaudeSkillTurnOff', "Turn Off"), detail: localize('academicStudioClaudeSkillTurnOffDetail', "Claude stops using this skill. Nothing is deleted.") }
-+					: { action: 'toggle', label: '$(check) ' + localize('academicStudioClaudeSkillTurnOn', "Turn On"), detail: localize('academicStudioClaudeSkillTurnOnDetail', "Claude can use this skill again.") },
++				skill.plugin
++					? skill.on
++						? { action: 'toggle', label: '$(circle-slash) ' + localize('academicStudioClaudePluginTurnOff', "Turn Off the {0} Plugin", skill.plugin), detail: localize('academicStudioClaudePluginTurnOffDetail', "A plugin's skills go on and off together: this turns off all of its skills and connectors. Nothing is deleted.") }
++						: { action: 'toggle', label: '$(check) ' + localize('academicStudioClaudePluginTurnOn', "Turn On the {0} Plugin", skill.plugin), detail: localize('academicStudioClaudePluginTurnOnDetail', "Claude can use all of its skills and connectors again.") }
++					: skill.on
++						? { action: 'toggle', label: '$(circle-slash) ' + localize('academicStudioClaudeSkillTurnOff', "Turn Off"), detail: localize('academicStudioClaudeSkillTurnOffDetail', "Claude stops using this skill. Nothing is deleted.") }
++						: { action: 'toggle', label: '$(check) ' + localize('academicStudioClaudeSkillTurnOn', "Turn On"), detail: localize('academicStudioClaudeSkillTurnOnDetail', "Claude can use this skill again.") },
 +				{ action: 'open', label: '$(go-to-file) ' + localize('academicStudioClaudeSkillOpen', "Open Instructions"), detail: 'SKILL.md' }
 +			];
 +			if (skill.deletable) {
@@ -851,10 +914,11 @@ new file mode 100644
 +			const action = await pickFollowUp(services, skill.name, followUps);
 +
 +			if (action === 'toggle') {
-+				await setEnabled(services, settings, skill.rule, skill.settingsFile, !skill.on);
++				await setEnabled(services, settings, skill.sw, !skill.on);
++				const what = skill.plugin ? localize('academicStudioClaudePluginNamed', "the {0} plugin", skill.plugin) : skill.name;
 +				services.notificationService.info(skill.on
-+					? localize('academicStudioClaudeSkillTurnedOff', "Turned off {0}. Start a new chat for Claude to pick up the change.", skill.name)
-+					: localize('academicStudioClaudeSkillTurnedOn', "Turned on {0}. Start a new chat for Claude to pick up the change.", skill.name));
++					? localize('academicStudioClaudeSkillTurnedOff', "Turned off {0}. Start a new chat for Claude to pick up the change.", what)
++					: localize('academicStudioClaudeSkillTurnedOn', "Turned on {0}. Start a new chat for Claude to pick up the change.", what));
 +			} else if (action === 'open') {
 +				await services.editorService.openEditor({ resource: joinPath(skill.folder, 'SKILL.md'), options: { pinned: true } });
 +				return;
@@ -873,8 +937,8 @@ new file mode 100644
 +						return;
 +					}
 +					if (!skill.on) {
-+						// drop the now-orphaned deny rule
-+						await setEnabled(services, settings, skill.rule, skill.settingsFile, true);
++						// drop the now-orphaned override
++						await setEnabled(services, settings, skill.sw, true);
 +					}
 +					services.notificationService.info(localize('academicStudioClaudeDeleteSkillDone', "Deleted skill \"{0}\".", skill.name));
 +				}
@@ -887,8 +951,7 @@ new file mode 100644
 +interface IConnectorEntry extends IQuickPickItem {
 +	connector?: {
 +		name: string;
-+		rule: string;
-+		settingsFile: URI;
++		sw: ISwitch;
 +		/** the file that defines it */
 +		configFile: URI;
 +		/** where in that file: `mcpServers` at the top, or under `projects[<path>]` */
@@ -946,19 +1009,19 @@ new file mode 100644
 +			const folder = firstFolder(services);
 +			const items: QuickPickInput<IConnectorEntry>[] = [];
 +
-+			const addGroup = (label: string, servers: { name: string; server: any; configFile: URI; projectPath?: string }[], toolPrefix: string, settingsFile: URI, removable: boolean) => {
++			const addGroup = (label: string, servers: { name: string; server: any; configFile: URI; projectPath?: string }[], swFor: (name: string, configFile: URI) => ISwitch, removable: boolean) => {
 +				if (!servers.length) {
 +					return;
 +				}
 +				items.push({ type: 'separator', label });
 +				for (const { name, server, configFile, projectPath } of servers) {
-+					const rule = `mcp__${toolPrefix}${mcpToolName(name)}`;
-+					const on = !isDenied(settings, rule);
++					const sw = swFor(name, configFile);
++					const on = !isOff(settings, sw);
 +					items.push({
 +						label: onOffLabel(name, on),
 +						description: onOffDescription(on),
 +						detail: describe(server),
-+						connector: { name, rule, settingsFile, configFile, projectPath, removable, on }
++						connector: { name, sw, configFile, projectPath, removable, on }
 +					});
 +				}
 +			};
@@ -977,13 +1040,17 @@ new file mode 100644
 +				} catch (e) {
 +					// unparsable — skip
 +				}
-+				addGroup(localize('academicStudioClaudeMcpThisFolderGroup', "This folder"), local, '', files.folder, true);
++				const folderFile = files.folder;
++				addGroup(localize('academicStudioClaudeMcpThisFolderGroup', "This folder"), local,
++					(name, configFile) => ({ kind: configFile === mcpJson ? 'mcpjson' : 'mcp', key: name, settingsFile: folderFile }), true);
 +			}
-+			addGroup(localize('academicStudioClaudeMcpAllProjectsGroup', "All projects"), mcpServersIn(userConfigText).map(([name, server]) => ({ name, server, configFile: userConfig })), '', files.user, true);
++			addGroup(localize('academicStudioClaudeMcpAllProjectsGroup', "All projects"), mcpServersIn(userConfigText).map(([name, server]) => ({ name, server, configFile: userConfig })),
++				name => ({ kind: 'mcp', key: name, settingsFile: files.user }), true);
 +			for (const plugin of await installedPlugins(services)) {
 +				const pluginMcp = joinPath(plugin.root, '.mcp.json');
 +				const servers = mcpServersIn(await readText(services, pluginMcp)).map(([name, server]) => ({ name, server, configFile: pluginMcp }));
-+				addGroup(localize('academicStudioClaudeMcpPlugin', "From the {0} plugin", plugin.name), servers, `plugin_${mcpToolName(plugin.name)}_`, files.user, false);
++				addGroup(localize('academicStudioClaudeMcpPlugin', "From the {0} plugin", plugin.name), servers,
++					name => ({ kind: 'mcp', key: `plugin:${plugin.name}:${name}`, settingsFile: files.user }), false);
 +			}
 +			const hasConnectors = items.length > 0;
 +
@@ -1019,7 +1086,7 @@ new file mode 100644
 +
 +			const followUps: IFollowUpItem[] = [
 +				connector.on
-+					? { action: 'toggle', label: '$(circle-slash) ' + localize('academicStudioClaudeConnectorTurnOff', "Turn Off"), detail: localize('academicStudioClaudeConnectorTurnOffDetail', "Block all of its tools. Its configuration is kept.") }
++					? { action: 'toggle', label: '$(circle-slash) ' + localize('academicStudioClaudeConnectorTurnOff', "Turn Off"), detail: localize('academicStudioClaudeConnectorTurnOffDetail', "Claude stops connecting to it. Its configuration is kept.") }
 +					: { action: 'toggle', label: '$(check) ' + localize('academicStudioClaudeConnectorTurnOn', "Turn On"), detail: localize('academicStudioClaudeConnectorTurnOnDetail', "Claude can use its tools again.") },
 +				{ action: 'open', label: '$(go-to-file) ' + localize('academicStudioClaudeConnectorOpen', "Open Configuration"), detail: agentPath(connector.configFile) }
 +			];
@@ -1029,7 +1096,7 @@ new file mode 100644
 +			const action = await pickFollowUp(services, connector.name, followUps);
 +
 +			if (action === 'toggle') {
-+				await setEnabled(services, settings, connector.rule, connector.settingsFile, !connector.on);
++				await setEnabled(services, settings, connector.sw, !connector.on);
 +				services.notificationService.info(connector.on
 +					? localize('academicStudioClaudeConnectorTurnedOff', "Turned off {0}. Start a new chat for Claude to pick up the change.", connector.name)
 +					: localize('academicStudioClaudeConnectorTurnedOn', "Turned on {0}. Start a new chat for Claude to pick up the change.", connector.name));
@@ -1045,8 +1112,8 @@ new file mode 100644
 +				});
 +				if (confirmed && await removeConnector(services, connector.configFile, connector.name, connector.projectPath)) {
 +					if (!connector.on) {
-+						// drop the now-orphaned deny rule
-+						await setEnabled(services, settings, connector.rule, connector.settingsFile, true);
++						// drop the now-orphaned off setting
++						await setEnabled(services, settings, connector.sw, true);
 +					}
 +					services.notificationService.info(localize('academicStudioClaudeRemoveConnectorDone', "Removed connector \"{0}\".", connector.name));
 +				}
