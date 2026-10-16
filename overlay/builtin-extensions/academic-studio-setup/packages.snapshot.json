@@ -7,14 +7,14 @@
       "label": "Finance Data — fetch market & economic data (Yahoo Finance, FRED, SEC EDGAR, Ken French, FinnHub, Financial Modeling Prep) and save as CSV",
       "author": "Kerry Back",
       "name": "finance-data",
-      "marketplace": "kerryback",
-      "marketplaceRepo": "kerryback/skills",
+      "marketplace": "kerryback-public",
+      "marketplaceRepo": "kerryback/kerryback-public",
       "plugin": "finance-data",
       "version": 1,
       "prereq": "python",
-      "authorUrl": "https://github.com/kerryback/skills",
+      "authorUrl": "https://github.com/kerryback/kerryback-public",
       "latestVersion": "1.1.0",
-      "docsUrl": "https://github.com/kerryback/skills/tree/main/plugins/finance-data"
+      "docsUrl": "https://github.com/kerryback/kerryback-public/tree/main/plugins/finance-data"
     }
   ]
 }
